@@ -9,7 +9,7 @@ import Footer from '@/Components/landing_page/footer.vue';
   <div class="min-h-screen flex flex-col bg-[#f7f5ee] antialiased font-sans">
     
     <Navbar />
-    <main class="flex-grow w-full">
+    <main class="flex-grow w-full pt-[60px] md:pt-[68px]">
       <slot />
     </main>
 

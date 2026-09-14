@@ -46,8 +46,8 @@ const handleLogin = () => {
 }
 </style>
 <template>
-  <!-- Navbar (Outer: Full Width & Sticky) -->
-  <nav class="sticky top-0 z-50 w-full bg-[#4b857a] shadow-md">
+  <!-- Navbar (Outer: Full Width & Fixed) -->
+  <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-[#4b857a] shadow-md">
     
     <!-- Inner Container: Penyeimbang Margin (Sama dengan Layout dan Footer) -->
     <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 md:px-10">
