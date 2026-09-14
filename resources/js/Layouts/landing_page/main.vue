@@ -6,9 +6,14 @@ import Footer from '@/Components/landing_page/footer.vue';
 </script>
 
 <template>
-  <div class="w-full min-h-screen flex flex-col justify-between bg-[#4b857a] text-white font-poppins">
+  <div class="min-h-screen flex flex-col bg-[#f7f5ee] antialiased font-sans">
+    
     <Navbar />
-    <slot />
+    <main class="flex-grow w-full">
+      <slot />
+    </main>
+
     <Footer />
+
   </div>
 </template>
