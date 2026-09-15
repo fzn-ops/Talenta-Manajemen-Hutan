@@ -40,22 +40,32 @@ const isActive = (item) => {
 	}
 };
 
-// Initial state: only open if user is currently visiting a child page
-const openDropdowns = ref(
-	menuItems
-		.filter((item) => item.hasChildren && item.children?.some((child) => isActive(child)))
-		.map((item) => item.label)
-);
+const STORAGE_KEY = 'sidebar_mahasiswa_open_dropdowns';
 
-// Close dropdown when sidebar collapses / closes
-watch(
-	() => props.collapsed,
-	(isCollapsed) => {
-		if (isCollapsed) {
-			openDropdowns.value = [];
+const getInitialOpenDropdowns = () => {
+	const activeParents = menuItems
+		.filter((item) => item.hasChildren && item.children?.some((child) => isActive(child)))
+		.map((item) => item.label);
+
+	if (typeof window === 'undefined') return activeParents;
+
+	try {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved !== null) {
+			const parsed = JSON.parse(saved);
+			if (Array.isArray(parsed)) {
+				return Array.from(new Set([...parsed, ...activeParents]));
+			}
 		}
+	} catch {
+		// Ignore parsing error
 	}
-);
+
+	return activeParents;
+};
+
+// State: retains open dropdowns even when sidebar is collapsed or closed
+const openDropdowns = ref(getInitialOpenDropdowns());
 
 const toggleDropdown = (label) => {
 	const index = openDropdowns.value.indexOf(label);
@@ -64,12 +74,17 @@ const toggleDropdown = (label) => {
 	} else {
 		openDropdowns.value.push(label);
 	}
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(openDropdowns.value));
+	} catch {
+		// Ignore storage error
+	}
 };
 
 const isParentActive = (item) => {
 	if (!isActive(item)) return false;
-	// If dropdown is open (and expanded), child is highlighted instead of parent
-	if ((!props.collapsed || props.mobile) && openDropdowns.value.includes(item.label)) {
+	// If dropdown is open, child is highlighted instead of parent
+	if (openDropdowns.value.includes(item.label)) {
 		return false;
 	}
 	return true;
@@ -138,7 +153,7 @@ const isParentActive = (item) => {
 						:title="(!mobile && collapsed) ? item.label : undefined"
 						@click="toggleDropdown(item.label)"
 					>
-						<div class="flex items-center gap-5">
+						<div class="flex items-center" :class="(!mobile && collapsed) ? 'justify-center' : 'gap-5'">
 							<img :src="`/assets/icons/${item.icon}.svg`" :alt="`${item.label} icon`" class="h-5 w-5 shrink-0 object-contain" />
 							<span v-if="!collapsed || mobile" class="whitespace-nowrap truncate">{{ item.label }}</span>
 						</div>
@@ -159,29 +174,37 @@ const isParentActive = (item) => {
 
 					<!-- Submenu Items (Smooth Grid Accordion Animation) -->
 					<div
-						v-if="!collapsed || mobile"
 						class="submenu-collapse"
 						:class="{ 'is-open': openDropdowns.includes(item.label) }"
 					>
-						<!-- Hapus class flex, gap, dan pt dari sini... -->
 						<div class="submenu-inner min-h-0 overflow-hidden">
-							
-							<!-- ...lalu pindahkan ke div baru di dalamnya -->
-							<div class="flex flex-col gap-3.5 pt-3.5">
+							<div
+								class="flex flex-col pt-3"
+								:class="(!mobile && collapsed) ? 'gap-2.5' : 'gap-3.5'"
+							>
 								<Link
 									v-for="sub in item.children"
 									:key="sub.label"
 									:href="sub.href"
 									:class="[
-										'flex h-11 items-center text-[15px] font-semibold transition-colors duration-200 ease-in-out focus:outline-none whitespace-nowrap ml-6 w-[calc(100%-24px)] gap-5 rounded-l-full pl-7 pr-4',
+										'flex h-11 items-center text-[15px] font-semibold transition-colors duration-200 ease-in-out focus:outline-none whitespace-nowrap',
+										(!mobile && collapsed)
+											? 'w-full justify-center rounded-full px-0'
+											: 'ml-6 w-[calc(100%-24px)] gap-5 rounded-l-full pl-7 pr-4',
 										isActive(sub)
 											? 'bg-[#345c53] text-white shadow-sm'
 											: ['text-white/80', !mobile ? 'hover:bg-[#528277] hover:text-white' : ''],
 									]"
+									:title="(!mobile && collapsed) ? sub.label : undefined"
 									@click="$emit('navigate')"
 								>
-									<img :src="`/assets/icons/${sub.icon}.svg`" :alt="`${sub.label} icon`" class="h-5 w-5 shrink-0 object-contain" />
-									<span class="whitespace-nowrap truncate">{{ sub.label }}</span>
+									<img
+										:src="`/assets/icons/${sub.icon}.svg`"
+										:alt="`${sub.label} icon`"
+										:class="(!mobile && collapsed) ? 'h-4 w-4' : 'h-5 w-5'"
+										class="shrink-0 object-contain"
+									/>
+									<span v-if="!collapsed || mobile" class="whitespace-nowrap truncate">{{ sub.label }}</span>
 								</Link>
 							</div>
 						</div>

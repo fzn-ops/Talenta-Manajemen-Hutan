@@ -1,9 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import ToastNotification from '@/Components/ToastNotification.vue';
-import Modal from '@/Components/Modal.vue';
+import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
+import Modal from '@/Components/dashboard/Modal.vue';
 
 // Chart.js registration
 import { Pie } from 'vue-chartjs';
@@ -27,7 +27,7 @@ const props = defineProps({
 			{ category: 'Akademisi', count: 100, color: '#fb923c' },
 		],
 	},
-	pengajuanKegiatan: {
+	pengajuanAktivitas: {
 		type: Array,
 		default: () => [
 			{ id: 1, judul: 'Lorem Ipsum dolor sit amet...', kategori: 'Profesional, Bisnis, Birokrat, Akad..', deadline: '10 Juli 2029', file: '123.jpg', status: 'Menunggu' },
@@ -50,20 +50,36 @@ const props = defineProps({
 	hasilAktivitas: {
 		type: Array,
 		default: () => [
-			{ id: 1, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaKegiatan: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
-			{ id: 2, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaKegiatan: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
-			{ id: 3, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaKegiatan: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
-			{ id: 4, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaKegiatan: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
-			{ id: 5, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaKegiatan: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
+			{ id: 1, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaAktivitas: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
+			{ id: 2, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaAktivitas: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
+			{ id: 3, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaAktivitas: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
+			{ id: 4, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaAktivitas: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
+			{ id: 5, namaMahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenisRoadmap: 'Professional', namaAktivitas: 'Hackaton V2.0 Tahun 2026', file: '123.jpg', status: 'Menunggu' },
 		],
 	},
 });
 
 const isLoading = ref(true);
+const isDesktop = ref(false);
+
+const updateScreenSize = () => {
+	if (typeof window !== 'undefined') {
+		isDesktop.value = window.innerWidth >= 1024;
+	}
+};
+
 onMounted(() => {
 	setTimeout(() => {
 		isLoading.value = false;
 	}, 250);
+	updateScreenSize();
+	window.addEventListener('resize', updateScreenSize, { passive: true });
+});
+
+onUnmounted(() => {
+	if (typeof window !== 'undefined') {
+		window.removeEventListener('resize', updateScreenSize);
+	}
 });
 
 // Toast State
@@ -91,17 +107,126 @@ const handlePreview = (item) => {
 };
 
 const handleApprove = (item) => {
-	showToast('success', 'Berhasil Disetujui', `Aktivitas ${item.judul || item.namaKegiatan || item.namaTim || ''} berhasil disetujui.`);
+	showToast('success', 'Berhasil Disetujui', `Aktivitas ${item.judul || item.namaAktivitas || item.namaTim || ''} berhasil disetujui.`);
 };
 
 const handleReject = (item) => {
-	showToast('error', 'Aktivitas Ditolak', `Aktivitas ${item.judul || item.namaKegiatan || item.namaTim || ''} telah ditolak.`);
+	showToast('error', 'Aktivitas Ditolak', `Aktivitas ${item.judul || item.namaAktivitas || item.namaTim || ''} telah ditolak.`);
 };
 
 // Participant Statistics
 const participantStats = computed(() => props.participantDistribution);
 const totalParticipants = computed(() => {
 	return participantStats.value.reduce((acc, curr) => acc + curr.count, 0);
+});
+
+// Mobile distribution interactive fluid slider state
+const activeSlideIndex = ref(0);
+const isDragging = ref(false);
+const dragStartX = ref(0);
+const dragStartY = ref(0);
+const dragOffset = ref(0);
+let isHorizontalDrag = null;
+
+const startDrag = (clientX, clientY) => {
+	if (isDesktop.value) return;
+	isDragging.value = true;
+	dragStartX.value = clientX;
+	dragStartY.value = clientY;
+	dragOffset.value = 0;
+	isHorizontalDrag = null;
+};
+
+const moveDrag = (clientX, clientY, e) => {
+	if (!isDragging.value || isDesktop.value) return;
+	const deltaX = clientX - dragStartX.value;
+	const deltaY = clientY - dragStartY.value;
+
+	if (isHorizontalDrag === null && (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6)) {
+		isHorizontalDrag = Math.abs(deltaX) > Math.abs(deltaY);
+	}
+
+	if (isHorizontalDrag === false) {
+		isDragging.value = false;
+		dragOffset.value = 0;
+		return;
+	}
+
+	if (isHorizontalDrag === true) {
+		if (e && e.cancelable && e.preventDefault) {
+			e.preventDefault();
+		}
+		// Rubber-band resistance at boundary edges for satisfying tactile feel
+		if ((activeSlideIndex.value === 0 && deltaX > 0) || (activeSlideIndex.value === 1 && deltaX < 0)) {
+			dragOffset.value = deltaX * 0.28;
+		} else {
+			dragOffset.value = deltaX;
+		}
+	}
+};
+
+const endDrag = () => {
+	if (!isDragging.value) return;
+	isDragging.value = false;
+	const threshold = 40;
+	if (dragOffset.value < -threshold && activeSlideIndex.value < 1) {
+		activeSlideIndex.value = 1;
+	} else if (dragOffset.value > threshold && activeSlideIndex.value > 0) {
+		activeSlideIndex.value = 0;
+	}
+	dragOffset.value = 0;
+	isHorizontalDrag = null;
+};
+
+// Touch Handlers
+const handleTouchStart = (e) => {
+	if (e.touches && e.touches.length === 1) {
+		startDrag(e.touches[0].clientX, e.touches[0].clientY);
+	}
+};
+const handleTouchMove = (e) => {
+	if (e.touches && e.touches.length === 1) {
+		moveDrag(e.touches[0].clientX, e.touches[0].clientY, e);
+	}
+};
+const handleTouchEnd = () => {
+	endDrag();
+};
+
+// Mouse Handlers (Enables natural drag in desktop responsive preview)
+const handleMouseDown = (e) => {
+	if (e.button !== 0) return;
+	startDrag(e.clientX, e.clientY);
+};
+const handleMouseMove = (e) => {
+	moveDrag(e.clientX, e.clientY, e);
+};
+const handleMouseUp = () => {
+	endDrag();
+};
+const handleMouseLeave = () => {
+	if (isDragging.value) {
+		endDrag();
+	}
+};
+
+const goToSlide = (index) => {
+	activeSlideIndex.value = index;
+	dragOffset.value = 0;
+};
+
+const mobileTrackStyle = computed(() => {
+	if (isDesktop.value) {
+		return {};
+	}
+	if (isDragging.value) {
+		return {
+			transform: `translateX(calc(-${activeSlideIndex.value * 100}% + ${dragOffset.value}px))`,
+		};
+	}
+	return {
+		transform: `translateX(-${activeSlideIndex.value * 100}%)`,
+	};
 });
 
 // Chart Data Setup
@@ -121,6 +246,10 @@ const pieChartData = computed(() => ({
 const pieChartOptions = {
 	responsive: true,
 	maintainAspectRatio: false,
+	interaction: {
+		mode: 'nearest',
+		intersect: true,
+	},
 	layout: {
 		padding: 10,
 	},
@@ -182,7 +311,7 @@ const columnsHasil = [
 	{ key: 'namaMahasiswa', label: 'Nama Mahasiswa', sortable: true, width: 'w-[190px]' },
 	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[110px]' },
 	{ key: 'jenisRoadmap', label: 'Jenis Roadmap', sortable: true, width: 'w-[150px]' },
-	{ key: 'namaKegiatan', label: 'Nama Kegiatan', sortable: true, width: 'w-[200px]' },
+	{ key: 'namaAktivitas', label: 'Nama Aktivitas', sortable: true, width: 'w-[200px]' },
 	{ key: 'file', label: 'Bukti', sortable: true, width: 'w-[100px]' },
 	{ key: 'status', label: 'Status', sortable: true, width: 'w-[130px]' },
 	{ key: 'aksi', label: 'Aksi', sortable: false, width: 'w-[140px]' },
@@ -200,7 +329,8 @@ const toggleSort1 = (key) => {
 	}
 };
 const sortedPengajuan = computed(() => {
-	return [...props.pengajuanKegiatan].sort((a, b) => {
+	const data = props.pengajuanAktivitas || [];
+	return [...data].sort((a, b) => {
 		let left = a[sortKey1.value] ?? '';
 		let right = b[sortKey1.value] ?? '';
 		if (typeof left === 'number' && typeof right === 'number') {
@@ -268,80 +398,118 @@ const sortedHasil = computed(() => {
 	<Head title="Dashboard Admin" />
 
 	<AdminLayout>
-		<div class="mx-auto w-full max-w-[1520px] space-y-8 font-poppins pb-12">
+		<div class="mx-auto w-full max-w-[1520px] space-y-10 sm:space-y-12 lg:space-y-14 font-poppins pb-16">
 			<!-- Header Section -->
 			<div class="space-y-1">
 				<h1 class="text-[28px] sm:text-[34px] lg:text-[40px] font-extrabold leading-tight text-[#17334F] tracking-tight">
 					Selamat Datang Admin!
 				</h1>
-				<p class="font-poppins text-[13px] sm:text-[14px] font-medium text-[#64748b]">
+				<p class="font-inter text-[13px] sm:text-[14px] font-medium text-[#64748b]">
 					Lihat seberapa banyak mahasiswa yang mengikuti aktivitas Talenta!
 				</p>
 			</div>
 
-			<!-- Distribution Cards Section (Side by Side) -->
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-				<!-- Left Card: Pie Chart -->
-				<div class="rounded-2xl bg-white p-6 shadow-xs ring-1 ring-[#e2e8f0] flex flex-col items-center justify-between">
-					<h2 class="text-center font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F]">
-						Distribusi Peserta Berdasarkan Kategori Talenta
-					</h2>
+			<!-- Distribution Cards Section -->
+			<div class="w-full">
+				<!-- Outer overflow container: isolates cards on mobile with touch drag, visible on desktop so borders/shadows are never clipped -->
+				<div class="w-full overflow-hidden lg:overflow-visible select-none lg:select-auto p-1 lg:p-0">
+					<div
+						class="flex lg:grid lg:grid-cols-2 lg:gap-6 will-change-transform lg:!transform-none lg:!cursor-default"
+						:class="isDragging ? 'transition-none cursor-grabbing' : 'transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-grab'"
+						:style="mobileTrackStyle"
+						@touchstart="handleTouchStart"
+						@touchmove="handleTouchMove"
+						@touchend="handleTouchEnd"
+						@mousedown="handleMouseDown"
+						@mousemove="handleMouseMove"
+						@mouseup="handleMouseUp"
+						@mouseleave="handleMouseLeave"
+					>
+						<!-- Left Card Slide: Pie Chart -->
+						<div class="w-full shrink-0 lg:shrink px-1 lg:px-0">
+							<div class="w-full rounded-2xl bg-white p-5 sm:p-6 shadow-xs border border-[#e2e8f0] flex flex-col items-center justify-between min-h-[380px]">
+								<h2 class="text-center font-poppins text-[14px] sm:text-[16px] font-bold text-[#17334F] leading-snug px-2">
+									Distribusi Peserta Berdasarkan Kategori Talenta
+								</h2>
 
-					<div class="relative w-full h-[250px] sm:h-[270px] my-3 flex items-center justify-center">
-						<div v-if="isLoading" class="h-48 w-48 rounded-full bg-slate-100 animate-pulse"></div>
-						<Pie
-							v-else
-							:data="pieChartData"
-							:options="pieChartOptions"
-							:plugins="[ChartDataLabels]"
-							aria-label="Grafik Distribusi Peserta"
-						/>
-					</div>
+								<div class="relative w-full max-w-[240px] sm:max-w-[260px] h-[210px] sm:h-[250px] my-2 flex items-center justify-center">
+									<div v-if="isLoading" class="h-44 w-44 rounded-full bg-slate-100 animate-pulse"></div>
+									<Pie
+										v-else
+										:data="pieChartData"
+										:options="pieChartOptions"
+										:plugins="[ChartDataLabels]"
+										aria-label="Grafik Distribusi Peserta"
+									/>
+								</div>
 
-					<!-- Legend Badges Below Chart -->
-					<div class="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-[#475569] pt-2">
-						<div v-for="item in participantStats" :key="item.category" class="flex items-center gap-1.5">
-							<span class="h-3 w-3 rounded-full shrink-0" :style="{ backgroundColor: item.color }"></span>
-							<span>{{ item.category }}</span>
+								<!-- Legend Badges Below Chart -->
+								<div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-semibold text-[#475569] pt-2">
+									<div v-for="item in participantStats" :key="item.category" class="flex items-center gap-1.5">
+										<span class="h-3 w-3 rounded-full shrink-0" :style="{ backgroundColor: item.color }"></span>
+										<span>{{ item.category }}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Right Card Slide: Real Numbers Table -->
+						<div class="w-full shrink-0 lg:shrink px-1 lg:px-0">
+							<div class="w-full rounded-2xl bg-white p-5 sm:p-6 shadow-xs border border-[#e2e8f0] flex flex-col justify-between min-h-[380px]">
+								<h2 class="text-center font-poppins text-[14px] sm:text-[16px] font-bold text-[#17334F] leading-snug px-2">
+									Distribusi Peserta Berdasarkan Kategori Talenta<br />
+									<span class="text-[12px] sm:text-[13px] font-medium text-[#64748b]">(Dalam Angka riil)</span>
+								</h2>
+
+								<div class="mt-4 flex-1 flex flex-col justify-center px-2 sm:px-10">
+									<div class="flex items-center justify-between py-2.5 border-b-2 border-[#17334F]/20 font-bold text-sm sm:text-[15px] text-[#17334F]">
+										<span>Kategori</span>
+										<span>Jumlah</span>
+									</div>
+									<div class="divide-y divide-[#f1f5f9] text-sm sm:text-[14px] text-[#334155] font-medium">
+										<div v-for="item in participantStats" :key="item.category" class="flex items-center justify-between py-2.5 sm:py-3">
+											<span>{{ item.category }}</span>
+											<span class="font-semibold text-[#17334F]">{{ item.count }}</span>
+										</div>
+									</div>
+									<div class="flex items-center justify-between py-3.5 border-t-2 border-[#17334F]/20 font-bold text-sm sm:text-[15px] text-[#17334F]">
+										<span>Total</span>
+										<span>{{ totalParticipants }}</span>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 
-				<!-- Right Card: Real Numbers Table -->
-				<div class="rounded-2xl bg-white p-6 shadow-xs ring-1 ring-[#e2e8f0] flex flex-col justify-between">
-					<h2 class="text-center font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F] leading-snug">
-						Distribusi Peserta Berdasarkan Kategori Talenta<br />
-						<span class="text-[13px] font-medium text-[#64748b]">(Dalam Angka riil)</span>
-					</h2>
-
-					<div class="mt-4 flex-1 flex flex-col justify-center px-4 sm:px-10">
-						<div class="flex items-center justify-between py-2.5 border-b-2 border-[#17334F]/20 font-bold text-sm sm:text-[15px] text-[#17334F]">
-							<span>Kategori</span>
-							<span>Jumlah</span>
-						</div>
-						<div class="divide-y divide-[#f1f5f9] text-sm sm:text-[14px] text-[#334155] font-medium">
-							<div v-for="item in participantStats" :key="item.category" class="flex items-center justify-between py-3">
-								<span>{{ item.category }}</span>
-								<span class="font-semibold text-[#17334F]">{{ item.count }}</span>
-							</div>
-						</div>
-						<div class="flex items-center justify-between py-3.5 border-t-2 border-[#17334F]/20 font-bold text-sm sm:text-[15px] text-[#17334F]">
-							<span>Total</span>
-							<span>{{ totalParticipants }}</span>
-						</div>
-					</div>
+				<!-- Dots Pagination Indicator (Mobile only) -->
+				<div class="flex items-center justify-center gap-2 lg:hidden mt-4">
+					<button
+						type="button"
+						@click="goToSlide(0)"
+						class="h-2 rounded-full transition-all duration-300 cursor-pointer"
+						:class="activeSlideIndex === 0 ? 'w-6 bg-[#416f65]' : 'w-2 bg-slate-300 hover:bg-slate-400'"
+						aria-label="Slide 1: Grafik"
+					></button>
+					<button
+						type="button"
+						@click="goToSlide(1)"
+						class="h-2 rounded-full transition-all duration-300 cursor-pointer"
+						:class="activeSlideIndex === 1 ? 'w-6 bg-[#416f65]' : 'w-2 bg-slate-300 hover:bg-slate-400'"
+						aria-label="Slide 2: Angka Riil"
+					></button>
 				</div>
 			</div>
 
-			<!-- Table 1: Pengajuan Kegiatan Mahasiswa -->
+			<!-- Table 1: Pengajuan Aktivitas Mahasiswa -->
 			<div>
 				<div class="mb-4 flex items-center justify-between gap-3">
-					<h2 class="text-[20px] font-bold leading-none text-[#17334F]">
-						Pengajuan Kegiatan
+					<h2 class="text-[16px] sm:text-[18px] md:text-[20px] font-bold leading-tight sm:leading-none text-[#17334F]">
+						Pengajuan Aktivitas
 					</h2>
 					<Link
 						href="/admin/aktivitas/persetujuan"
-						class="font-inter text-sm font-semibold text-[#17334F] hover:text-[#416f65] flex items-center gap-1 transition-colors"
+						class="font-inter text-xs sm:text-sm font-semibold text-[#17334F] hover:text-[#416f65] flex items-center gap-1 transition-colors shrink-0"
 					>
 						<span>Selengkapnya</span>
 						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -445,7 +613,7 @@ const sortedHasil = computed(() => {
 								</td>
 							</tr>
 							<tr v-if="sortedPengajuan.length === 0">
-								<td colspan="7" class="py-8 text-center text-[#64748b]">Belum ada data pengajuan kegiatan.</td>
+								<td colspan="7" class="py-8 text-center text-[#64748b]">Belum ada data pengajuan aktivitas.</td>
 							</tr>
 						</tbody>
 					</table>
@@ -455,12 +623,12 @@ const sortedHasil = computed(() => {
 			<!-- Table 2: Pendaftaran Aktivitas Mahasiswa -->
 			<div>
 				<div class="mb-4 flex items-center justify-between gap-3">
-					<h2 class="text-[20px] font-bold leading-none text-[#17334F]">
+					<h2 class="text-[16px] sm:text-[18px] md:text-[20px] font-bold leading-tight sm:leading-none text-[#17334F]">
 						Pendaftaran Aktivitas Mahasiswa
 					</h2>
 					<Link
 						href="/admin/aktivitas/bukti-pendaftaran"
-						class="font-inter text-sm font-semibold text-[#17334F] hover:text-[#416f65] flex items-center gap-1 transition-colors"
+						class="font-inter text-xs sm:text-sm font-semibold text-[#17334F] hover:text-[#416f65] flex items-center gap-1 transition-colors shrink-0"
 					>
 						<span>Selengkapnya</span>
 						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -573,12 +741,12 @@ const sortedHasil = computed(() => {
 			<!-- Table 3: Hasil Aktivitas Mahasiswa -->
 			<div>
 				<div class="mb-4 flex items-center justify-between gap-3">
-					<h2 class="text-[20px] font-bold leading-none text-[#17334F]">
+					<h2 class="text-[16px] sm:text-[18px] md:text-[20px] font-bold leading-tight sm:leading-none text-[#17334F]">
 						Hasil Aktivitas Mahasiswa
 					</h2>
 					<Link
 						href="/admin/aktivitas/hasil"
-						class="font-inter text-sm font-semibold text-[#17334F] hover:text-[#416f65] flex items-center gap-1 transition-colors"
+						class="font-inter text-xs sm:text-sm font-semibold text-[#17334F] hover:text-[#416f65] flex items-center gap-1 transition-colors shrink-0"
 					>
 						<span>Selengkapnya</span>
 						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -634,7 +802,7 @@ const sortedHasil = computed(() => {
 								<td class="px-4 py-3 text-left font-medium text-[#2f4b6e] truncate w-[190px]" :title="item.namaMahasiswa">{{ item.namaMahasiswa }}</td>
 								<td class="px-4 py-3 text-center font-mono text-[#64748b] w-[110px]">{{ item.nim }}</td>
 								<td class="px-4 py-3 text-center w-[150px]">{{ item.jenisRoadmap }}</td>
-								<td class="px-4 py-3 text-left truncate w-[200px]" :title="item.namaKegiatan">{{ item.namaKegiatan }}</td>
+								<td class="px-4 py-3 text-left truncate w-[200px]" :title="item.namaAktivitas">{{ item.namaAktivitas }}</td>
 								<td class="px-4 py-3 text-center w-[100px]">
 									<button
 										type="button"
@@ -712,7 +880,7 @@ const sortedHasil = computed(() => {
 						<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
 					</svg>
 					<p class="text-sm font-semibold text-[#17334F]">{{ previewItem?.file || 'Dokumen.jpg' }}</p>
-					<p class="text-xs text-gray-500 mt-1">{{ previewItem?.judul || previewItem?.namaKegiatan || previewItem?.namaTim || 'Detail Aktivitas' }}</p>
+					<p class="text-xs text-gray-500 mt-1">{{ previewItem?.judul || previewItem?.namaAktivitas || previewItem?.namaTim || 'Detail Aktivitas' }}</p>
 				</div>
 
 				<div class="flex justify-end gap-2.5">
