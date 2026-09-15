@@ -37,7 +37,7 @@ const cards = Array.from({ length: 6 }).map((_, index) => ({
 
 
 <template>
-  <div class="min-h-screen bg-[#fcfcfb] py-16 px-4 relative overflow-hidden font-sans">
+  <div class="min-h-screen bg-[#fcfcfb] py-16 px-4 relative overflow-hidden font-poppins">
     
     <!-- Ornamen Background (Opsional, untuk meniru coretan dan bintang) -->
     <div class="absolute top-10 left-10 text-slate-300 w-32 h-32 border-l-2 border-t-2 border-dashed rounded-tl-full opacity-50"></div>

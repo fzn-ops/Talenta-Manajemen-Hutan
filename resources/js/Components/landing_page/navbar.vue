@@ -47,7 +47,7 @@ const handleLogin = () => {
 </style>
 <template>
   <!-- Navbar (Outer: Full Width & Fixed) -->
-  <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-[#4b857a] shadow-md">
+  <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-[#4b857a] shadow-md font-poppins">
     
     <!-- Inner Container: Penyeimbang Margin (Sama dengan Layout dan Footer) -->
     <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 md:px-10">
@@ -65,7 +65,7 @@ const handleLogin = () => {
         <li v-for="item in menuItems" :key="item.label">
           <a
             :href="item.href"
-            class="group relative inline-block whitespace-nowrap text-sm font-bold text-white opacity-95 transition-opacity hover:opacity-100"
+            class="group relative inline-block whitespace-nowrap text-sm font-semibold text-white opacity-95 transition-opacity hover:opacity-100"
           >
             {{ item.label }}
             <span class="absolute -bottom-1 left-0 h-[2px] w-0 bg-white transition-all duration-300 ease-out group-hover:w-full"></span>

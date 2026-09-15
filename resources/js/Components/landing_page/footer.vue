@@ -4,7 +4,7 @@
 
 <template>
   <!-- Footer (Outer: Full Width Background) -->
-  <footer class="w-full bg-[#4b857a] text-white font-sans">
+  <footer class="w-full bg-[#4b857a] text-white font-poppins">
     
     <!-- Inner Container: Penyeimbang Margin (Sejajar dengan Navbar & Layout) -->
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center px-4 pt-12 pb-8 sm:px-6 md:px-10">

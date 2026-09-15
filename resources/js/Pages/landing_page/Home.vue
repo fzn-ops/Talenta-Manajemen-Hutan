@@ -31,13 +31,13 @@ onUnmounted(() => {
       <img 
         src="/assets/icons/icon_daun_kiri.svg" 
         alt="Daun Kiri" 
-        class="absolute left-0 -top-16 z-30 w-32 drop-shadow-lg pointer-events-none md:-top-24 md:w-32 lg:w-48"
+        class="absolute left-0 -top-16 z-30 w-24 drop-shadow-lg pointer-events-none md:-top-28 md:w-24 lg:w-48"
       />
     <FeatureSection />
       <img 
         src="/assets/icons/icon_daun_kanan.svg" 
         alt="Daun Kanan" 
-        class="absolute -right-6 -bottom-10 z-10 w-32 pointer-events-none drop-shadow-lg sm:-right-8 sm:-bottom-32 sm:w-32 md:-right-12 md:-bottom-20 md:w-48 lg:-right-16 lg:-bottom-24 lg:w-60"
+        class="absolute -right-6 -bottom-10 z-10 w-32 pointer-events-none drop-shadow-lg sm:-right-8 sm:-bottom-32 sm:w-32 md:-right-6 md:-bottom-6 md:w-48 lg:-right-16 lg:-bottom-24 lg:w-60"
       />
     </div>
     <ActivitySection />

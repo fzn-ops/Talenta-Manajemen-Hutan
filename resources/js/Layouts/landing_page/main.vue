@@ -5,7 +5,7 @@ import Navbar from '@/Components/landing_page/navbar.vue';
 import Footer from '@/Components/landing_page/footer.vue';
 </script>
 
-<template>
+<template class="font-poppins antialiased">
   <div class="min-h-screen flex flex-col bg-[#f7f5ee] antialiased font-sans">
     
     <Navbar />
