@@ -1,15 +1,15 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
-import Sidebar from '@/Components/dashboard/admin/SidebarAdmin.vue';
-import Topbar from '@/Components/dashboard/admin/TopbarAdmin.vue';
+import SidebarMahasiswa from '@/Components/dashboard/mahasiswa/SidebarMahasiswa.vue';
+import TopbarMahasiswa from '@/Components/dashboard/mahasiswa/TopbarMahasiswa.vue';
 
 const checkIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 768;
 
 const getSavedSidebarState = () => {
 	if (typeof window === 'undefined') return true;
 	if (window.innerWidth < 768) return false;
-	const saved = localStorage.getItem('sidebar_expanded');
+	const saved = localStorage.getItem('sidebar_mahasiswa_expanded');
 	if (saved !== null) {
 		return saved === 'true';
 	}
@@ -47,7 +47,7 @@ const updateViewport = () => {
 const toggleSidebar = () => {
 	showingSidebar.value = !showingSidebar.value;
 	if (!isMobile.value) {
-		localStorage.setItem('sidebar_expanded', showingSidebar.value ? 'true' : 'false');
+		localStorage.setItem('sidebar_mahasiswa_expanded', showingSidebar.value ? 'true' : 'false');
 	}
 };
 
@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
 		</Transition>
 
 		<!-- Sidebar Component -->
-		<Sidebar
+		<SidebarMahasiswa
 			:collapsed="sidebarCollapsed"
 			:mobile="isMobile"
 			@navigate="isMobile && (showingSidebar = false)"
@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
 		<!-- Content Wrapper -->
 		<div class="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-white">
 			<!-- Topbar Component -->
-			<Topbar
+			<TopbarMahasiswa
 				@toggle="toggleSidebar"
 				@logout="handleLogout"
 			/>

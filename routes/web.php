@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -52,6 +52,31 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/berita', function () {
         return Inertia::render('dashboard/admin/Dashboard');
     })->name('berita');
+});
+
+/* Mahasiswa Dashboard Routes */
+Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('dashboard/mahasiswa/Dashboard');
+    })->name('dashboard');
+
+    Route::get('/roadmap', function () {
+        return Inertia::render('dashboard/mahasiswa/Dashboard');
+    })->name('roadmap');
+
+    Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
+        Route::get('/list', function () {
+            return Inertia::render('dashboard/mahasiswa/Dashboard');
+        })->name('list');
+
+        Route::get('/pengajuan', function () {
+            return Inertia::render('dashboard/mahasiswa/Dashboard');
+        })->name('pengajuan');
+    });
+
+    Route::get('/profile', function () {
+        return Inertia::render('dashboard/mahasiswa/Dashboard');
+    })->name('profile');
 });
 
 Route::middleware('auth')->group(function () {

@@ -106,7 +106,7 @@ const isParentActive = (item) => {
 
 		<!-- Nav Menu Area -->
 		<nav aria-label="Navigasi utama" :class="[
-			'mt-8 sm:mt-10 flex-1 space-y-3.5 overflow-y-auto overflow-x-hidden',
+			'mt-8 sm:mt-10 flex-1 flex flex-col gap-3.5 overflow-y-auto overflow-x-hidden',
 			(!mobile && collapsed) ? 'px-3' : 'px-0'
 		]">
 			<template v-for="item in menuItems" :key="item.label">
@@ -129,7 +129,7 @@ const isParentActive = (item) => {
 				</Link>
 
 				<!-- Menu Dropdown (Aktivitas) -->
-				<div v-else>
+				<div v-else class="flex flex-col">
 					<button
 						type="button"
 						:class="[
@@ -167,22 +167,27 @@ const isParentActive = (item) => {
 						class="submenu-collapse"
 						:class="{ 'is-open': openDropdowns.includes(item.label) }"
 					>
-						<div class="submenu-inner space-y-3.5 pt-3.5">
-							<Link
-								v-for="sub in item.children"
-								:key="sub.label"
-								:href="sub.href"
-								:class="[
-									'flex h-11 items-center text-[15px] font-semibold transition-colors duration-200 ease-in-out focus:outline-none whitespace-nowrap ml-6 w-[calc(100%-24px)] gap-5 rounded-l-full pl-7 pr-4',
-									isActive(sub)
-										? 'bg-[#345c53] text-white shadow-sm'
-										: ['text-white/80', !mobile ? 'hover:bg-[#528277] hover:text-white' : ''],
-								]"
-								@click="$emit('navigate')"
-							>
-								<img :src="`/assets/icons/${sub.icon}.svg`" :alt="`${sub.label} icon`" class="h-5 w-5 shrink-0 object-contain" />
-								<span class="whitespace-nowrap truncate">{{ sub.label }}</span>
-							</Link>
+						<!-- Hilangkan class flex, gap, dan pt dari submenu-inner -->
+						<div class="submenu-inner min-h-0 overflow-hidden">
+							
+							<!-- Pindahkan class tersebut ke div wrapper baru di sini -->
+							<div class="flex flex-col gap-3.5 pt-3.5">
+								<Link
+									v-for="sub in item.children"
+									:key="sub.label"
+									:href="sub.href"
+									:class="[
+										'flex h-11 items-center text-[15px] font-semibold transition-colors duration-200 ease-in-out focus:outline-none whitespace-nowrap ml-6 w-[calc(100%-24px)] gap-5 rounded-l-full pl-7 pr-4',
+										isActive(sub)
+											? 'bg-[#345c53] text-white shadow-sm'
+											: ['text-white/80', !mobile ? 'hover:bg-[#528277] hover:text-white' : ''],
+									]"
+									@click="$emit('navigate')"
+								>
+									<img :src="`/assets/icons/${sub.icon}.svg`" :alt="`${sub.label} icon`" class="h-5 w-5 shrink-0 object-contain" />
+									<span class="whitespace-nowrap truncate">{{ sub.label }}</span>
+								</Link>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -213,15 +218,18 @@ const isParentActive = (item) => {
 	display: grid;
 	grid-template-rows: 0fr;
 	opacity: 0;
-	transition: grid-template-rows 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+	visibility: hidden;
+	transition: grid-template-rows 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease, visibility 250ms;
 }
 
 .submenu-collapse.is-open {
 	grid-template-rows: 1fr;
 	opacity: 1;
+	visibility: visible;
 }
 
 .submenu-inner {
+	min-height: 0;
 	overflow: hidden;
 }
 </style>
