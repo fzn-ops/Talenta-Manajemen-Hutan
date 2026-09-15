@@ -6,7 +6,7 @@ const stats = [
   { value: '120', label: 'Bisnis' },
   { value: '120', label: 'Birokrat' },
   { value: '120', label: 'Akademisi' },
-  { value: '120', label: 'Total Kegiatan' },
+  { value: '120', label: 'Total Aktivitas' },
 ];
 </script>
 
