@@ -1,6 +1,6 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
-import MahasiswaLayout from '@/Layouts/MahasiswaLayout.vue';
+import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
 </script>
 
 <template>

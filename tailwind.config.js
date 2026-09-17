@@ -17,6 +17,9 @@ export default {
                 inter: ['Inter', ...defaultTheme.fontFamily.sans],
                 poppins: ['Poppins', ...defaultTheme.fontFamily.sans],
             },
+            backdropBlur: {
+                xs: '2px',
+            },
         },
     },
 

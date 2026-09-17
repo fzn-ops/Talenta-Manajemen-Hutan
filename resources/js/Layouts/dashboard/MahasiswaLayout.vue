@@ -1,8 +1,9 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import SidebarMahasiswa from '@/Components/dashboard/mahasiswa/SidebarMahasiswa.vue';
 import TopbarMahasiswa from '@/Components/dashboard/mahasiswa/TopbarMahasiswa.vue';
+import ModalLogoutConfirmation from '@/Components/dashboard/ModalLogoutConfirmation.vue';
 
 const checkIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -18,13 +19,16 @@ const getSavedSidebarState = () => {
 
 const isMobile = ref(checkIsMobile());
 const showingSidebar = ref(getSavedSidebarState());
+const showLogoutModal = ref(false);
 const isLoggingOut = ref(false);
+const mainContentRef = ref(null);
 
 const handleLogout = () => {
 	isLoggingOut.value = true;
 	router.post(route('logout'), {}, {
 		onFinish: () => {
 			isLoggingOut.value = false;
+			showLogoutModal.value = false;
 			showingSidebar.value = false;
 		}
 	});
@@ -53,19 +57,71 @@ const toggleSidebar = () => {
 
 const sidebarCollapsed = computed(() => !showingSidebar.value);
 
+let modalObserver = null;
+let removeRouterListener = null;
+let rafId = null;
+
+const checkHasOpenModal = () => {
+	if (typeof document === 'undefined') return false;
+	const modals = document.querySelectorAll('.fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[100\\], [role="dialog"]');
+	return modals.length > 0;
+};
+
+const updateModalScrollLock = () => {
+	if (typeof document === 'undefined') return;
+	const shouldLock = showLogoutModal.value || checkHasOpenModal() || (isMobile.value && showingSidebar.value);
+	if (mainContentRef.value) {
+		if (shouldLock) {
+			mainContentRef.value.style.overflowY = 'hidden';
+		} else {
+			mainContentRef.value.style.overflowY = 'auto';
+		}
+	}
+};
+
+const scheduleModalCheck = () => {
+	if (rafId) cancelAnimationFrame(rafId);
+	rafId = requestAnimationFrame(updateModalScrollLock);
+};
+
+watch([showLogoutModal, showingSidebar], scheduleModalCheck);
+
 onMounted(() => {
 	updateViewport();
 	window.addEventListener('resize', updateViewport);
+
+	// MutationObserver to detect child / teleported modals and lock main scroll
+	modalObserver = new MutationObserver(() => {
+		scheduleModalCheck();
+	});
+	modalObserver.observe(document.body, { childList: true, subtree: true });
+
+	// Clean up on Inertia navigation
+	removeRouterListener = router.on('navigate', () => {
+		scheduleModalCheck();
+	});
 });
 
 onBeforeUnmount(() => {
 	window.removeEventListener('resize', updateViewport);
+	if (rafId) cancelAnimationFrame(rafId);
+	if (modalObserver) {
+		modalObserver.disconnect();
+		modalObserver = null;
+	}
+	if (removeRouterListener) {
+		removeRouterListener();
+		removeRouterListener = null;
+	}
+	if (mainContentRef.value) {
+		mainContentRef.value.style.overflowY = 'auto';
+	}
 });
 </script>
 
 <template>
 	<div class="fixed inset-0 flex h-full w-full overflow-hidden bg-white font-poppins text-gray-800">
-		<!-- Mobile Backdrop Overlay (Click to close) -->
+		<!-- Mobile Backdrop Overlay (Covers Topbar & Content, click to close) -->
 		<Transition
 			enter-active-class="ease-out duration-300"
 			enter-from-class="opacity-0"
@@ -76,7 +132,7 @@ onBeforeUnmount(() => {
 		>
 			<div
 				v-if="isMobile && showingSidebar"
-				class="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs cursor-pointer md:hidden"
+				class="fixed inset-0 z-40 bg-[#102653]/35 backdrop-blur-xs cursor-pointer md:hidden"
 				aria-hidden="true"
 				@click="showingSidebar = false"
 			></div>
@@ -87,21 +143,33 @@ onBeforeUnmount(() => {
 			:collapsed="sidebarCollapsed"
 			:mobile="isMobile"
 			@navigate="isMobile && (showingSidebar = false)"
-			@logout="handleLogout"
+			@logout="showLogoutModal = true"
 		/>
 
 		<!-- Content Wrapper -->
 		<div class="flex flex-col flex-1 min-w-0 h-full overflow-hidden bg-white">
 			<!-- Topbar Component -->
 			<TopbarMahasiswa
+				class="shrink-0"
 				@toggle="toggleSidebar"
-				@logout="handleLogout"
+				@logout="showLogoutModal = true"
 			/>
 
 			<!-- Main Page Content (Putih Bersih) -->
-			<main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white p-6 sm:p-8">
+			<main
+				ref="mainContentRef"
+				class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white p-6 sm:p-8"
+			>
 				<slot />
 			</main>
 		</div>
+
+		<!-- Modal Logout Confirmation -->
+		<ModalLogoutConfirmation
+			:show="showLogoutModal"
+			:loading="isLoggingOut"
+			@close="showLogoutModal = false"
+			@confirm="handleLogout"
+		/>
 	</div>
 </template>

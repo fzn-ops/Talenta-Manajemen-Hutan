@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
+import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import Modal from '@/Components/dashboard/Modal.vue';
 
@@ -398,7 +398,7 @@ const sortedHasil = computed(() => {
 	<Head title="Dashboard Admin" />
 
 	<AdminLayout>
-		<div class="mx-auto w-full max-w-[1520px] space-y-10 sm:space-y-12 lg:space-y-14 font-poppins pb-16">
+		<div class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8 space-y-10 sm:space-y-12 lg:space-y-14 pb-16">
 			<!-- Header Section -->
 			<div class="space-y-1">
 				<h1 class="text-[28px] sm:text-[34px] lg:text-[40px] font-extrabold leading-tight text-[#17334F] tracking-tight">

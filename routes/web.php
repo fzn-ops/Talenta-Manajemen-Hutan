@@ -20,7 +20,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('dashboard');
 
     Route::get('/mahasiswa', function () {
-        return Inertia::render('dashboard/admin/Dashboard');
+        return Inertia::render('dashboard/admin/Mahasiswa');
     })->name('mahasiswa');
 
     Route::get('/roadmap', function () {
