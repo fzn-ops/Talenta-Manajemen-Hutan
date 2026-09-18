@@ -1,7 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
@@ -9,21 +9,22 @@ import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import ModalFormMahasiswa from '@/Components/dashboard/admin/ModalFormMahasiswa.vue';
 import ModalImportMahasiswa from '@/Components/dashboard/admin/ModalImportMahasiswa.vue';
+import ModalBulkDeleteMahasiswa from '@/Components/dashboard/admin/ModalBulkDeleteMahasiswa.vue';
 
 const props = defineProps({
 	students: {
 		type: Array,
 		default: () => [
-			{ id: 1, nim: 'J0403231085', name: 'Fauzan Fuadiansyah', email: 'novafauzan@gmail.com', phone: '' },
-			{ id: 2, nim: 'J0403231075', name: 'Farhan Hakim', email: '01122005farhan@apps.ipb.ac.id', phone: '+62 895-6228-15861' },
-			{ id: 3, nim: '198512102012121010', name: 'Dr. Eko Prasetyo S.Hut., Ph.D.', email: 'eko.prasetyo@apps.ipb.ac.id', phone: '+62 857-5678-9012' },
-			{ id: 4, nim: '198102182006042009', name: 'Dr. Sri Wahyuni S.Hut., M.Si.', email: 'sri.wahyuni@apps.ipb.ac.id', phone: '+62 822-4567-8901' },
-			{ id: 5, nim: '197308301999031008', name: 'Ir. Bambang Triyono M.For.', email: 'bambang.t@apps.ipb.ac.id', phone: '+62 819-3456-7890' },
-			{ id: 6, nim: '198609252014042007', name: 'Dr. Nurul Hidayah S.Hut., M.Sc.', email: 'nurul.h@apps.ipb.ac.id', phone: '+62 812-2345-6789' },
-			{ id: 7, nim: '198404172010121006', name: 'Dr. Dedi Kusnadi S.Hut., M.Si.', email: 'dedi.kusnadi@apps.ipb.ac.id', phone: '+62 878-9012-3456' },
-			{ id: 8, nim: '197811092003122005', name: 'Dr. Ir. Rina Marlina M.Sc.', email: 'rina.marlina@apps.ipb.ac.id', phone: '+62 856-7890-1234' },
-			{ id: 9, nim: '197001151995031004', name: 'Prof. Dr. Ir. Ahmad Fauzi M.Agr.', email: 'ahmad.fauzi@apps.ipb.ac.id', phone: '+62 821-1234-5678' },
-			{ id: 10, nim: '198208222008121003', name: 'Dr. Hendra Setiawan S.Hut., Ph.D.', email: 'hendra.s@apps.ipb.ac.id', phone: '+62 815-6789-0123' },
+			{ id: 1, nim: 'J0403231085', name: 'Fauzan Fuadiansyah', angkatan: '60', email: 'novafauzan@gmail.com', phone: '+62 812-3456-7890' },
+			{ id: 2, nim: 'J0403231075', name: 'Farhan Hakim', angkatan: '60', email: '01122005farhan@apps.ipb.ac.id', phone: '+62 895-6228-15861' },
+			{ id: 3, nim: 'E1401201012', name: 'Eko Prasetyo', angkatan: '62', email: 'eko.prasetyo@apps.ipb.ac.id', phone: '+62 857-5678-9012' },
+			{ id: 4, nim: 'E1401211025', name: 'Sri Wahyuni', angkatan: '61', email: 'sri.wahyuni@apps.ipb.ac.id', phone: '+62 822-4567-8901' },
+			{ id: 5, nim: 'E1401221044', name: 'Bambang Triyono', angkatan: '62', email: 'bambang.t@apps.ipb.ac.id', phone: '+62 819-3456-7890' },
+			{ id: 6, nim: 'E1401221089', name: 'Nurul Hidayah', angkatan: '62', email: 'nurul.h@apps.ipb.ac.id', phone: '+62 812-2345-6789' },
+			{ id: 7, nim: 'E1401201067', name: 'Dedi Kusnadi', angkatan: '60', email: 'dedi.kusnadi@apps.ipb.ac.id', phone: '+62 878-9012-3456' },
+			{ id: 8, nim: 'E1401211053', name: 'Rina Marlina', angkatan: '61', email: 'rina.marlina@apps.ipb.ac.id', phone: '+62 856-7890-1234' },
+			{ id: 9, nim: 'E1401211098', name: 'Ahmad Fauzi', angkatan: '61', email: 'ahmad.fauzi@apps.ipb.ac.id', phone: '+62 821-1234-5678' },
+			{ id: 10, nim: 'E1401201015', name: 'Hendra Setiawan', angkatan: '60', email: 'hendra.s@apps.ipb.ac.id', phone: '+62 815-6789-0123' },
 		],
 	},
 	mahasiswa: {
@@ -94,6 +95,90 @@ watch(
 	{ immediate: true, deep: true }
 );
 
+// Filter Angkatan State & Logic
+const isFilterOpen = ref(false);
+const selectedAngkatan = ref([]);
+const filterContainerRef = ref(null);
+const filterDropdownStyle = ref({});
+
+const calculateFilterPlacement = () => {
+	if (!filterContainerRef.value || typeof window === 'undefined') return;
+	const rect = filterContainerRef.value.getBoundingClientRect();
+	const dropdownWidth = 256; // 16rem = 256px
+	const windowWidth = window.innerWidth;
+	const padding = 16;
+
+	const style = {};
+
+	// Cek apakah dropdown muat jika rata kanan (right: 0)
+	const leftIfRightAligned = rect.right - dropdownWidth;
+	// Cek apakah dropdown muat jika rata kiri (left: 0)
+	const rightIfLeftAligned = rect.left + dropdownWidth;
+
+	if (leftIfRightAligned >= padding && rect.right <= windowWidth - padding) {
+		style.right = '0px';
+		style.left = 'auto';
+	} else if (rightIfLeftAligned <= windowWidth - padding && rect.left >= padding) {
+		style.left = '0px';
+		style.right = 'auto';
+	} else {
+		// Jika berada di tengah dan berisiko keluar batas layar, geser posisi horizontal secara dinamis
+		const targetScreenLeft = Math.max(padding, Math.min(rect.left, windowWidth - dropdownWidth - padding));
+		const relativeOffset = targetScreenLeft - rect.left;
+		style.left = `${relativeOffset}px`;
+		style.right = 'auto';
+	}
+
+	// Cek posisi vertikal (buka ke atas jika sisa ruang di bawah kurang dari 250px)
+	const spaceBelow = window.innerHeight - rect.bottom;
+	const dropdownHeight = 250;
+	if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+		style.bottom = 'calc(100% + 8px)';
+		style.top = 'auto';
+	} else {
+		style.top = 'calc(100% + 8px)';
+		style.bottom = 'auto';
+	}
+
+	filterDropdownStyle.value = style;
+};
+
+const toggleFilterDropdown = () => {
+	const willOpen = !isFilterOpen.value;
+	if (willOpen) {
+		calculateFilterPlacement();
+	}
+	isFilterOpen.value = willOpen;
+};
+
+const closeFilterDropdown = () => {
+	isFilterOpen.value = false;
+};
+
+const handleWindowChange = () => {
+	if (isFilterOpen.value) {
+		calculateFilterPlacement();
+	}
+};
+
+const resetAllFilters = () => {
+	selectedAngkatan.value = [];
+};
+
+const availableAngkatans = computed(() => {
+	const angkatans = new Set();
+	students.value.forEach((s) => {
+		if (s.angkatan) {
+			angkatans.add(s.angkatan.toString());
+		}
+	});
+	return Array.from(angkatans).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+});
+
+const getStudentCountByAngkatan = (angkatan) => {
+	return students.value.filter((s) => s.angkatan?.toString() === angkatan.toString()).length;
+};
+
 // Loading Animation
 const isLoading = ref(true);
 onMounted(() => {
@@ -101,6 +186,15 @@ onMounted(() => {
 	setTimeout(() => {
 		isLoading.value = false;
 	}, 250);
+	document.addEventListener('click', closeFilterDropdown);
+	window.addEventListener('resize', handleWindowChange, { passive: true });
+	window.addEventListener('scroll', handleWindowChange, { passive: true });
+});
+
+onBeforeUnmount(() => {
+	document.removeEventListener('click', closeFilterDropdown);
+	window.removeEventListener('resize', handleWindowChange);
+	window.removeEventListener('scroll', handleWindowChange);
 });
 
 // Search Query
@@ -108,8 +202,9 @@ const searchQuery = ref('');
 
 // Sorting
 const columns = [
-	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[150px]' },
-	{ key: 'name', label: 'Nama Mahasiswa', sortable: true, width: 'w-[210px]' },
+	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[140px]' },
+	{ key: 'name', label: 'Nama Mahasiswa', sortable: true, width: 'w-[200px]' },
+	{ key: 'angkatan', label: 'Angkatan', sortable: true, width: 'w-[110px]' },
 	{ key: 'email', label: 'Email', sortable: true, width: 'w-[190px]' },
 	{ key: 'phone', label: 'Nomor Handphone', sortable: true, width: 'w-[150px]' },
 	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[90px]' },
@@ -132,15 +227,22 @@ const toggleSort = (key) => {
 const filteredAndSortedStudents = computed(() => {
 	let list = [...students.value];
 
-	// Search Query (NIM atau Nama Mahasiswa)
+	// Search Query (NIM, Nama Mahasiswa, Angkatan, Email, Phone)
 	if (searchQuery.value.trim()) {
 		const q = searchQuery.value.toLowerCase().trim();
 		list = list.filter(
 			(s) =>
 				(s.name && s.name.toLowerCase().includes(q)) ||
 				(s.nim && s.nim.toLowerCase().includes(q)) ||
-				(s.email && s.email.toLowerCase().includes(q))
+				(s.angkatan && s.angkatan.toString().toLowerCase().includes(q)) ||
+				(s.email && s.email.toLowerCase().includes(q)) ||
+				(s.phone && s.phone.toLowerCase().includes(q))
 		);
+	}
+
+	// Filter by Angkatan
+	if (selectedAngkatan.value.length > 0) {
+		list = list.filter((s) => selectedAngkatan.value.includes(s.angkatan?.toString()));
 	}
 
 	// Sorting
@@ -181,8 +283,8 @@ const paginatedStudents = computed(() => {
 	return filteredAndSortedStudents.value.slice(start, start + rowsPerPage.value);
 });
 
-// Reset to page 1 on search or rowsPerPage change
-watch([searchQuery, rowsPerPage], () => {
+// Reset to page 1 on search, filter, or rowsPerPage change
+watch([searchQuery, selectedAngkatan, rowsPerPage], () => {
 	currentPage.value = 1;
 });
 
@@ -242,6 +344,25 @@ const handleImportSubmit = (importedStudents) => {
 	}
 };
 
+// MODAL BULK DELETE MAHASISWA
+const isBulkDeleteModalOpen = ref(false);
+
+const openBulkDeleteModal = () => {
+	isBulkDeleteModalOpen.value = true;
+};
+
+const closeBulkDeleteModal = () => {
+	isBulkDeleteModalOpen.value = false;
+};
+
+const handleBulkDeleteConfirm = ({ angkatans, count }) => {
+	setTimeout(() => {
+		students.value = students.value.filter((s) => !angkatans.includes(s.angkatan?.toString()));
+		isBulkDeleteModalOpen.value = false;
+		showToast('success', 'Berhasil Dihapus', `${count} data mahasiswa angkatan ${angkatans.join(', ')} berhasil dihapus.`);
+	}, 300);
+};
+
 // MODAL DELETE CONFIRMATION
 const isDeleteModalOpen = ref(false);
 const deletingStudent = ref(null);
@@ -289,39 +410,137 @@ const confirmDeleteStudent = () => {
 					</p>
 				</div>
 
-				<!-- Action Bar (Search, Import, Tambah Button) -->
-				<div class="flex items-center gap-3">
-					<!-- Search Input Component -->
+				<!-- Action Bar (Search, Filter, Import, Bulk Delete, Tambah Button) -->
+				<div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+					<!-- Search Input Component (Full width on mobile, flex-1 on tablet/desktop) -->
 					<SearchBarTable
 						v-model="searchQuery"
 						placeholder="Cari NIM atau Nama Mahasiswa disini"
 					/>
 
-					<!-- Import Button -->
-					<button
-						type="button"
-						@click="(e) => { e.currentTarget?.blur(); openImportModal(); }"
-						class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center gap-2 rounded-[10px] border-2 border-[#d6e0ee] bg-transparent px-0 sm:px-4 font-poppins text-[14px] font-semibold text-[#183669] transition-colors hover:border-[#8ea9cb] focus:border-[#183669] focus:outline-none focus:ring-0 focus-visible:outline-none active:scale-95 select-none cursor-pointer"
-						title="Import Data Mahasiswa (Excel / CSV)"
-					>
-						<svg class="h-5 w-5 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-						</svg>
-						<span class="hidden sm:inline">Import</span>
-					</button>
+					<!-- Action Buttons Row (Right aligned on mobile & desktop) -->
+					<div class="flex items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+						<!-- Single Filter Button with Unified Dropdown -->
+						<div ref="filterContainerRef" class="relative" @click.stop @keydown.escape="isFilterOpen = false">
+							<button
+								type="button"
+								@click="toggleFilterDropdown"
+								class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors focus:outline-none select-none cursor-pointer"
+								:class="isFilterOpen || selectedAngkatan.length > 0
+									? 'border-[#183669]'
+									: 'border-[#d6e0ee] hover:border-[#8ea9cb]'"
+								title="Filter Angkatan Mahasiswa"
+							>
+								<img
+									src="/assets/icons/filter.svg"
+									alt="Filter Icon"
+									class="h-5 w-5 shrink-0 object-contain pointer-events-none"
+								/>
+								<!-- Red active indicator dot -->
+								<span
+									v-if="selectedAngkatan.length > 0"
+									class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"
+								></span>
+							</button>
 
-					<!-- Tambah Button -->
-					<button
-						type="button"
-						@click="(e) => { e.currentTarget?.blur(); openCreateModal(); }"
-						class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center rounded-[10px] bg-[#183669] px-0 sm:px-7 font-poppins text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#122b54] active:scale-95 focus:outline-none focus:ring-0 focus-visible:outline-none select-none cursor-pointer"
-						title="Tambah Mahasiswa"
-					>
-						<svg class="h-5 w-5 sm:hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-						</svg>
-						<span class="hidden sm:inline">Tambah</span>
-					</button>
+							<!-- Unified Filter Dropdown Menu (Angkatan) -->
+							<Transition
+								enter-active-class="transition ease-out duration-150"
+								enter-from-class="opacity-0 translate-y-1 scale-95"
+								enter-to-class="opacity-100 translate-y-0 scale-100"
+								leave-active-class="transition ease-in duration-100"
+								leave-from-class="opacity-100 translate-y-0 scale-100"
+								leave-to-class="opacity-0 translate-y-1 scale-95"
+							>
+								<div
+									v-if="isFilterOpen"
+									:style="filterDropdownStyle"
+									class="absolute z-30 w-64 max-w-[calc(100vw-2rem)] rounded-[10px] border border-[#d6e0ee] bg-white p-3 shadow-xl font-inter"
+								>
+									<!-- Header with Reset All -->
+									<div class="flex items-center justify-between border-b border-[#f0f4f9] pb-2">
+										<p class="font-poppins text-xs font-bold text-[#183669]">
+											Filter Angkatan
+										</p>
+										<button
+											v-if="selectedAngkatan.length > 0"
+											type="button"
+											@click="resetAllFilters"
+											class="font-inter text-[11px] font-semibold text-[#dc2626] hover:underline cursor-pointer"
+										>
+											Reset Semua
+										</button>
+									</div>
+
+									<!-- List of Angkatan -->
+									<div class="mt-2.5 max-h-48 overflow-y-auto space-y-1 pr-1">
+										<label
+											v-for="ang in availableAngkatans"
+											:key="ang"
+											class="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none"
+										>
+											<div class="flex items-center gap-2.5">
+												<input
+													type="checkbox"
+													:value="ang"
+													v-model="selectedAngkatan"
+													class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-[#183669] cursor-pointer"
+												/>
+												<span class="text-xs font-medium text-[#334155]">
+													Angkatan {{ ang }}
+												</span>
+											</div>
+											<span class="text-[11px] font-semibold text-[#64748b] bg-[#f1f5f9] px-1.5 py-0.5 rounded">
+												{{ getStudentCountByAngkatan(ang) }}
+											</span>
+										</label>
+										<div v-if="availableAngkatans.length === 0" class="py-2 text-center text-xs text-gray-400">
+											Tidak ada data angkatan
+										</div>
+									</div>
+								</div>
+							</Transition>
+						</div>
+
+						<!-- Import Button -->
+						<button
+							type="button"
+							@click="(e) => { e.currentTarget?.blur(); openImportModal(); }"
+							class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center gap-2 rounded-[10px] border-2 border-[#d6e0ee] bg-transparent px-0 sm:px-4 font-poppins text-[14px] font-semibold text-[#183669] transition-colors hover:border-[#8ea9cb] focus:border-[#183669] focus:outline-none active:scale-95 select-none cursor-pointer"
+							title="Import Data Mahasiswa (Excel / CSV)"
+						>
+							<svg class="h-5 w-5 shrink-0 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+							</svg>
+							<span class="hidden sm:inline">Import</span>
+						</button>
+
+						<!-- Bulk Delete Button -->
+						<button
+							type="button"
+							@click="(e) => { e.currentTarget?.blur(); openBulkDeleteModal(); }"
+							class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center gap-2 rounded-[10px] bg-red-600 px-0 sm:px-4 font-poppins text-[14px] font-semibold text-white shadow-sm transition hover:bg-red-700 active:scale-95 focus:outline-none select-none cursor-pointer"
+							title="Hapus Banyak Data Mahasiswa"
+						>
+							<svg class="h-[18px] w-auto shrink-0 text-white" viewBox="0 0 14 18" fill="currentColor">
+								<path d="M0.942857 15.6444C0.942857 16.72 1.79143 17.6 2.82857 17.6H10.3714C11.4086 17.6 12.2571 16.72 12.2571 15.6444V5.86667C12.2571 4.79111 11.4086 3.91111 10.3714 3.91111H2.82857C1.79143 3.91111 0.942857 4.79111 0.942857 5.86667V15.6444ZM12.2571 0.977778H9.9L9.23057 0.283556C9.06086 0.107556 8.81571 0 8.57057 0H4.62943C4.38429 0 4.13914 0.107556 3.96943 0.283556L3.3 0.977778H0.942857C0.424286 0.977778 0 1.41778 0 1.95556C0 2.49333 0.424286 2.93333 0.942857 2.93333H12.2571C12.7757 2.93333 13.2 2.49333 13.2 1.95556C13.2 1.41778 12.7757 0.977778 12.2571 0.977778Z" />
+							</svg>
+							<span class="hidden sm:inline">Hapus Banyak</span>
+						</button>
+
+						<!-- Tambah Button -->
+						<button
+							type="button"
+							@click="(e) => { e.currentTarget?.blur(); openCreateModal(); }"
+							class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center gap-2 rounded-[10px] bg-[#183669] px-0 sm:px-7 font-poppins text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#122b54] active:scale-95 focus:outline-none select-none cursor-pointer"
+							title="Tambah Mahasiswa"
+						>
+							<svg class="h-5 w-5 shrink-0 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+							</svg>
+							<span class="hidden sm:inline">Tambah</span>
+						</button>
+					</div>
 				</div>
 
 				<!-- Table Section -->
@@ -425,6 +644,9 @@ const confirmDeleteStudent = () => {
 									<td class="px-3 py-2.5">
 										<div class="h-4 w-44 rounded-md bg-slate-200"></div>
 									</td>
+									<td class="px-3 py-2.5 text-center">
+										<div class="mx-auto h-4 w-16 rounded-md bg-slate-200"></div>
+									</td>
 									<td class="px-3 py-2.5">
 										<div class="h-4 w-36 rounded-md bg-slate-200"></div>
 									</td>
@@ -462,6 +684,12 @@ const confirmDeleteStudent = () => {
 										<span class="block truncate">{{ student.name }}</span>
 									</td>
 
+									<!-- Angkatan -->
+									<td class="px-3 py-2.5 text-center font-medium text-[#435b76]" :title="student.angkatan">
+										<span v-if="student.angkatan" class="block truncate">{{ student.angkatan }}</span>
+										<span v-else class="block truncate text-[#7890a8]">-</span>
+									</td>
+
 									<!-- Email -->
 									<td :class="['px-3 py-2.5', student.email && student.email !== '-' ? 'text-left' : 'text-center']" :title="student.email">
 										<a
@@ -493,7 +721,7 @@ const confirmDeleteStudent = () => {
 
 								<!-- Empty Search Results -->
 								<tr v-if="filteredAndSortedStudents.length === 0">
-									<td colspan="6" class="py-8 text-center text-[#7890a8]">
+									<td colspan="7" class="py-8 text-center text-[#7890a8]">
 										Tidak ada data mahasiswa yang sesuai pencarian.
 									</td>
 								</tr>
@@ -578,6 +806,14 @@ const confirmDeleteStudent = () => {
 				</div>
 			</div>
 		</div>
+
+		<!-- MODAL BULK DELETE MAHASISWA -->
+		<ModalBulkDeleteMahasiswa
+			:show="isBulkDeleteModalOpen"
+			:students="students"
+			@close="closeBulkDeleteModal"
+			@confirm="handleBulkDeleteConfirm"
+		/>
 
 		<!-- TOAST NOTIFICATION -->
 		<ToastNotification

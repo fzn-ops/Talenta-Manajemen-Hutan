@@ -63,8 +63,30 @@ let rafId = null;
 
 const checkHasOpenModal = () => {
 	if (typeof document === 'undefined') return false;
-	const modals = document.querySelectorAll('.fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[100\\], [role="dialog"]');
-	return modals.length > 0;
+	// Look for dialogs that are currently open
+	const openDialogs = document.querySelectorAll('dialog[open]');
+	if (openDialogs.length > 0) return true;
+
+	// Look for fixed full-screen modal overlays that are currently visible
+	const modals = document.querySelectorAll('.fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[100\\]');
+	for (const modal of modals) {
+		const parentDialog = modal.closest('dialog');
+		if (parentDialog && !parentDialog.open) continue;
+
+		if (modal.offsetWidth === 0 && modal.offsetHeight === 0) continue;
+
+		try {
+			const style = window.getComputedStyle(modal);
+			if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+				continue;
+			}
+		} catch {
+			continue;
+		}
+
+		return true;
+	}
+	return false;
 };
 
 const updateModalScrollLock = () => {
