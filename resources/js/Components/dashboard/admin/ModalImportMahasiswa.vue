@@ -29,7 +29,9 @@ const fileInputRef = ref(null);
 
 // Inline edit in preview table
 const editingRowIndex = ref(null);
-const editRowForm = ref({ nim: '', name: '', angkatan: '', username: '', password: '', email: '', phone: '' });
+const editRowForm = ref({ nim: '', name: '', angkatan: '', talent_mapping: '', username: '', password: '', email: '', phone: '' });
+
+const talentMappingOptions = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
 
 // Reset state when modal is opened or closed
 watch(
@@ -161,6 +163,7 @@ const downloadExcelTemplate = () => {
 			'NIM': 'J0403231085',
 			'Nama Mahasiswa': 'Fauzan Fuadiansyah',
 			'Angkatan': '60',
+			'Talent Mapping': 'Profesional',
 			'Username': 'fauzanfuad',
 			'Password': 'J0403231085',
 			'Email': 'novafauzan@gmail.com',
@@ -170,19 +173,21 @@ const downloadExcelTemplate = () => {
 			'NIM': 'J0403231075',
 			'Nama Mahasiswa': 'Farhan Hakim',
 			'Angkatan': '60',
+			'Talent Mapping': 'Bisnis',
 			'Username': 'farhanhakim',
 			'Password': 'J0403231075',
 			'Email': '01122005farhan@apps.ipb.ac.id',
-			'Nomor Handphone': '+62 895-6228-15861',
+			'Nomor Handphone': '+62 812-3456-7891',
 		},
 		{
 			'NIM': 'J0403231012',
 			'Nama Mahasiswa': 'Siti Rahmawati',
 			'Angkatan': '60',
+			'Talent Mapping': 'Akademisi',
 			'Username': 'sitirahma',
 			'Password': 'J0403231012',
 			'Email': 'siti.rahma@apps.ipb.ac.id',
-			'Nomor Handphone': '+62 813-9876-5432',
+			'Nomor Handphone': '+62 812-3456-7892',
 		},
 	];
 
@@ -192,6 +197,7 @@ const downloadExcelTemplate = () => {
 		{ wch: 18 }, // NIM
 		{ wch: 32 }, // Nama Mahasiswa
 		{ wch: 12 }, // Angkatan
+		{ wch: 18 }, // Talent Mapping
 		{ wch: 20 }, // Username
 		{ wch: 20 }, // Password
 		{ wch: 32 }, // Email
@@ -245,6 +251,7 @@ const processFile = async (file) => {
 		const nimIdx = headers.findIndex((h) => h.includes('nim') || h.includes('nip'));
 		const nameIdx = headers.findIndex((h) => h.includes('nama') || h.includes('name') || h.includes('mahasiswa'));
 		const angkatanIdx = headers.findIndex((h) => h.includes('angkatan') || h.includes('batch') || h.includes('tahun'));
+		const talentIdx = headers.findIndex((h) => h.includes('talent') || h.includes('mapping') || h.includes('peminatan') || h.includes('kategori'));
 		const usernameIdx = headers.findIndex((h) => h.includes('username') || h.includes('user'));
 		const passwordIdx = headers.findIndex((h) => h.includes('password') || h.includes('sandi') || h.includes('pass'));
 		const emailIdx = headers.findIndex((h) => h.includes('email') || h.includes('surel'));
@@ -258,6 +265,11 @@ const processFile = async (file) => {
 			const nim = nimIdx !== -1 ? String(row[nimIdx]).trim() : (row[0] ? String(row[0]).trim() : '');
 			const name = nameIdx !== -1 ? String(row[nameIdx]).trim() : (row[1] ? String(row[1]).trim() : '');
 			const angkatanRaw = angkatanIdx !== -1 ? String(row[angkatanIdx]).trim().replace(/\D/g, '') : '';
+			
+			// Talent Mapping matching
+			const rawTalent = talentIdx !== -1 ? String(row[talentIdx]).trim() : '';
+			const matchedTalent = talentMappingOptions.find((opt) => opt.toLowerCase() === rawTalent.toLowerCase()) || (rawTalent || '-');
+
 			const username = usernameIdx !== -1 ? String(row[usernameIdx]).trim() : '';
 			const password = passwordIdx !== -1 ? String(row[passwordIdx]).trim() : '';
 			const email = emailIdx !== -1 ? String(row[emailIdx]).trim() : (row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : ''));
@@ -268,6 +280,7 @@ const processFile = async (file) => {
 					nim: nim || '-',
 					name: name || 'Tanpa Nama',
 					angkatan: angkatanRaw || '-',
+					talent_mapping: matchedTalent || '-',
 					username: username || '-',
 					password: password || '',
 					email: email || '-',
@@ -323,6 +336,7 @@ const startEditPreviewRow = (idx) => {
 		nim: row.nim !== '-' ? row.nim : '',
 		name: row.name !== 'Tanpa Nama' ? row.name : '',
 		angkatan: row.angkatan !== '-' ? row.angkatan : '',
+		talent_mapping: row.talent_mapping !== '-' ? row.talent_mapping : '',
 		username: row.username !== '-' ? row.username : '',
 		password: row.password || '',
 		email: row.email !== '-' ? row.email : '',
@@ -336,6 +350,7 @@ const saveEditPreviewRow = (idx) => {
 		nim: editRowForm.value.nim.trim() || '-',
 		name: editRowForm.value.name.trim() || 'Tanpa Nama',
 		angkatan: editRowForm.value.angkatan.replace(/\D/g, '').trim() || '-',
+		talent_mapping: editRowForm.value.talent_mapping.trim() || '-',
 		username: editRowForm.value.username.trim() || '-',
 		password: editRowForm.value.password.trim() || '',
 		email: editRowForm.value.email.trim() || '-',
@@ -373,6 +388,7 @@ const confirmImport = () => {
 		nim: item.nim,
 		name: item.name,
 		angkatan: item.angkatan && item.angkatan !== '-' ? item.angkatan : null,
+		talent_mapping: item.talent_mapping && item.talent_mapping !== '-' ? item.talent_mapping : null,
 		username: item.username && item.username !== '-' ? item.username : null,
 		password: item.password && item.password !== '-' ? item.password : item.nim,
 		email: item.email && item.email !== '-' ? item.email : null,
@@ -409,7 +425,7 @@ const handleBackdropMouseUp = (e) => {
 		>
 			<div
 				v-if="show"
-				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/40 backdrop-blur-xs p-3.5 sm:p-4"
+				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-slate-900/40 backdrop-blur-xs p-3.5 sm:p-4"
 				@mousedown="handleBackdropMouseDown"
 				@mouseup="handleBackdropMouseUp"
 			>
@@ -458,7 +474,7 @@ const handleBackdropMouseUp = (e) => {
 								class="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-1.5 rounded-[8px] bg-[#1b8755] px-3.5 py-2 font-poppins text-[12px] font-semibold text-white shadow-xs transition hover:bg-[#156e45] cursor-pointer select-none"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
 								</svg>
 								<span>Download Template</span>
 							</button>
@@ -574,13 +590,14 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 
 								<div class="max-h-[290px] overflow-auto rounded-[10px] border border-[#d6e0ee] shadow-sm">
-									<table class="w-full min-w-[940px] border-separate border-spacing-0 text-left text-xs">
+									<table class="w-full min-w-[1040px] border-separate border-spacing-0 text-left text-xs">
 										<thead class="sticky top-0 z-20 bg-[#183669] font-poppins text-white shadow-sm">
 											<tr>
 												<th class="w-10 px-3 py-2.5 text-center">No</th>
 												<th class="min-w-[150px] px-3.5 py-2.5">Nama Mahasiswa</th>
 												<th class="min-w-[110px] px-3 py-2.5 text-center">NIM</th>
-												<th class="min-w-[90px] px-2.5 py-2.5 text-center">Angkatan</th>
+												<th class="min-w-[80px] px-2.5 py-2.5 text-center">Angkatan</th>
+												<th class="min-w-[125px] px-2.5 py-2.5 text-center">Talent Mapping</th>
 												<th class="min-w-[100px] px-3 py-2.5">Username</th>
 												<th class="min-w-[110px] px-3 py-2.5">Password</th>
 												<th class="min-w-[150px] px-3.5 py-2.5">Email</th>
@@ -609,6 +626,22 @@ const handleBackdropMouseUp = (e) => {
 													</td>
 													<td class="px-2.5 py-2 text-center font-medium text-[#435b76] border-b border-[#d6e0ee]" :title="item.angkatan">
 														{{ item.angkatan }}
+													</td>
+													<td class="px-2.5 py-2 text-center border-b border-[#d6e0ee]" :title="item.talent_mapping">
+														<span
+															v-if="item.talent_mapping && item.talent_mapping !== '-'"
+															:class="[
+																'inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold border',
+																item.talent_mapping === 'Profesional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+																item.talent_mapping === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+																item.talent_mapping === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+																item.talent_mapping === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+																'bg-slate-100 text-slate-700 border-slate-200'
+															]"
+														>
+															{{ item.talent_mapping }}
+														</span>
+														<span v-else class="text-[#7890a8]">-</span>
 													</td>
 													<td class="px-3 py-2 text-[#5a718d] border-b border-[#d6e0ee]" :title="item.username">
 														<span class="block truncate max-w-[100px]">{{ item.username }}</span>
@@ -691,6 +724,17 @@ const handleBackdropMouseUp = (e) => {
 															@input="editRowForm.angkatan = editRowForm.angkatan.replace(/\D/g, '')"
 															class="h-8 w-full min-w-[65px] rounded-[6px] border border-[#d6e0ee] px-2 text-xs text-center transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
 														/>
+													</td>
+													<td class="px-2 py-1.5 border-b border-[#d6e0ee] bg-amber-50/40">
+														<select
+															v-model="editRowForm.talent_mapping"
+															class="h-8 w-full min-w-[110px] rounded-[6px] border border-[#d6e0ee] bg-white px-2 text-xs transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0 cursor-pointer"
+														>
+															<option value="">- Belum Ada -</option>
+															<option v-for="opt in talentMappingOptions" :key="opt" :value="opt">
+																{{ opt }}
+															</option>
+														</select>
 													</td>
 													<td class="px-2 py-1.5 border-b border-[#d6e0ee] bg-amber-50/40">
 														<input

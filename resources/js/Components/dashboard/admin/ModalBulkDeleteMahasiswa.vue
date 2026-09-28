@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
 		>
 			<div
 				v-if="show"
-				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/40 backdrop-blur-xs p-3.5 sm:p-4 font-poppins"
+				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-slate-900/40 backdrop-blur-xs p-3.5 sm:p-4 font-poppins"
 				@click.self="handleClose"
 			>
 				<Transition
@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
 												type="checkbox"
 												:value="ang"
 												v-model="selectedAngkatans"
-												class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+												class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-0 focus:ring-offset-0 focus:outline-none focus-visible:outline-none cursor-pointer"
 											/>
 											<span class="text-sm font-medium text-slate-700">
 												Angkatan {{ ang }}

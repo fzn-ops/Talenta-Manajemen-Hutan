@@ -23,6 +23,10 @@ const props = defineProps({
 		type: Array,
 		default: () => [5, 10, 20, 50],
 	},
+	itemLabel: {
+		type: String,
+		default: 'Rows',
+	},
 	disabled: {
 		type: Boolean,
 		default: false,
@@ -138,7 +142,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeDropup));
 
 			<span class="mx-1.5 text-[#cbd6e2]">|</span>
 
-			<span>Rows per page</span>
+			<span>{{ itemLabel }} per page</span>
 
 			<!-- Rows Per Page Dropup -->
 			<div class="relative" @click.stop>

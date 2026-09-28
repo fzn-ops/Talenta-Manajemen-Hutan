@@ -24,7 +24,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('mahasiswa');
 
     Route::get('/roadmap', function () {
-        return Inertia::render('dashboard/admin/Dashboard');
+        return Inertia::render('dashboard/admin/Roadmap');
     })->name('roadmap');
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {

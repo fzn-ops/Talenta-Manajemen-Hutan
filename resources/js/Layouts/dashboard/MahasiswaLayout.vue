@@ -57,87 +57,13 @@ const toggleSidebar = () => {
 
 const sidebarCollapsed = computed(() => !showingSidebar.value);
 
-let modalObserver = null;
-let removeRouterListener = null;
-let rafId = null;
-
-const checkHasOpenModal = () => {
-	if (typeof document === 'undefined') return false;
-	// Look for dialogs that are currently open
-	const openDialogs = document.querySelectorAll('dialog[open]');
-	if (openDialogs.length > 0) return true;
-
-	// Look for fixed full-screen modal overlays that are currently visible
-	const modals = document.querySelectorAll('.fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[100\\]');
-	for (const modal of modals) {
-		const parentDialog = modal.closest('dialog');
-		if (parentDialog && !parentDialog.open) continue;
-
-		if (modal.offsetWidth === 0 && modal.offsetHeight === 0) continue;
-
-		try {
-			const style = window.getComputedStyle(modal);
-			if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-				continue;
-			}
-		} catch {
-			continue;
-		}
-
-		return true;
-	}
-	return false;
-};
-
-const updateModalScrollLock = () => {
-	if (typeof document === 'undefined') return;
-	const shouldLock = showLogoutModal.value || checkHasOpenModal() || (isMobile.value && showingSidebar.value);
-	if (mainContentRef.value) {
-		if (shouldLock) {
-			mainContentRef.value.style.overflowY = 'hidden';
-		} else {
-			mainContentRef.value.style.overflowY = 'auto';
-		}
-	}
-};
-
-const scheduleModalCheck = () => {
-	if (rafId) cancelAnimationFrame(rafId);
-	rafId = requestAnimationFrame(updateModalScrollLock);
-};
-
-watch([showLogoutModal, showingSidebar], scheduleModalCheck);
-
 onMounted(() => {
 	updateViewport();
 	window.addEventListener('resize', updateViewport);
-
-	// MutationObserver to detect child / teleported modals and lock main scroll
-	modalObserver = new MutationObserver(() => {
-		scheduleModalCheck();
-	});
-	modalObserver.observe(document.body, { childList: true, subtree: true });
-
-	// Clean up on Inertia navigation
-	removeRouterListener = router.on('navigate', () => {
-		scheduleModalCheck();
-	});
 });
 
 onBeforeUnmount(() => {
 	window.removeEventListener('resize', updateViewport);
-	if (rafId) cancelAnimationFrame(rafId);
-	if (modalObserver) {
-		modalObserver.disconnect();
-		modalObserver = null;
-	}
-	if (removeRouterListener) {
-		removeRouterListener();
-		removeRouterListener = null;
-	}
-	if (mainContentRef.value) {
-		mainContentRef.value.style.overflowY = 'auto';
-	}
 });
 </script>
 

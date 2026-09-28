@@ -15,16 +15,16 @@ const props = defineProps({
 	students: {
 		type: Array,
 		default: () => [
-			{ id: 1, nim: 'J0403231085', name: 'Fauzan Fuadiansyah', angkatan: '60', email: 'novafauzan@gmail.com', phone: '+62 812-3456-7890' },
-			{ id: 2, nim: 'J0403231075', name: 'Farhan Hakim', angkatan: '60', email: '01122005farhan@apps.ipb.ac.id', phone: '+62 895-6228-15861' },
-			{ id: 3, nim: 'E1401201012', name: 'Eko Prasetyo', angkatan: '62', email: 'eko.prasetyo@apps.ipb.ac.id', phone: '+62 857-5678-9012' },
-			{ id: 4, nim: 'E1401211025', name: 'Sri Wahyuni', angkatan: '61', email: 'sri.wahyuni@apps.ipb.ac.id', phone: '+62 822-4567-8901' },
-			{ id: 5, nim: 'E1401221044', name: 'Bambang Triyono', angkatan: '62', email: 'bambang.t@apps.ipb.ac.id', phone: '+62 819-3456-7890' },
-			{ id: 6, nim: 'E1401221089', name: 'Nurul Hidayah', angkatan: '62', email: 'nurul.h@apps.ipb.ac.id', phone: '+62 812-2345-6789' },
-			{ id: 7, nim: 'E1401201067', name: 'Dedi Kusnadi', angkatan: '60', email: 'dedi.kusnadi@apps.ipb.ac.id', phone: '+62 878-9012-3456' },
-			{ id: 8, nim: 'E1401211053', name: 'Rina Marlina', angkatan: '61', email: 'rina.marlina@apps.ipb.ac.id', phone: '+62 856-7890-1234' },
-			{ id: 9, nim: 'E1401211098', name: 'Ahmad Fauzi', angkatan: '61', email: 'ahmad.fauzi@apps.ipb.ac.id', phone: '+62 821-1234-5678' },
-			{ id: 10, nim: 'E1401201015', name: 'Hendra Setiawan', angkatan: '60', email: 'hendra.s@apps.ipb.ac.id', phone: '+62 815-6789-0123' },
+			{ id: 1, nim: 'J0403231085', name: 'Fauzan Fuadiansyah', angkatan: '60', talent_mapping: 'Profesional', email: 'novafauzan@gmail.com', phone: '+62 812-3456-7890' },
+			{ id: 2, nim: 'J0403231075', name: 'Farhan Hakim', angkatan: '60', talent_mapping: 'Bisnis', email: '01122005farhan@apps.ipb.ac.id', phone: '+62 895-6228-15861' },
+			{ id: 3, nim: 'E1401201012', name: 'Eko Prasetyo', angkatan: '62', talent_mapping: 'Akademisi', email: 'eko.prasetyo@apps.ipb.ac.id', phone: '+62 857-5678-9012' },
+			{ id: 4, nim: 'E1401211025', name: 'Sri Wahyuni', angkatan: '61', talent_mapping: 'Birokrat', email: 'sri.wahyuni@apps.ipb.ac.id', phone: '+62 822-4567-8901' },
+			{ id: 5, nim: 'E1401221044', name: 'Bambang Triyono', angkatan: '62', talent_mapping: 'Profesional', email: 'bambang.t@apps.ipb.ac.id', phone: '+62 819-3456-7890' },
+			{ id: 6, nim: 'E1401221089', name: 'Nurul Hidayah', angkatan: '62', talent_mapping: 'Bisnis', email: 'nurul.h@apps.ipb.ac.id', phone: '+62 812-2345-6789' },
+			{ id: 7, nim: 'E1401201067', name: 'Dedi Kusnadi', angkatan: '60', talent_mapping: 'Birokrat', email: 'dedi.kusnadi@apps.ipb.ac.id', phone: '+62 878-9012-3456' },
+			{ id: 8, nim: 'E1401211053', name: 'Rina Marlina', angkatan: '61', talent_mapping: 'Akademisi', email: 'rina.marlina@apps.ipb.ac.id', phone: '+62 856-7890-1234' },
+			{ id: 9, nim: 'E1401211098', name: 'Ahmad Fauzi', angkatan: '61', talent_mapping: 'Profesional', email: 'ahmad.fauzi@apps.ipb.ac.id', phone: '+62 821-1234-5678' },
+			{ id: 10, nim: 'E1401201015', name: 'Hendra Setiawan', angkatan: '60', talent_mapping: 'Bisnis', email: 'hendra.s@apps.ipb.ac.id', phone: '+62 815-6789-0123' },
 		],
 	},
 	mahasiswa: {
@@ -80,6 +80,7 @@ const initStudentsData = () => {
 		nim: item.nim || item.nip || '',
 		name: item.name || item.namaMahasiswa || item.namaDosen || item.nama || '',
 		angkatan: item.angkatan || '',
+		talent_mapping: item.talent_mapping || item.talentMapping || item.talent || item.hasilTalentMapping || '',
 		username: item.username || '',
 		password: item.password || '',
 		email: item.email || '',
@@ -95,44 +96,56 @@ watch(
 	{ immediate: true, deep: true }
 );
 
-// Filter Angkatan State & Logic
+// Filter State & Logic (Angkatan & Talent Mapping)
 const isFilterOpen = ref(false);
 const selectedAngkatan = ref([]);
+const selectedTalentMapping = ref([]);
+const talentMappingFilterOptions = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
 const filterContainerRef = ref(null);
 const filterDropdownStyle = ref({});
+
+const hasActiveFilters = computed(() => {
+	return selectedAngkatan.value.length > 0 || selectedTalentMapping.value.length > 0;
+});
 
 const calculateFilterPlacement = () => {
 	if (!filterContainerRef.value || typeof window === 'undefined') return;
 	const rect = filterContainerRef.value.getBoundingClientRect();
-	const dropdownWidth = 256; // 16rem = 256px
 	const windowWidth = window.innerWidth;
-	const padding = 16;
+	const padding = 16; // Margin aman dari tepi layar
 
-	const style = {};
+	// Lebar dropdown responsif
+	const desiredWidth = Math.min(276, windowWidth - padding * 2);
 
-	// Cek apakah dropdown muat jika rata kanan (right: 0)
-	const leftIfRightAligned = rect.right - dropdownWidth;
-	// Cek apakah dropdown muat jika rata kiri (left: 0)
-	const rightIfLeftAligned = rect.left + dropdownWidth;
+	const style = {
+		width: `${desiredWidth}px`,
+		maxWidth: `calc(100vw - ${padding * 2}px)`,
+	};
 
-	if (leftIfRightAligned >= padding && rect.right <= windowWidth - padding) {
-		style.right = '0px';
-		style.left = 'auto';
-	} else if (rightIfLeftAligned <= windowWidth - padding && rect.left >= padding) {
-		style.left = '0px';
-		style.right = 'auto';
-	} else {
-		// Jika berada di tengah dan berisiko keluar batas layar, geser posisi horizontal secara dinamis
-		const targetScreenLeft = Math.max(padding, Math.min(rect.left, windowWidth - dropdownWidth - padding));
-		const relativeOffset = targetScreenLeft - rect.left;
-		style.left = `${relativeOffset}px`;
-		style.right = 'auto';
+	// Posisi horizontal: default rata kanan dengan tombol filter
+	let targetScreenLeft = rect.right - desiredWidth;
+
+	// Jika menabrak tepi kiri layar, geser agar tidak terpotong (beri ruang aman)
+	if (targetScreenLeft < padding) {
+		targetScreenLeft = padding;
 	}
 
-	// Cek posisi vertikal (buka ke atas jika sisa ruang di bawah kurang dari 250px)
+	// Jika menabrak tepi kanan layar, kunci di batas kanan
+	if (targetScreenLeft + desiredWidth > windowWidth - padding) {
+		targetScreenLeft = windowWidth - padding - desiredWidth;
+	}
+
+	// Konversi koordinat layar ke offset relatif tombol
+	const relativeLeft = targetScreenLeft - rect.left;
+	style.left = `${relativeLeft}px`;
+	style.right = 'auto';
+
+	// Cek posisi vertikal (buka ke atas jika sisa ruang di bawah kurang dari 300px dan ruang atas lebih luas)
 	const spaceBelow = window.innerHeight - rect.bottom;
-	const dropdownHeight = 250;
-	if (spaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+	const spaceAbove = rect.top;
+	const dropdownHeight = 300;
+
+	if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
 		style.bottom = 'calc(100% + 8px)';
 		style.top = 'auto';
 	} else {
@@ -163,6 +176,7 @@ const handleWindowChange = () => {
 
 const resetAllFilters = () => {
 	selectedAngkatan.value = [];
+	selectedTalentMapping.value = [];
 };
 
 const availableAngkatans = computed(() => {
@@ -177,6 +191,10 @@ const availableAngkatans = computed(() => {
 
 const getStudentCountByAngkatan = (angkatan) => {
 	return students.value.filter((s) => s.angkatan?.toString() === angkatan.toString()).length;
+};
+
+const getStudentCountByTalentMapping = (talent) => {
+	return students.value.filter((s) => (s.talent_mapping || '').toLowerCase() === talent.toLowerCase()).length;
 };
 
 // Loading Animation
@@ -202,10 +220,11 @@ const searchQuery = ref('');
 
 // Sorting
 const columns = [
-	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[140px]' },
-	{ key: 'name', label: 'Nama Mahasiswa', sortable: true, width: 'w-[200px]' },
-	{ key: 'angkatan', label: 'Angkatan', sortable: true, width: 'w-[110px]' },
-	{ key: 'email', label: 'Email', sortable: true, width: 'w-[190px]' },
+	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[130px]' },
+	{ key: 'name', label: 'Nama Mahasiswa', sortable: true, width: 'w-[190px]' },
+	{ key: 'angkatan', label: 'Angkatan', sortable: true, width: 'w-[100px]' },
+	{ key: 'talent_mapping', label: 'Talent Mapping', sortable: true, width: 'w-[150px]' },
+	{ key: 'email', label: 'Email', sortable: true, width: 'w-[180px]' },
 	{ key: 'phone', label: 'Nomor Handphone', sortable: true, width: 'w-[150px]' },
 	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[90px]' },
 ];
@@ -227,7 +246,7 @@ const toggleSort = (key) => {
 const filteredAndSortedStudents = computed(() => {
 	let list = [...students.value];
 
-	// Search Query (NIM, Nama Mahasiswa, Angkatan, Email, Phone)
+	// Search Query (NIM, Nama Mahasiswa, Angkatan, Talent Mapping, Email, Phone)
 	if (searchQuery.value.trim()) {
 		const q = searchQuery.value.toLowerCase().trim();
 		list = list.filter(
@@ -235,6 +254,7 @@ const filteredAndSortedStudents = computed(() => {
 				(s.name && s.name.toLowerCase().includes(q)) ||
 				(s.nim && s.nim.toLowerCase().includes(q)) ||
 				(s.angkatan && s.angkatan.toString().toLowerCase().includes(q)) ||
+				(s.talent_mapping && s.talent_mapping.toLowerCase().includes(q)) ||
 				(s.email && s.email.toLowerCase().includes(q)) ||
 				(s.phone && s.phone.toLowerCase().includes(q))
 		);
@@ -243,6 +263,11 @@ const filteredAndSortedStudents = computed(() => {
 	// Filter by Angkatan
 	if (selectedAngkatan.value.length > 0) {
 		list = list.filter((s) => selectedAngkatan.value.includes(s.angkatan?.toString()));
+	}
+
+	// Filter by Talent Mapping
+	if (selectedTalentMapping.value.length > 0) {
+		list = list.filter((s) => selectedTalentMapping.value.includes(s.talent_mapping));
 	}
 
 	// Sorting
@@ -284,7 +309,7 @@ const paginatedStudents = computed(() => {
 });
 
 // Reset to page 1 on search, filter, or rowsPerPage change
-watch([searchQuery, selectedAngkatan, rowsPerPage], () => {
+watch([searchQuery, selectedAngkatan, selectedTalentMapping, rowsPerPage], () => {
 	currentPage.value = 1;
 });
 
@@ -426,10 +451,10 @@ const confirmDeleteStudent = () => {
 								type="button"
 								@click="toggleFilterDropdown"
 								class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors focus:outline-none select-none cursor-pointer"
-								:class="isFilterOpen || selectedAngkatan.length > 0
+								:class="isFilterOpen || hasActiveFilters
 									? 'border-[#183669]'
 									: 'border-[#d6e0ee] hover:border-[#8ea9cb]'"
-								title="Filter Angkatan Mahasiswa"
+								title="Filter Mahasiswa"
 							>
 								<img
 									src="/assets/icons/filter.svg"
@@ -438,32 +463,32 @@ const confirmDeleteStudent = () => {
 								/>
 								<!-- Red active indicator dot -->
 								<span
-									v-if="selectedAngkatan.length > 0"
+									v-if="hasActiveFilters"
 									class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"
 								></span>
 							</button>
 
-							<!-- Unified Filter Dropdown Menu (Angkatan) -->
+							<!-- Unified Filter Dropdown Menu (Angkatan & Talent Mapping) -->
 							<Transition
-								enter-active-class="transition ease-out duration-150"
-								enter-from-class="opacity-0 translate-y-1 scale-95"
-								enter-to-class="opacity-100 translate-y-0 scale-100"
-								leave-active-class="transition ease-in duration-100"
-								leave-from-class="opacity-100 translate-y-0 scale-100"
-								leave-to-class="opacity-0 translate-y-1 scale-95"
+								enter-active-class="transition duration-150 ease-out"
+								enter-from-class="transform scale-95 opacity-0 translate-y-1"
+								enter-to-class="transform scale-100 opacity-100 translate-y-0"
+								leave-active-class="transition duration-100 ease-in"
+								leave-from-class="transform scale-100 opacity-100 translate-y-0"
+								leave-to-class="transform scale-95 opacity-0 translate-y-1"
 							>
 								<div
 									v-if="isFilterOpen"
 									:style="filterDropdownStyle"
-									class="absolute z-30 w-64 max-w-[calc(100vw-2rem)] rounded-[10px] border border-[#d6e0ee] bg-white p-3 shadow-xl font-inter"
+									class="absolute z-50 rounded-[14px] border border-[#d6e0ee] bg-white p-3.5 shadow-2xl ring-1 ring-black/10 font-inter"
 								>
 									<!-- Header with Reset All -->
 									<div class="flex items-center justify-between border-b border-[#f0f4f9] pb-2">
 										<p class="font-poppins text-xs font-bold text-[#183669]">
-											Filter Angkatan
+											Filter Mahasiswa
 										</p>
 										<button
-											v-if="selectedAngkatan.length > 0"
+											v-if="hasActiveFilters"
 											type="button"
 											@click="resetAllFilters"
 											class="font-inter text-[11px] font-semibold text-[#dc2626] hover:underline cursor-pointer"
@@ -472,30 +497,66 @@ const confirmDeleteStudent = () => {
 										</button>
 									</div>
 
-									<!-- List of Angkatan -->
-									<div class="mt-2.5 max-h-48 overflow-y-auto space-y-1 pr-1">
-										<label
-											v-for="ang in availableAngkatans"
-											:key="ang"
-											class="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none"
-										>
-											<div class="flex items-center gap-2.5">
-												<input
-													type="checkbox"
-													:value="ang"
-													v-model="selectedAngkatan"
-													class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-[#183669] cursor-pointer"
-												/>
-												<span class="text-xs font-medium text-[#334155]">
-													Angkatan {{ ang }}
-												</span>
+									<div class="mt-2.5 max-h-[300px] overflow-y-auto space-y-3 pr-1">
+										<!-- Section 1: Filter Angkatan -->
+										<div>
+											<p class="px-2 text-[11px] font-semibold uppercase tracking-wider text-[#7188a3]">
+												Angkatan
+											</p>
+											<div class="mt-1 space-y-0.5">
+												<label
+													v-for="ang in availableAngkatans"
+													:key="ang"
+													class="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none"
+												>
+													<div class="flex items-center gap-2.5">
+														<input
+															type="checkbox"
+															:value="ang"
+															v-model="selectedAngkatan"
+															class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-0 focus:ring-offset-0 focus:outline-none focus-visible:outline-none cursor-pointer"
+														/>
+														<span class="text-xs font-medium text-[#334155]">
+															Angkatan {{ ang }}
+														</span>
+													</div>
+													<span class="text-[11px] font-semibold text-[#64748b] bg-[#f1f5f9] px-1.5 py-0.5 rounded">
+														{{ getStudentCountByAngkatan(ang) }}
+													</span>
+												</label>
+												<div v-if="availableAngkatans.length === 0" class="py-1 px-2 text-xs text-gray-400">
+													Tidak ada data angkatan
+												</div>
 											</div>
-											<span class="text-[11px] font-semibold text-[#64748b] bg-[#f1f5f9] px-1.5 py-0.5 rounded">
-												{{ getStudentCountByAngkatan(ang) }}
-											</span>
-										</label>
-										<div v-if="availableAngkatans.length === 0" class="py-2 text-center text-xs text-gray-400">
-											Tidak ada data angkatan
+										</div>
+
+										<!-- Section 2: Filter Talent Mapping -->
+										<div class="border-t border-[#f0f4f9] pt-2">
+											<p class="px-2 text-[11px] font-semibold uppercase tracking-wider text-[#7188a3]">
+												Talent Mapping
+											</p>
+											<div class="mt-1 space-y-0.5">
+												<label
+													v-for="talent in talentMappingFilterOptions"
+													:key="talent"
+													class="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none"
+												>
+													<div class="flex items-center gap-2.5">
+														<input
+															type="checkbox"
+															:value="talent"
+															v-model="selectedTalentMapping"
+															class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-0 focus:ring-offset-0 focus:outline-none focus-visible:outline-none cursor-pointer"
+														/>
+														<span class="text-xs font-medium text-[#334155]">
+															{{ talent }}
+														</span>
+													</div>
+													<span class="text-[11px] font-semibold text-[#64748b] bg-[#f1f5f9] px-1.5 py-0.5 rounded">
+														{{ getStudentCountByTalentMapping(talent) }}
+													</span>
+												</label>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -545,7 +606,7 @@ const confirmDeleteStudent = () => {
 
 				<!-- Table Section -->
 				<div class="overflow-x-auto rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
-					<table class="w-full min-w-[980px] table-fixed border-collapse text-sm">
+					<table class="w-full min-w-[1040px] table-fixed border-collapse text-sm">
 						<!-- Table Header (Matching signature green styling, centered) -->
 						<thead class="bg-[#416f65]">
 							<tr class="h-[48px]">
@@ -647,6 +708,9 @@ const confirmDeleteStudent = () => {
 									<td class="px-3 py-2.5 text-center">
 										<div class="mx-auto h-4 w-16 rounded-md bg-slate-200"></div>
 									</td>
+									<td class="px-3 py-2.5 text-center">
+										<div class="mx-auto h-4 w-24 rounded-md bg-slate-200"></div>
+									</td>
 									<td class="px-3 py-2.5">
 										<div class="h-4 w-36 rounded-md bg-slate-200"></div>
 									</td>
@@ -690,6 +754,24 @@ const confirmDeleteStudent = () => {
 										<span v-else class="block truncate text-[#7890a8]">-</span>
 									</td>
 
+									<!-- Talent Mapping -->
+									<td class="px-3 py-2.5 text-center" :title="student.talent_mapping">
+										<span
+											v-if="student.talent_mapping && student.talent_mapping !== '-'"
+											:class="[
+												'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+												student.talent_mapping === 'Profesional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+												student.talent_mapping === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+												student.talent_mapping === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+												student.talent_mapping === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+												'bg-slate-100 text-slate-700 border-slate-200'
+											]"
+										>
+											{{ student.talent_mapping }}
+										</span>
+										<span v-else class="block truncate text-[#7890a8]">-</span>
+									</td>
+
 									<!-- Email -->
 									<td :class="['px-3 py-2.5', student.email && student.email !== '-' ? 'text-left' : 'text-center']" :title="student.email">
 										<a
@@ -721,7 +803,7 @@ const confirmDeleteStudent = () => {
 
 								<!-- Empty Search Results -->
 								<tr v-if="filteredAndSortedStudents.length === 0">
-									<td colspan="7" class="py-8 text-center text-[#7890a8]">
+									<td colspan="8" class="py-8 text-center text-[#7890a8]">
 										Tidak ada data mahasiswa yang sesuai pencarian.
 									</td>
 								</tr>
@@ -763,7 +845,7 @@ const confirmDeleteStudent = () => {
 		<!-- MODAL DELETE CONFIRMATION -->
 		<div
 			v-if="isDeleteModalOpen"
-			class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-xs transition-opacity duration-200"
+			class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs transition-opacity duration-200"
 			@click.self="closeDeleteModal"
 		>
 			<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center">
