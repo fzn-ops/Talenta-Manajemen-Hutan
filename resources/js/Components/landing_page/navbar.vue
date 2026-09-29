@@ -98,13 +98,15 @@ const handleLogin = () => {
       </ul>
 
       <!-- Desktop Login -->
-      <button
+      
+      <Link
         type="button"
         class="hidden shrink-0 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#4f8073] shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md md:block lg:px-6"
+        :href="'/login'"
         @click="$emit('login-click')"
       >
         Login
-      </button>
+      </Link>
 
       <!-- Mobile Hamburger -->
       <button

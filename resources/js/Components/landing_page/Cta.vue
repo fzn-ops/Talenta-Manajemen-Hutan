@@ -29,9 +29,8 @@ import { Link } from '@inertiajs/vue3';
     <!-- WADAH KHUSUS TOMBOL & PESAWAT              -->
     <!-- ========================================== -->
     <div class="relative flex w-full max-w-5xl justify-center">
-      
         <Link 
-            href="/tujuan-link-kamu" 
+            href="/login" 
             class="relative z-20 inline-flex items-center justify-center rounded-full bg-[#152c5b] px-10 py-3.5 text-sm font-bold tracking-wide text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#0f1f43] hover:shadow-lg sm:px-12 sm:py-4 sm:text-base">
             Aku Siap
         </Link>
