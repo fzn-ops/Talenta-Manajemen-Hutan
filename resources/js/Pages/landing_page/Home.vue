@@ -4,6 +4,9 @@ import MainLayout from '@/Layouts/landing_page/main.vue';
 import HeroSection from '@/Components/landing_page/HeroSection.vue';
 import FeatureSection from '@/Components/landing_page/FeatureSection.vue';
 import ActivitySection from '@/Components/landing_page/Activity.vue';
+import BeritaLanding from '@/Components/landing_page/BeritaLanding.vue';
+import QuoteLanding from '@/Components/landing_page/QuoteLanding.vue';
+import CtaSection from '@/Components/landing_page/Cta.vue';
 
 /* // 1. Buat variabel reaktif untuk melacak posisi scroll
 const scrollY = ref(0);
@@ -41,6 +44,9 @@ onUnmounted(() => {
       />
     </div>
     <ActivitySection />
+    <BeritaLanding />
+    <QuoteLanding />
+    <CtaSection />
   </MainLayout>
 </template>
 

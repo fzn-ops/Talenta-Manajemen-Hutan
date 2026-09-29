@@ -1,17 +1,37 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { usePage, Link } from '@inertiajs/vue3' // Wajib import dari inertia
 
 const emit = defineEmits(['login-click'])
-
 const isMenuOpen = ref(false)
 
 const menuItems = [
-  { label: 'Beranda', href: '#beranda' },
-  { label: 'Aktivitas', href: '#aktivitas' },
-  { label: 'Karir', href: '#karir' },
-  { label: 'Berita', href: '#berita' },
-  { label: 'FAQ', href: '#faq' },
+  // Ganti #beranda jadi '/' untuk standar routing
+  { label: 'Beranda', href: '/' }, 
+  { label: 'Aktivitas', href: '/activities' },
+  { label: 'Karir', href: '/careers' },
+  { label: 'Berita', href: '/news' },
+  { label: 'FAQ', href: '/FAQ' },
 ]
+
+// Ambil URL saat ini secara reaktif dari Inertia
+const page = usePage()
+const currentUrl = computed(() => page.url)
+
+// Fungsi mendeteksi halaman aktif
+const isActive = (href) => {
+  // 1. Kasus khusus untuk Beranda biar nggak nyala terus
+  if (href === '/' || href === '#beranda') {
+    return currentUrl.value === '/' || currentUrl.value === ''
+  }
+  
+  // 2. Bersihkan href dari garis miring atau hashtag
+  const cleanTarget = href.replace('/', '').replace('#', '')
+  if (!cleanTarget) return false
+
+  // 3. Cek apakah URL yang lagi dibuka mengandung nama href tersebut
+  return currentUrl.value.includes(cleanTarget)
+}
 
 const handleLogin = () => {
   isMenuOpen.value = false
@@ -20,12 +40,11 @@ const handleLogin = () => {
 </script>
 
 <style scoped>
-/* Background */
+/* Background Overlay */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -34,22 +53,18 @@ const handleLogin = () => {
 /* Menu turun dari atas */
 .slide-down-enter-active,
 .slide-down-leave-active {
-  transition:
-    transform 0.3s ease,
-    opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
-
 .slide-down-enter-from,
 .slide-down-leave-to {
   transform: translateY(-100%);
   opacity: 0;
 }
 </style>
+
 <template>
-  <!-- Navbar (Outer: Full Width & Fixed) -->
   <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-[#4b857a] shadow-md font-poppins">
     
-    <!-- Inner Container: Penyeimbang Margin (Sama dengan Layout dan Footer) -->
     <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 md:px-10">
 
       <!-- Logo & Brand -->
@@ -60,16 +75,25 @@ const handleLogin = () => {
         </span>
       </div>
 
-      <!-- Desktop Navigation -->
+<!-- Desktop Navigation -->
       <ul class="hidden flex-1 list-none items-center justify-center gap-5 md:flex lg:gap-8">
         <li v-for="item in menuItems" :key="item.label">
-          <a
+          <Link
             :href="item.href"
-            class="group relative inline-block whitespace-nowrap text-sm font-semibold text-white opacity-95 transition-opacity hover:opacity-100"
+            :class="[
+              'group relative inline-block whitespace-nowrap text-sm transition-opacity hover:opacity-100',
+              isActive(item.href) ? 'font-bold text-white opacity-100' : 'font-semibold text-white opacity-90'
+            ]"
           >
             {{ item.label }}
-            <span class="absolute -bottom-1 left-0 h-[2px] w-0 bg-white transition-all duration-300 ease-out group-hover:w-full"></span>
-          </a>
+            <!-- Garis Bawah -->
+            <span 
+              :class="[
+                'absolute -bottom-1 left-0 h-[2px] bg-white transition-all duration-300 ease-out',
+                isActive(item.href) ? 'w-full' : 'w-0 group-hover:w-full'
+              ]"
+            ></span>
+          </Link>
         </li>
       </ul>
 
@@ -89,12 +113,9 @@ const handleLogin = () => {
         @click="isMenuOpen = !isMenuOpen"
         aria-label="Toggle menu"
       >
-        <!-- Hamburger -->
         <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-6 w-6">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
-
-        <!-- Close -->
         <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-6 w-6">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>
@@ -119,14 +140,18 @@ const handleLogin = () => {
     >
       <ul class="flex flex-col gap-1">
         <!-- Navigation -->
+<!-- Navigation Mobile -->
         <li v-for="item in menuItems" :key="item.label">
-          <a
+          <Link
             :href="item.href"
-            class="block rounded-xl px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
             @click="isMenuOpen = false"
+            :class="[
+              'block rounded-xl px-4 py-3 text-sm font-bold transition-colors hover:bg-white/10',
+              isActive(item.href) ? 'bg-white/20 text-white' : 'text-white'
+            ]"
           >
             {{ item.label }}
-          </a>
+          </Link>
         </li>
 
         <!-- Divider -->
@@ -146,5 +171,3 @@ const handleLogin = () => {
     </div>
   </Transition>
 </template>
-
-

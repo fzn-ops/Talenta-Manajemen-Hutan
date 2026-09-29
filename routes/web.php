@@ -5,9 +5,47 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+/* Route Landing dan Website Public*/
+
 Route::get('/', function () {
     return Inertia::render('landing_page/Home');
 });
+
+Route::get('/activities', function () {
+    return Inertia::render('landing_page/activity/Activities');
+})->name('activities');
+
+/* Route::get('/activities/{id}', function ($id) {
+    return Inertia::render('landing_page/activity/ActivityDetail', [
+        'activityId' => $id,
+    ]);
+})->name('activity.detail'); */
+
+Route::get('/activities/{id}', function ($id) {
+    return Inertia::render('landing_page/activity/Show');
+})->name('activity.detail');
+
+Route::get('/careers', function () {
+    return Inertia::render('landing_page/career/Careers');
+})->name('careers');
+
+Route::get('/careers/{id}', function ($id) {
+    return Inertia::render('landing_page/career/Show');
+})->name('career.detail');
+
+Route::get('/news', function () {
+    return Inertia::render('landing_page/news/News');
+})->name('news');
+
+Route::get('/news/{id}', function ($id) {
+    return Inertia::render('landing_page/news/Show');
+})->name('news.detail');
+
+Route::get('/FAQ', function () {
+    return Inertia::render('landing_page/Faq');
+})->name('FAQ');
+
+/*----------------------------------------------------------------------*/
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
