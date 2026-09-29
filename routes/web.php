@@ -65,6 +65,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         return Inertia::render('dashboard/admin/Roadmap');
     })->name('roadmap');
 
+    Route::get('/roadmap/{id}', function ($id = 1) {
+        return Inertia::render('dashboard/admin/RoadmapDetail', [
+            'roadmapId' => $id,
+        ]);
+    })->name('roadmap.detail');
+
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
         Route::get('/persetujuan', function () {
             return Inertia::render('dashboard/admin/Dashboard');

@@ -1,9 +1,10 @@
 <script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
@@ -303,6 +304,10 @@ const openEditModal = (roadmap) => {
 	isFormModalOpen.value = true;
 };
 
+const handlePreview = (roadmap) => {
+	router.visit(`/admin/roadmap/${roadmap.id || 1}`);
+};
+
 const handleFormSubmit = (formData) => {
 	const now = new Date();
 	const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
@@ -506,9 +511,10 @@ const confirmDeleteRoadmap = () => {
 							</div>
 							<div class="mt-5 flex items-center justify-between border-t border-[#f1f5f9] pt-3">
 								<div class="h-3 w-28 rounded bg-slate-200"></div>
-								<div class="flex gap-2">
-									<div class="h-7 w-7 rounded-lg bg-slate-200"></div>
-									<div class="h-7 w-7 rounded-lg bg-slate-200"></div>
+								<div class="flex gap-1.5">
+									<div class="h-8 w-8 rounded-lg bg-slate-200"></div>
+									<div class="h-8 w-8 rounded-lg bg-slate-200"></div>
+									<div class="h-8 w-8 rounded-lg bg-slate-200"></div>
 								</div>
 							</div>
 						</div>
@@ -604,6 +610,7 @@ const confirmDeleteRoadmap = () => {
 									Diperbarui : {{ item.updated_at }}
 								</span>
 								<div class="flex items-center gap-1.5">
+									<PreviewButtonTable :label="`Lihat detail ${item.title}`" @click="handlePreview(item)" />
 									<EditButtonTable :label="`Edit ${item.title}`" @click="openEditModal(item)" />
 									<DeleteButtonTable :label="`Hapus ${item.title}`" @click="openDeleteModal(item)" />
 								</div>
