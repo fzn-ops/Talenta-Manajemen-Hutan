@@ -4,6 +4,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed, nextTick, ref, watch } from 'vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import ModalFormMateriTask from '@/Components/dashboard/admin/ModalFormMateriTask.vue';
+import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
+import RoadmapCardBuilder from '@/Components/dashboard/admin/RoadmapCardBuilder.vue';
 
 const props = defineProps({
 	roadmapId: {
@@ -180,21 +182,80 @@ const currentItem = computed(() => {
 });
 
 // Editor State for Current Item
+const isEditingContent = ref(false);
 const editTopic = ref('');
-const editDescription = ref('');
-const uploadedFile = ref(null);
-const fileInputRef = ref(null);
+const editCards = ref([]);
+
+// Available Card Types for Add Button
+const availableCardTypes = [
+	{ type: 'image', label: 'Gambar', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
+	{ type: 'text', label: 'Teks Deskripsi', icon: 'M4 6h16M4 12h16M4 18h7' },
+	{ type: 'pdf', label: 'File PDF', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+	{ type: 'video', label: 'Video YouTube', icon: 'M21.582 6.186a2.665 2.665 0 0 0-1.884-1.884C18.04 3.84 12 3.84 12 3.84s-6.04 0-7.698.462a2.665 2.665 0 0 0-1.884 1.884C1.956 7.844 1.956 12 1.956 12s0 4.156.462 5.814a2.665 2.665 0 0 0 1.884 1.884C6.04 20.16 12 20.16 12 20.16s6.04 0 7.698-.462a2.665 2.665 0 0 0 1.884-1.884C22.044 16.156 22.044 12 22.044 12s0-4.156-.462-5.814zM9.954 15.496V8.504l6.505 3.496-6.505 3.496z' },
+];
+
+const showAddCardDropdown = ref(false);
+
+const hasCardType = (type) => editCards.value.some((c) => c.type === type);
+
+const isAllCardsAdded = computed(() => availableCardTypes.every(t => hasCardType(t.type)));
+
+const handleAddCard = (type) => {
+	if (!hasCardType(type)) {
+		editCards.value.push({ id: Date.now().toString(), type, content: '', fileName: '' });
+		showAddCardDropdown.value = false;
+	}
+};
+
+// Initial State for dirty checking
+const initialTopic = ref('');
+const initialCardsString = ref('');
+
+const stripError = (cards) => cards.map(({ hasError, ...c }) => c);
+
+const isModified = computed(() => {
+	if (editTopic.value !== initialTopic.value) return true;
+	return JSON.stringify(stripError(editCards.value)) !== initialCardsString.value;
+});
 
 // Sync editor state with selected item
 const syncEditorState = () => {
+	isEditingContent.value = false;
 	if (currentItem.value) {
 		editTopic.value = currentItem.value.topic || '';
-		editDescription.value = currentItem.value.description || '';
-		uploadedFile.value = currentItem.value.file || null;
+		
+		if (currentItem.value.cards) {
+			editCards.value = JSON.parse(JSON.stringify(currentItem.value.cards));
+		} else {
+			const initialCards = [];
+			if (currentItem.value.file) {
+				initialCards.push({
+					id: Date.now() + 'f',
+					type: currentItem.value.file.type.startsWith('image/') ? 'image' : 'pdf',
+					content: currentItem.value.file.dataUrl || '',
+					file: currentItem.value.file,
+					fileName: currentItem.value.fileName || currentItem.value.file.name,
+				});
+			}
+			if (currentItem.value.description) {
+				initialCards.push({
+					id: Date.now() + 'd',
+					type: 'text',
+					content: currentItem.value.description,
+					file: null,
+					fileName: '',
+				});
+			}
+			editCards.value = initialCards;
+		}
+
+		initialTopic.value = editTopic.value;
+		initialCardsString.value = JSON.stringify(stripError(editCards.value));
 	} else {
 		editTopic.value = '';
-		editDescription.value = '';
-		uploadedFile.value = null;
+		editCards.value = [];
+		initialTopic.value = '';
+		initialCardsString.value = '[]';
 	}
 };
 
@@ -226,16 +287,75 @@ const selectItem = (itemId) => {
 // Save Item Content
 const handleSaveItem = () => {
 	if (!currentItem.value) return;
+
+	if (editCards.value.length === 0) {
+		showToast('error', 'Gagal Disimpan', 'Materi harus memiliki minimal 1 konten (Gambar, Teks, PDF, atau Video).');
+		return;
+	}
+
+	let hasEmpty = false;
+
+	// Validation: Check for empty cards and mark them
+	editCards.value.forEach(c => {
+		let isEmpty = false;
+		if (c.type === 'text') isEmpty = !c.content || c.content.trim() === '' || c.content === '<p></p>';
+		else if (c.type === 'image' || c.type === 'pdf') isEmpty = !c.content;
+		else if (c.type === 'video') isEmpty = !c.content || c.content.trim() === '';
+		
+		c.hasError = isEmpty;
+		if (isEmpty) hasEmpty = true;
+	});
+
+	if (hasEmpty) {
+		showToast('error', 'Gagal Disimpan', 'Terdapat konten materi yang belum terisi dengan sempurna.');
+		return;
+	}
+
 	currentItem.value.topic = editTopic.value.trim();
-	currentItem.value.description = editDescription.value.trim();
-	currentItem.value.file = uploadedFile.value;
+	currentItem.value.cards = JSON.parse(JSON.stringify(editCards.value));
+	
+	// Backward compatibility
+	const textCard = currentItem.value.cards.find(c => c.type === 'text');
+	currentItem.value.description = textCard ? textCard.content : '';
+	const fileCard = currentItem.value.cards.find(c => c.type === 'image' || c.type === 'pdf');
+	currentItem.value.file = fileCard ? fileCard.file : null;
+	currentItem.value.fileName = fileCard ? fileCard.fileName : '';
+
+	isEditingContent.value = false;
 	showToast('success', 'Berhasil Disimpan', `Konten "${currentItem.value.title}" berhasil diperbarui.`);
 };
 
 // Reset/Cancel Item Changes
 const handleCancelEdit = () => {
 	syncEditorState();
-	showToast('info', 'Dibatalkan', 'Perubahan konten dikembalikan ke data sebelumnya.');
+	isEditingContent.value = false;
+};
+
+const startEditContent = () => {
+	isEditingContent.value = true;
+};
+
+// Video Embed Helper
+const getVideoEmbedUrl = (url) => {
+	if (!url) return null;
+	try {
+		if (url.includes('youtube.com/watch')) {
+			const urlObj = new window.URL(url);
+			const v = urlObj.searchParams.get('v');
+			return v ? `https://www.youtube.com/embed/${v}` : null;
+		}
+		if (url.includes('youtube.com/shorts/')) {
+			const id = url.split('youtube.com/shorts/')[1].split('?')[0];
+			return id ? `https://www.youtube.com/embed/${id}` : null;
+		}
+		if (url.includes('youtu.be/')) {
+			const id = url.split('youtu.be/')[1].split('?')[0];
+			return id ? `https://www.youtube.com/embed/${id}` : null;
+		}
+	} catch (e) {
+		return null;
+	}
+	return null;
 };
 
 // File Upload Handlers
@@ -551,121 +671,180 @@ const executeDeleteItem = () => {
 						<!-- ================= LEFT COLUMN: CONTENT & MEDIA (70%) ================= -->
 						<div class="w-full lg:w-[68%] xl:w-[70%] space-y-5">
 							
-							<!-- 1. Topic Title Field + Cancel & Save Action Buttons -->
-							<div class="flex items-center gap-3">
-								<!-- Editable Dashed Input Box -->
-								<div
-									:style="{ borderRadius: '10px' }"
-									class="flex-1 rounded-[10px] border-2 border-dashed border-[#183669] bg-white px-4 py-2.5 transition-colors focus-within:bg-[#fafcff]"
-								>
-									<input
-										v-model="editTopic"
-										type="text"
-										placeholder="Cara Mendapatkan Return Usaha 100% dalam 1 Bulan"
-										class="w-full border-none bg-transparent p-0 font-poppins text-[15px] sm:text-[16px] font-bold text-[#183669] placeholder-[#94a3b8] focus:outline-none focus:ring-0"
-									/>
+							<!-- READ-ONLY VIEW -->
+							<template v-if="!isEditingContent">
+								<!-- Title & Edit Button -->
+								<div class="flex items-center gap-4">
+									<h2 class="flex-1 font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight">
+										{{ currentItem?.topic || 'Belum ada topik' }}
+									</h2>
+									<EditButtonTable @click="startEditContent" label="Edit Konten" />
 								</div>
 
-								<!-- Cancel / Reset Button (White square with red border & red cross icon) -->
-								<button
-									type="button"
-									@click="handleCancelEdit"
-									class="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[8px] border-2 border-[#e05252] bg-white text-[#e05252] shadow-xs transition hover:bg-red-50 active:scale-95 focus:outline-none cursor-pointer"
-									title="Batal Perubahan"
-								>
-									<svg class="h-5 w-5 text-[#e05252]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-										<circle cx="12" cy="12" r="9" />
-										<path stroke-linecap="round" stroke-linejoin="round" d="M9 9l6 6m0-6l-6 6" />
-									</svg>
-								</button>
-
-								<!-- Save Button (Dark Navy square with floppy disk icon) -->
-								<button
-									type="button"
-									@click="handleSaveItem"
-									class="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[8px] bg-[#183669] text-white shadow-xs transition hover:bg-[#122b54] active:scale-95 focus:outline-none cursor-pointer"
-									title="Simpan Materi"
-								>
-									<svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-7 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H6V5h9v4z"/>
-									</svg>
-								</button>
-							</div>
-
-							<!-- 2. Media / Material Upload Area Box -->
-							<div
-								@click="triggerFileInput"
-								@dragover.prevent
-								@drop.prevent="handleFileDrop"
-								:style="{ borderRadius: '10px' }"
-								class="group relative flex min-h-[260px] sm:min-h-[300px] flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-[#183669] bg-white p-6 sm:p-10 text-center transition-colors hover:bg-[#fafcff] cursor-pointer"
-							>
-								<!-- Hidden File Input -->
-								<input
-									ref="fileInputRef"
-									type="file"
-									accept="video/*,image/*,.pdf,.doc,.docx,.ppt,.pptx"
-									class="hidden"
-									@change="handleFileChange"
-								/>
-
-								<!-- Upload State: File Already Selected -->
-								<div v-if="uploadedFile" class="flex flex-col items-center justify-center" @click.stop>
-									<div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#183669]/10 text-[#183669] mb-3">
-										<svg class="h-10 w-10 text-[#183669]" viewBox="0 0 64 64" fill="currentColor">
-											<path d="M40 2H12C8.686 2 6 4.686 6 8V56C6 59.314 8.686 62 12 62H52C55.314 62 58 59.314 58 56V20L40 2ZM32 22L44 34H36V46H28V34H20L32 22ZM38 20V6L54 22H38V20Z" />
-										</svg>
+								<!-- Media & Content Display (Read Only) -->
+								<div v-if="currentItem?.cards && currentItem.cards.length > 0" class="flex flex-col gap-6 mt-6">
+									<div v-for="card in currentItem.cards" :key="card.id" class="w-full">
+										<!-- IMAGE -->
+										<div v-if="card.type === 'image' && card.content" class="w-full aspect-video rounded-[10px] overflow-hidden border border-[#d6e0ee] shadow-sm bg-slate-50">
+											<img :src="card.content" class="w-full h-full object-cover" />
+										</div>
+										
+										<!-- PDF -->
+										<div v-else-if="card.type === 'pdf' && card.fileName" class="flex items-center gap-4 bg-[#fafcff] p-4 sm:p-5 border border-[#d6e0ee] rounded-[10px] shadow-sm">
+											<svg class="h-10 w-10 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+												<path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
+												<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.447 15.867c-.201.764-.787 1.137-1.468 1.137h-.083v2h-1.14v-5.263c.272-.042.663-.06 1.054-.06.882 0 1.503.415 1.503 1.155 0 .587-.332 1.019-.866 1.031zm3.799 1.83h-.148c-.29 0-.586-.03-.846-.071v-4.108c.284-.047.622-.065.989-.065 1.332 0 2.256.705 2.256 2.155 0 1.487-.96 2.089-2.251 2.089zm3.504-2.812h-1.344v2.545h-1.151v-5.228h2.64v1.013h-1.489v1.658h1.344v1.012z" />
+											</svg>
+											<div class="flex-1 min-w-0">
+												<p class="font-poppins font-bold text-[#183669] truncate text-[14px] sm:text-[15px]">{{ card.fileName }}</p>
+												<p class="font-inter text-[12px] text-[#7188a3] mt-0.5">Dokumen PDF</p>
+											</div>
+										</div>
+										
+										<!-- TEXT -->
+										<div v-else-if="card.type === 'text'" class="font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#334155] text-justify prose prose-sm sm:prose-base max-w-none prose-p:my-2 prose-h1:text-[22px] prose-h2:text-[18px] prose-h3:text-[16px]" v-html="card.content">
+										</div>
+										
+										<!-- VIDEO -->
+										<div v-else-if="card.type === 'video' && card.content" class="aspect-video w-full min-h-[250px] sm:min-h-0 rounded-[10px] overflow-hidden border border-[#d6e0ee] bg-black shadow-sm">
+											<iframe 
+												v-if="getVideoEmbedUrl(card.content)"
+												:src="getVideoEmbedUrl(card.content)" 
+												class="w-full h-full"
+												frameborder="0" 
+												allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+												allowfullscreen>
+											</iframe>
+											<div v-else class="flex h-full flex-col items-center justify-center bg-slate-100 text-[13px] font-semibold text-slate-500 text-center px-4">
+												<svg class="h-10 w-10 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+												Preview video belum didukung untuk tautan ini.<br>
+												Gunakan tautan YouTube yang valid.
+											</div>
+										</div>
 									</div>
-									<p class="font-poppins text-[15px] font-bold text-[#183669] max-w-sm truncate">
-										{{ uploadedFile.name }}
-									</p>
-									<p class="mt-0.5 font-inter text-xs text-[#7188a3]">
-										{{ (uploadedFile.size / (1024 * 1024)).toFixed(2) }} MB &bull; Siap digunakan
-									</p>
-									<div class="mt-4 flex items-center gap-3">
-										<button
-											type="button"
-											@click.stop="triggerFileInput"
-											class="rounded-lg bg-[#183669] px-4 py-1.5 font-poppins text-xs font-semibold text-white hover:bg-[#122b54] transition"
+								</div>
+								
+								<!-- Fallback Legacy Display (If Not Saved As Cards Yet) -->
+								<div v-else>
+									<!-- Media Display -->
+									<div v-if="currentItem?.file" class="w-full rounded-[10px] overflow-hidden mt-6">
+										<img 
+											v-if="currentItem.file.type.startsWith('image/')" 
+											:src="currentItem.file.dataUrl" 
+											class="w-full h-auto max-h-[450px] object-cover rounded-[10px] border border-[#d6e0ee]" 
+										/>
+										<div v-else class="flex flex-col items-center justify-center p-10 bg-[#f8fafc] border border-[#d6e0ee] rounded-[10px]">
+											<svg class="h-16 w-16 text-[#183669] mb-2" viewBox="0 0 64 64" fill="currentColor">
+												<path d="M40 2H12C8.686 2 6 4.686 6 8V56C6 59.314 8.686 62 12 62H52C55.314 62 58 59.314 58 56V20L40 2ZM32 22L44 34H36V46H28V34H20L32 22ZM38 20V6L54 22H38V20Z" />
+											</svg>
+											<p class="font-poppins font-bold text-[#183669]">{{ currentItem.file.name }}</p>
+										</div>
+									</div>
+
+									<!-- Description Display -->
+									<div class="font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#334155] whitespace-pre-wrap text-justify mt-6">
+										{{ currentItem?.description }}
+									</div>
+								</div>
+							</template>
+
+							<!-- EDIT MODE -->
+							<template v-else>
+								<!-- 1. Topic Title Field -->
+								<div class="flex items-center gap-3 relative">
+									<!-- Editable Dashed Input Box -->
+									<div
+										:style="{ borderRadius: '10px' }"
+										class="flex-1 rounded-[10px] border-2 border-dashed border-[#183669] bg-white px-4 py-2.5 transition-colors focus-within:bg-[#fafcff]"
+									>
+										<input
+											v-model="editTopic"
+											type="text"
+											placeholder="Cara Mendapatkan Return Usaha 100% dalam 1 Bulan"
+											class="w-full border-none bg-transparent p-0 font-poppins text-[15px] sm:text-[16px] font-bold text-[#183669] placeholder-[#94a3b8] focus:outline-none focus:ring-0"
+										/>
+									</div>
+
+									<!-- Add Card Dropdown Button -->
+									<div class="relative">
+										<button 
+											type="button" 
+											@click="showAddCardDropdown = !showAddCardDropdown"
+											:disabled="isAllCardsAdded"
+											:class="[
+												'flex h-12 w-12 items-center justify-center rounded-[10px] border-2 transition-all shadow-sm',
+												isAllCardsAdded 
+													? 'cursor-not-allowed border-slate-300 bg-slate-50 text-slate-400' 
+													: 'border-[#183669] bg-[#183669] text-white hover:bg-[#122b54] active:scale-95'
+											]"
+											title="Tambah Konten"
 										>
-											Ganti File
+											<svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
 										</button>
-										<button
-											type="button"
-											@click.stop="removeFile"
-											class="rounded-lg border border-red-200 bg-red-50 px-4 py-1.5 font-poppins text-xs font-semibold text-red-600 hover:bg-red-100 transition"
-										>
-											Hapus File
-										</button>
+
+										<!-- Dropdown Overlay & Menu -->
+										<div v-if="showAddCardDropdown" class="fixed inset-0 z-40" @click="showAddCardDropdown = false"></div>
+										<div v-if="showAddCardDropdown" class="absolute right-0 top-full mt-2 w-56 rounded-[10px] bg-white shadow-xl ring-1 ring-black/5 z-50 overflow-hidden border border-[#d6e0ee]">
+											<div class="p-1.5 flex flex-col gap-0.5">
+												<div class="px-2 pt-1 pb-2 text-[11px] font-bold text-[#8ca1b9] uppercase tracking-wider">Tambah Konten</div>
+												<button
+													v-for="typeObj in availableCardTypes"
+													:key="typeObj.type"
+													type="button"
+													@click="handleAddCard(typeObj.type)"
+													:disabled="hasCardType(typeObj.type)"
+													:class="[
+														'flex w-full items-center gap-2.5 rounded-[6px] px-3 py-2.5 text-[13px] font-semibold transition-colors',
+														hasCardType(typeObj.type)
+															? 'cursor-not-allowed text-slate-400 bg-slate-50 opacity-60'
+															: 'text-[#183669] hover:bg-[#f0f4f9] active:bg-[#e8eef8]'
+													]"
+												>
+													<svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" :d="typeObj.icon" />
+													</svg>
+													{{ typeObj.label }}
+												</button>
+											</div>
+										</div>
 									</div>
 								</div>
 
-								<!-- Upload State: Empty Placeholder as in Screenshot -->
-								<div v-else class="flex flex-col items-center justify-center pointer-events-none">
-									<!-- Document Upload Icon with Upward Arrow -->
-									<div class="flex items-center justify-center text-[#183669]">
-										<svg class="h-20 w-20 text-[#183669]" viewBox="0 0 64 64" fill="currentColor">
-											<path d="M40 2H12C8.686 2 6 4.686 6 8V56C6 59.314 8.686 62 12 62H52C55.314 62 58 59.314 58 56V20L40 2ZM32 22L44 34H36V46H28V34H20L32 22ZM38 20V6L54 22H38V20Z" />
+								<!-- Card Builder Area -->
+								<div class="mt-6 border-t border-[#d6e0ee] pt-5">
+									<RoadmapCardBuilder v-model="editCards" @error="(msg) => showToast('error', 'Gagal', msg)" />
+								</div>
+								
+								<!-- Action Buttons -->
+								<div class="flex items-center justify-end gap-3 mt-6 pt-5 border-t border-[#d6e0ee]">
+									<!-- Cancel Button -->
+									<button
+										type="button"
+										@click="handleCancelEdit"
+										class="flex items-center gap-2 rounded-[8px] border border-[#e05252] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#e05252] shadow-sm transition hover:bg-red-50 focus:outline-none"
+									>
+										Batal
+									</button>
+
+									<!-- Save Button -->
+									<button
+										type="button"
+										@click="handleSaveItem"
+										:disabled="!isModified"
+										:class="[
+											'flex items-center gap-2 rounded-[8px] px-6 py-2.5 text-[13px] font-semibold shadow-sm transition focus:outline-none',
+											isModified 
+												? 'bg-[#183669] text-white hover:bg-[#122b54] cursor-pointer' 
+												: 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+										]"
+									>
+										<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+											<path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-7 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H6V5h9v4z"/>
 										</svg>
-									</div>
-									<p class="mt-4 font-poppins text-[14px] sm:text-[15px] font-bold text-[#183669]">
-										Upload Video/Gambar/PDF Materi Disini
-									</p>
+										Simpan Materi
+									</button>
 								</div>
-							</div>
-
-							<!-- 3. Description / Content Text Box with Dashed Border -->
-							<div
-								:style="{ borderRadius: '10px' }"
-								class="rounded-[10px] border-2 border-dashed border-[#183669] bg-white p-5 sm:p-6"
-							>
-								<textarea
-									v-model="editDescription"
-									rows="10"
-									placeholder="Tuliskan materi pembelajaran atau instruksi tugas di sini..."
-									class="w-full resize-y border-none bg-transparent p-0 font-inter text-[13px] sm:text-[13.5px] leading-relaxed text-[#334155] placeholder-[#94a3b8] focus:outline-none focus:ring-0"
-								></textarea>
-							</div>
+							</template>
 						</div>
 
 						<!-- ================= RIGHT COLUMN: MATERI & TUGAS LIST (30%) ================= -->
