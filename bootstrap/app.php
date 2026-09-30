@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\CheckRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,6 +17,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        $middleware->redirectUsersTo(function(Request $request){
+            $user=Auth::user();
+            if($user && $user->role == 'admin'){
+                return '/admin/dashboard';
+            }
+            if($user && $user->role == 'mahasiswa'){
+                return '/mahasiswa/dashboard';
+            }
+            return '/';
+        });
+
+        $middleware->alias([
+            'role' => CheckRole::class
         ]);
 
         //

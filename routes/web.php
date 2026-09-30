@@ -52,7 +52,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 /* Admin Dashboard Routes */
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
     Route::get('/dashboard', function () {
         return Inertia::render('dashboard/admin/Dashboard');
     })->name('dashboard');
@@ -99,7 +99,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 /* Mahasiswa Dashboard Routes */
-Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
+Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('dashboard/mahasiswa/Dashboard');
     })->name('dashboard');

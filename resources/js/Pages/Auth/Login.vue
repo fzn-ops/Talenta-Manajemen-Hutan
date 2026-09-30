@@ -4,7 +4,7 @@ import { useForm, Link } from '@inertiajs/vue3';
 
 // Setup form Inertia untuk lempar data ke backend Laravel
 const form = useForm({
-  username: '',
+  nim: '',
   password: '',
   remember: false,
 });
@@ -58,7 +58,6 @@ const submit = () => {
 
       <form @submit.prevent="submit" class="flex flex-col gap-6">
         
-        <!-- Input Username -->
         <div class="relative">
           <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-2 text-[#152c5b]">
             <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -67,8 +66,8 @@ const submit = () => {
           </div>
           <input 
             type="text" 
-            v-model="form.username" 
-            placeholder="Username" 
+            v-model="form.nim" 
+            placeholder="Masukkan NIM" 
             class="w-full border-0 border-b-2 border-gray-400 bg-transparent py-2 pl-9 pr-4 text-sm font-semibold text-[#152c5b] placeholder-gray-400 transition-colors focus:border-[#152c5b] focus:ring-0" 
             required 
           />
