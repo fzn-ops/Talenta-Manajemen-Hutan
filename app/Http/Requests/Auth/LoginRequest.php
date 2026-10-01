@@ -46,7 +46,7 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'nim' => trans('auth.failed'),
+                'nim' => 'NIM atau password tidak sesuai',
             ]);
         }
 

@@ -73,19 +73,19 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
         Route::get('/persetujuan', function () {
-            return Inertia::render('dashboard/admin/Dashboard');
+            return Inertia::render('dashboard/admin/ActivityApproval');
         })->name('persetujuan');
 
         Route::get('/bukti-pendaftaran', function () {
-            return Inertia::render('dashboard/admin/Dashboard');
+            return Inertia::render('dashboard/admin/ActivityRegister');
         })->name('bukti');
 
         Route::get('/hasil', function () {
-            return Inertia::render('dashboard/admin/Dashboard');
+            return Inertia::render('dashboard/admin/ActivityResult');
         })->name('hasil');
 
         Route::get('/list', function () {
-            return Inertia::render('dashboard/admin/Dashboard');
+            return Inertia::render('dashboard/admin/ActivityList');
         })->name('list');
     });
 
