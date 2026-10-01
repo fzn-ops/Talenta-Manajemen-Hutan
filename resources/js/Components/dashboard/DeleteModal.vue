@@ -3,6 +3,18 @@ defineProps({
   show: {
     type: Boolean,
     default: false
+  },
+  title: {
+    type: String,
+    default: 'Hapus Data?'
+  },
+  message: {
+    type: String,
+    default: 'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.'
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -11,15 +23,14 @@ const emit = defineEmits(['close', 'confirm']);
 
 <template>
   <Transition 
-    enter-active-class="transition duration-300 ease-out" 
+    enter-active-class="transition duration-200 ease-out" 
     enter-from-class="opacity-0" 
     enter-to-class="opacity-100" 
-    leave-active-class="transition duration-200 ease-in" 
+    leave-active-class="transition duration-150 ease-in" 
     leave-from-class="opacity-100" 
     leave-to-class="opacity-0"
   >
-    <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div class="absolute inset-0" @click="emit('close')"></div>
+    <div v-if="show" class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs transition-opacity duration-200" @click.self="emit('close')">
       
       <Transition 
         enter-active-class="transition duration-300 ease-out delay-75" 
@@ -29,18 +40,40 @@ const emit = defineEmits(['close', 'confirm']);
         leave-from-class="opacity-100 translate-y-0 scale-100" 
         leave-to-class="opacity-0 translate-y-4 scale-95"
       >
-        <div v-if="show" class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center">
-          <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-            <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <div v-if="show" class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
+          <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </div>
-          <h3 class="mb-2 text-xl font-bold text-[#1a2b4c]">Hapus Aktivitas?</h3>
-          <p class="mb-6 text-sm text-gray-500">Apakah Anda yakin ingin menghapus aktivitas ini? Data yang dihapus tidak dapat dikembalikan.</p>
+          <h3 class="font-poppins text-lg font-bold text-[#17334F]">
+            <slot name="title">{{ title }}</slot>
+          </h3>
+          <p class="mt-2 font-inter text-sm text-[#64748b]">
+            <slot name="message">{{ message }}</slot>
+          </p>
           
-          <div class="flex justify-center gap-3">
-            <button @click="emit('close')" class="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-50">Batal</button>
-            <button @click="emit('confirm')" class="rounded-lg bg-red-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 shadow-md">Ya, Hapus</button>
+          <div class="mt-6 flex items-center justify-center gap-3">
+            <button 
+              type="button"
+              :disabled="isLoading"
+              @click="emit('close')" 
+              class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              Batal
+            </button>
+            <button 
+              type="button"
+              :disabled="isLoading"
+              @click="emit('confirm')" 
+              class="flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              <svg v-if="isLoading" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span><slot name="confirm-text">{{ isLoading ? 'Menghapus...' : 'Hapus' }}</slot></span>
+            </button>
           </div>
         </div>
       </Transition>

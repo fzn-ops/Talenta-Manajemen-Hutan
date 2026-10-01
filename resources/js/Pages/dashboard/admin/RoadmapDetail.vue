@@ -7,6 +7,7 @@ import ModalFormMateriTask from '@/Components/dashboard/admin/ModalFormMateriTas
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import RoadmapCardBuilder from '@/Components/dashboard/admin/RoadmapCardBuilder.vue';
 import RoadmapMaterialNavigation from '@/Components/dashboard/admin/RoadmapMaterialNavigation.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
 	roadmapId: {
@@ -40,41 +41,47 @@ const closeToast = () => {
 const roadmapsData = {
 	1: {
 		id: 1,
-		category: 'Bisnis',
-		title: 'Roadmap Bisnis',
+		category: 'Profesional',
+		title: 'Persiapan Karir Software Engineer & Fullstack Developer',
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	},
 	2: {
 		id: 2,
 		category: 'Bisnis',
-		title: 'Roadmap Bisnis',
+		title: 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	},
 	3: {
 		id: 3,
 		category: 'Birokrasi',
-		title: 'Roadmap Birokrasi',
+		title: 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	},
 	4: {
 		id: 4,
 		category: 'Akademisi',
-		title: 'Roadmap Akademisi',
+		title: 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	},
 	5: {
 		id: 5,
 		category: 'Profesional',
-		title: 'Roadmap Profesional',
+		title: 'Sertifikasi Konsultan Lingkungan & AMDAL Profesional',
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	},
+	6: {
+		id: 6,
+		category: 'Bisnis',
+		title: 'Pengembangan Usaha Ekowisata & Agroforestry Berkelanjutan',
+		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
+	}
 };
 
 const currentRoadmap = computed(() => {
 	return roadmapsData[props.roadmapId] || {
 		id: props.roadmapId,
-		category: 'Bisnis',
-		title: 'Roadmap Bisnis',
+		category: 'Roadmap',
+		title: `Roadmap ${props.roadmapId}`,
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	};
 });
@@ -1123,104 +1130,38 @@ const executeDeleteItem = () => {
 		/>
 
 		<!-- ================= MODAL: DELETE MONTH CONFIRMATION ================= -->
-		<Teleport to="body">
-			<Transition
-				enter-active-class="transition duration-200 ease-out"
-				enter-from-class="opacity-0"
-				enter-to-class="opacity-100"
-				leave-active-class="transition duration-150 ease-in"
-				leave-from-class="opacity-100"
-				leave-to-class="opacity-0"
-			>
-				<div
-					v-if="isDeleteMonthModalOpen"
-					class="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs"
-					@click.self="isDeleteMonthModalOpen = false"
-				>
-					<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
-						<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
-							<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-							</svg>
-						</div>
-
-						<h3 class="text-lg font-bold text-[#17334F]">
-							Hapus {{ monthToDelete?.name }}?
-						</h3>
-						<p class="mt-2 font-inter text-sm text-[#64748b]">
-							Semua materi dan tugas di dalam tab <span class="font-bold text-[#17334F]">"{{ monthToDelete?.name }}"</span> akan ikut terhapus.
-						</p>
-
-						<div class="mt-6 flex items-center justify-center gap-3">
-							<button
-								type="button"
-								@click="isDeleteMonthModalOpen = false"
-								class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition cursor-pointer"
-							>
-								Batal
-							</button>
-							<button
-								type="button"
-								@click="executeDeleteMonth"
-								class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shadow-sm cursor-pointer"
-							>
-								Hapus Bulan
-							</button>
-						</div>
-					</div>
-				</div>
-			</Transition>
-		</Teleport>
+		<DeleteModal
+			:show="isDeleteMonthModalOpen"
+			@close="isDeleteMonthModalOpen = false"
+			@confirm="executeDeleteMonth"
+		>
+			<template #title>
+				Hapus {{ monthToDelete?.name }}?
+			</template>
+			<template #message>
+				Semua materi dan tugas di dalam tab <span class="font-bold text-[#17334F]">"{{ monthToDelete?.name }}"</span> akan ikut terhapus.
+			</template>
+			<template #confirm-text>
+				Hapus Bulan
+			</template>
+		</DeleteModal>
 
 		<!-- ================= MODAL: DELETE ITEM CONFIRMATION ================= -->
-		<Teleport to="body">
-			<Transition
-				enter-active-class="transition duration-200 ease-out"
-				enter-from-class="opacity-0"
-				enter-to-class="opacity-100"
-				leave-active-class="transition duration-150 ease-in"
-				leave-from-class="opacity-100"
-				leave-to-class="opacity-0"
-			>
-				<div
-					v-if="isDeleteItemModalOpen"
-					class="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs"
-					@click.self="isDeleteItemModalOpen = false"
-				>
-					<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
-						<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
-							<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-							</svg>
-						</div>
-
-						<h3 class="text-lg font-bold text-[#17334F]">
-							Hapus {{ itemToDelete?.title }}?
-						</h3>
-						<p class="mt-2 font-inter text-sm text-[#64748b]">
-							Apakah Anda yakin ingin menghapus <span class="font-bold text-[#17334F]">"{{ itemToDelete?.title }}"</span>? Tindakan ini tidak dapat dibatalkan.
-						</p>
-
-						<div class="mt-6 flex items-center justify-center gap-3">
-							<button
-								type="button"
-								@click="isDeleteItemModalOpen = false"
-								class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition cursor-pointer"
-							>
-								Batal
-							</button>
-							<button
-								type="button"
-								@click="executeDeleteItem"
-								class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shadow-sm cursor-pointer"
-							>
-								Hapus Item
-							</button>
-						</div>
-					</div>
-				</div>
-			</Transition>
-		</Teleport>
+		<DeleteModal
+			:show="isDeleteItemModalOpen"
+			@close="isDeleteItemModalOpen = false"
+			@confirm="executeDeleteItem"
+		>
+			<template #title>
+				Hapus {{ itemToDelete?.title }}?
+			</template>
+			<template #message>
+				Apakah Anda yakin ingin menghapus <span class="font-bold text-[#17334F]">"{{ itemToDelete?.title }}"</span>? Tindakan ini tidak dapat dibatalkan.
+			</template>
+			<template #confirm-text>
+				Hapus Item
+			</template>
+		</DeleteModal>
 
 		<!-- Toast Notification -->
 		<ToastNotification
