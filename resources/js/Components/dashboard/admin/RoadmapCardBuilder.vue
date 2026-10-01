@@ -35,6 +35,7 @@ const availableTypes = [
 	{ type: 'text', label: 'Teks Deskripsi', icon: 'M4 6h16M4 12h16M4 18h7' },
 	{ type: 'pdf', label: 'File PDF', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
 	{ type: 'video', label: 'Video Embed', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z' },
+	{ type: 'task_submission', label: 'Instruksi Pengumpulan Tugas', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
 ];
 
 const hasCardType = (type) => cards.value.some((c) => c.type === type);
@@ -56,6 +57,7 @@ const removeCard = (id) => {
 
 // Drag and drop mechanics
 const dragIndex = ref(-1);
+const dragEnabledIndex = ref(null);
 
 // --- Desktop HTML5 Drag ---
 const onDragStart = (e, index) => {
@@ -123,7 +125,7 @@ const onTouchStart = (e, index) => {
 
 const onTouchMove = (e) => {
 	if (!touchState.value.active) return;
-	e.preventDefault(); // Prevent scrolling
+	// e.preventDefault(); // Removed because 'touch-none' CSS class handles scroll prevention
 	const touch = e.touches[0];
 	const deltaY = touch.clientY - touchState.value.startY;
 	
@@ -281,24 +283,28 @@ const getVideoEmbedUrl = (url) => {
 					'card-wrapper group relative rounded-[10px] bg-white transition-colors shadow-sm focus-within:border-[#183669] border',
 					card.hasError ? 'border-red-500 ring-1 ring-red-500' : 'border-[#d6e0ee]'
 				]"
-				:draggable="true"
+				:draggable="dragEnabledIndex === index"
 				@dragstart="onDragStart($event, index)"
 				@dragenter.prevent="onDragEnter($event, index)"
 				@dragover.prevent
 				@dragend="onDragEnd"
 			>
 				<!-- Card Header (Drag Handle & Title) -->
-				<div 
-					class="flex items-center justify-between border-b border-[#d6e0ee] bg-[#fafcff] px-4 py-2 rounded-t-[10px] cursor-grab active:cursor-grabbing select-none"
-					@touchstart.passive="onTouchStart($event, index)"
-					@touchmove="onTouchMove"
-					@touchend="onTouchEnd"
-					@touchcancel="onTouchEnd"
-				>
+				<div class="flex items-center justify-between border-b border-[#d6e0ee] bg-[#fafcff] px-4 py-2 rounded-t-[10px]">
 					<div class="flex items-center gap-2">
-						<svg class="h-5 w-5 text-[#8c9eb5] hover:text-[#183669]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
-						</svg>
+						<div 
+							class="cursor-grab active:cursor-grabbing p-1.5 -ml-1.5 rounded hover:bg-[#e2e8f0] transition-colors touch-none"
+							@mouseenter="dragEnabledIndex = index"
+							@mouseleave="dragEnabledIndex = null"
+							@touchstart.passive="onTouchStart($event, index)"
+							@touchmove.passive="onTouchMove"
+							@touchend.passive="onTouchEnd"
+							@touchcancel.passive="onTouchEnd"
+						>
+							<svg class="h-5 w-5 text-[#8c9eb5] hover:text-[#183669]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+							</svg>
+						</div>
 						<span class="text-sm font-bold text-[#183669] capitalize">
 							{{ availableTypes.find(t => t.type === card.type)?.label }}
 						</span>
@@ -314,6 +320,7 @@ const getVideoEmbedUrl = (url) => {
 
 						<!-- Delete Button -->
 						<button
+							v-if="!card.isFixed"
 							type="button"
 							@click.stop="removeCard(card.id)"
 							class="flex h-7 w-7 items-center justify-center rounded-[6px] bg-red-50 text-red-500 transition hover:bg-red-100"
@@ -414,6 +421,25 @@ const getVideoEmbedUrl = (url) => {
 								Preview video belum didukung untuk tautan ini.<br>
 								Gunakan tautan YouTube yang valid.
 							</div>
+						</div>
+					</div>
+
+					<!-- TASK SUBMISSION CARD (Admin Config) -->
+					<div v-else-if="card.type === 'task_submission'">
+						<label class="block text-[12.5px] font-semibold text-[#183669] mb-1">Judul / Instruksi Pengumpulan Tugas</label>
+						<input
+							type="text"
+							v-model="card.content"
+							placeholder="Contoh: Ikuti Kegiatan Terkait Analisis Kelayakan Finansial..."
+							class="w-full rounded-[8px] border border-[#d6e0ee] bg-white px-3 py-2.5 font-inter text-[13px] text-[#334155] placeholder-[#94a3b8] focus:border-[#183669] focus:ring-1 focus:ring-[#183669] outline-none transition-colors"
+						/>
+						<div class="mt-2 flex items-start gap-2 bg-[#f0f4f9] p-3 rounded-[6px]">
+							<svg class="h-5 w-5 text-[#8ca1b9] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							<p class="font-inter text-[12px] text-[#5a718d] leading-relaxed">
+								Card ini tidak dapat dihapus dan akan memunculkan formulir otomatis (tombol Tambah Kegiatan, form teks, & upload bukti) bagi mahasiswa saat mereka melihat halaman tugas ini.
+							</p>
 						</div>
 					</div>
 				</div>

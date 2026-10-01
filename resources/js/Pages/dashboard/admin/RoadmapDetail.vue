@@ -1,11 +1,12 @@
 <script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import ModalFormMateriTask from '@/Components/dashboard/admin/ModalFormMateriTask.vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import RoadmapCardBuilder from '@/Components/dashboard/admin/RoadmapCardBuilder.vue';
+import RoadmapMaterialNavigation from '@/Components/dashboard/admin/RoadmapMaterialNavigation.vue';
 
 const props = defineProps({
 	roadmapId: {
@@ -200,10 +201,16 @@ const hasCardType = (type) => editCards.value.some((c) => c.type === type);
 
 const isAllCardsAdded = computed(() => availableCardTypes.every(t => hasCardType(t.type)));
 
-const handleAddCard = (type) => {
+const handleAddCard = async (type) => {
 	if (!hasCardType(type)) {
 		editCards.value.push({ id: Date.now().toString(), type, content: '', fileName: '' });
 		showAddCardDropdown.value = false;
+		
+		await nextTick();
+		const mainEl = document.querySelector('main');
+		if (mainEl) {
+			mainEl.scrollTo({ top: mainEl.scrollHeight, behavior: 'smooth' });
+		}
 	}
 };
 
@@ -211,7 +218,16 @@ const handleAddCard = (type) => {
 const initialTopic = ref('');
 const initialCardsString = ref('');
 
-const stripError = (cards) => cards.map(({ hasError, ...c }) => c);
+const stripError = (cards) => {
+	return cards.map(c => ({
+		id: c.id,
+		type: c.type,
+		content: c.content,
+		fileName: c.fileName,
+		isFixed: c.isFixed || false,
+		file: c.file ? { name: c.file.name, size: c.file.size, type: c.file.type, dataUrl: c.file.dataUrl } : null
+	}));
+};
 
 const isModified = computed(() => {
 	if (editTopic.value !== initialTopic.value) return true;
@@ -249,6 +265,23 @@ const syncEditorState = () => {
 			editCards.value = initialCards;
 		}
 
+		// Enforce task_submission card for Tugas
+		if (currentItem.value.type === 'Tugas') {
+			const hasTaskSub = editCards.value.some(c => c.type === 'task_submission');
+			if (!hasTaskSub) {
+				editCards.value.push({
+					id: Date.now() + 'ts',
+					type: 'task_submission',
+					content: `Ikuti Kegiatan Terkait ${currentItem.value.topic || 'Tugas'}`,
+					fileName: '',
+					isFixed: true, // Cannot be deleted
+				});
+			} else {
+				const taskSub = editCards.value.find(c => c.type === 'task_submission');
+				if (taskSub) taskSub.isFixed = true;
+			}
+		}
+
 		initialTopic.value = editTopic.value;
 		initialCardsString.value = JSON.stringify(stripError(editCards.value));
 	} else {
@@ -259,17 +292,19 @@ const syncEditorState = () => {
 	}
 };
 
+const isMobileNavOpen = ref(false);
+
 watch(
 	[activeMonthId, selectedItemId],
 	() => {
 		syncEditorState();
+		isMobileNavOpen.value = false;
 	},
 	{ immediate: true }
 );
 
 // Switch active month
 const selectMonth = (monthId) => {
-	editingItemId.value = null;
 	activeMonthId.value = monthId;
 	const m = months.value.find((item) => item.id === monthId);
 	if (m && m.items.length > 0) {
@@ -282,6 +317,81 @@ const selectMonth = (monthId) => {
 // Switch active item
 const selectItem = (itemId) => {
 	selectedItemId.value = itemId;
+};
+
+// --- Dynamic Top-Right Corner Logic ---
+const tabsContainerRef = ref(null);
+const isTopRightRounded = ref(true);
+let tabsResizeObserver = null;
+
+const checkTopRightCorner = () => {
+	if (!tabsContainerRef.value) return;
+	const container = tabsContainerRef.value;
+	const children = container.children;
+	if (children.length === 0) return;
+	
+	const lastChild = children[children.length - 1];
+	const totalWidth = lastChild.offsetLeft + lastChild.offsetWidth;
+	
+	// If the tabs occupy less width than the container, we have empty space on the right
+	isTopRightRounded.value = totalWidth < container.clientWidth - 5;
+};
+
+onMounted(() => {
+	if (tabsContainerRef.value) {
+		tabsResizeObserver = new ResizeObserver(() => checkTopRightCorner());
+		tabsResizeObserver.observe(tabsContainerRef.value);
+	}
+	setTimeout(() => checkTopRightCorner(), 100);
+});
+
+onUnmounted(() => {
+	if (tabsResizeObserver && tabsContainerRef.value) {
+		tabsResizeObserver.unobserve(tabsContainerRef.value);
+	}
+});
+
+watch(() => months.value.length, () => {
+	nextTick(() => checkTopRightCorner());
+});
+
+// Student Task Activities (Mockup)
+const handleAddActivity = async () => {
+	if (!currentItem.value) return;
+	if (!currentItem.value.activities) {
+		currentItem.value.activities = [];
+	}
+	currentItem.value.activities.push({
+		id: Date.now(),
+		notes: '',
+		fileName: '',
+		expanded: true,
+	});
+	
+	await nextTick();
+	const mainEl = document.querySelector('main');
+	if (mainEl) {
+		mainEl.scrollTo({ top: mainEl.scrollHeight, behavior: 'smooth' });
+	}
+};
+
+const handleRemoveActivity = (index) => {
+	if (currentItem.value && currentItem.value.activities) {
+		currentItem.value.activities.splice(index, 1);
+	}
+};
+
+const handleSubmitActivity = (index) => {
+	showToast('success', 'Berhasil Dikirim', 'Bukti kegiatan berhasil disubmit.');
+};
+
+const getTaskInstructionText = (item) => {
+	if (!item || item.type !== 'Tugas') return '';
+	if (item.cards) {
+		const tCard = item.cards.find(c => c.type === 'task_submission');
+		if (tCard && tCard.content) return tCard.content;
+	}
+	return `Ikuti Kegiatan Terkait ${item.topic || 'Tugas'}`;
 };
 
 // Save Item Content
@@ -300,7 +410,7 @@ const handleSaveItem = () => {
 		let isEmpty = false;
 		if (c.type === 'text') isEmpty = !c.content || c.content.trim() === '' || c.content === '<p></p>';
 		else if (c.type === 'image' || c.type === 'pdf') isEmpty = !c.content;
-		else if (c.type === 'video') isEmpty = !c.content || c.content.trim() === '';
+		else if (c.type === 'video' || c.type === 'task_submission') isEmpty = !c.content || c.content.trim() === '';
 		
 		c.hasError = isEmpty;
 		if (isEmpty) hasEmpty = true;
@@ -331,8 +441,19 @@ const handleCancelEdit = () => {
 	isEditingContent.value = false;
 };
 
-const startEditContent = () => {
+const topicTextareaRef = ref(null);
+
+const adjustTopicTextarea = (e) => {
+	const el = e?.target || topicTextareaRef.value;
+	if (!el) return;
+	el.style.height = 'auto';
+	el.style.height = el.scrollHeight + 'px';
+};
+
+const startEditContent = async () => {
 	isEditingContent.value = true;
+	await nextTick();
+	adjustTopicTextarea();
 };
 
 // Video Embed Helper
@@ -444,7 +565,7 @@ const handleAddMonth = () => {
 				topic: 'Pengantar Modul Baru',
 				file: null,
 				fileName: '',
-				description: 'Masukkan deskripsi dan rangkuman materi di sini...',
+				description: '',
 			},
 		],
 	};
@@ -491,7 +612,6 @@ const executeDeleteMonth = () => {
 const isAddModalOpen = ref(false);
 
 const openAddModal = () => {
-	editingItemId.value = null;
 	isAddModalOpen.value = true;
 };
 
@@ -504,7 +624,7 @@ const handleSaveNewItem = (itemData) => {
 		topic: `Topik ${itemData.title}`,
 		file: null,
 		fileName: '',
-		description: `Tuliskan penjelasan dan rincian mengenai ${itemData.title} di sini...`,
+		description: '',
 	};
 
 	currentMonth.value.items.push(newItem);
@@ -513,43 +633,10 @@ const handleSaveNewItem = (itemData) => {
 	showToast('success', 'Item Ditambahkan', `"${newItem.title}" berhasil ditambahkan ke ${currentMonth.value.name}.`);
 };
 
-// Inline Edit Item Title State
-const editingItemId = ref(null);
-const editingItemTitle = ref('');
-
-const adjustTextareaHeight = (el) => {
-	if (!el) return;
-	el.style.height = 'auto';
-	el.style.height = `${Math.max(el.scrollHeight, 26)}px`;
-};
-
-const startInlineEdit = (item, e) => {
-	e?.stopPropagation();
-	selectedItemId.value = item.id;
-	editingItemId.value = item.id;
-	editingItemTitle.value = item.title;
-	nextTick(() => {
-		const el = document.getElementById(`inline-edit-item-${item.id}`);
-		if (el) {
-			adjustTextareaHeight(el);
-			el.focus();
-			const len = el.value.length;
-			el.setSelectionRange(len, len);
-		}
-	});
-};
-
-const saveInlineItemTitle = (item, e) => {
-	e?.stopPropagation();
-	if (editingItemTitle.value.trim()) {
-		item.title = editingItemTitle.value.trim();
-		showToast('success', 'Judul Diperbarui', `Nama item diubah menjadi "${item.title}".`);
-	}
-	editingItemId.value = null;
-};
-
-const cancelInlineEdit = () => {
-	editingItemId.value = null;
+// Handle Item Title Update from Sidebar
+const updateItemTitle = (item, newTitle) => {
+	item.title = newTitle;
+	showToast('success', 'Judul Diperbarui', `Nama item diubah menjadi "${item.title}".`);
 };
 
 // Delete Item Confirmation
@@ -569,9 +656,7 @@ const confirmDeleteItem = (item, e) => {
 const executeDeleteItem = () => {
 	if (!currentMonth.value || !itemToDelete.value) return;
 	const deletedId = itemToDelete.value.id;
-	if (editingItemId.value === deletedId) {
-		editingItemId.value = null;
-	}
+	
 	currentMonth.value.items = currentMonth.value.items.filter((i) => i.id !== deletedId);
 
 	if (selectedItemId.value === deletedId) {
@@ -586,7 +671,7 @@ const executeDeleteItem = () => {
 	<Head :title="`Detail ${currentRoadmap.title} - Admin`" />
 
 	<AdminLayout>
-		<div class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8 space-y-6 pb-20">
+		<div class="flex flex-col gap-6 min-h-[calc(100vh-80px)] mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8 pb-24 sm:pb-20">
 			<!-- Top Breadcrumb -->
 			<nav class="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#183669]">
 				<Link href="/admin/roadmap" class="hover:underline text-[#183669] transition-colors">
@@ -606,10 +691,13 @@ const executeDeleteItem = () => {
 				</p>
 			</div>
 
-			<!-- Main Roadmap Folder Structure (Identical to Dashboard_admin_roadmap_preview.png) -->
 			<div class="mt-6 w-full max-w-full overflow-hidden">
 				<!-- Folder Header Tabs Row (Seamless 0 gap between tabs and + button, horizontal scroll for many tabs) -->
-				<div class="flex items-end select-none relative z-10 -mb-[1px] overflow-x-auto scrollbar-hide w-full" style="scrollbar-width: none; -ms-overflow-style: none;">
+				<div 
+					ref="tabsContainerRef"
+					class="flex items-end select-none relative z-10 -mb-[1px] overflow-x-auto scrollbar-hide w-full" 
+					style="scrollbar-width: none; -ms-overflow-style: none;"
+				>
 					<!-- Month Tab Buttons -->
 					<button
 						v-for="(m, index) in months"
@@ -661,24 +749,29 @@ const executeDeleteItem = () => {
 					</button>
 				</div>
 
-				<!-- Main White Card Body (Top corners flat/square so it connects seamlessly into tabs; bottom corners 10px rounded) -->
+				<!-- Main White Card Body (Top right corner dynamic; bottom corners 10px rounded) -->
 				<div
-					:style="{ borderBottomLeftRadius: '10px', borderBottomRightRadius: '10px', borderTopLeftRadius: '0px', borderTopRightRadius: '0px' }"
-					class="rounded-b-[10px] rounded-t-none border border-[#d6e0ee] bg-white p-5 sm:p-7 lg:p-9 shadow-xs font-poppins relative z-0"
+					:class="[
+						'border border-[#d6e0ee] bg-white p-5 sm:p-7 lg:p-9 shadow-xs font-poppins relative z-0 min-h-[400px]',
+						isTopRightRounded ? 'rounded-tr-[10px]' : 'rounded-tr-none',
+						'rounded-b-[10px] rounded-tl-none'
+					]"
 				>
-					<div class="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+					<div class="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
 						
 						<!-- ================= LEFT COLUMN: CONTENT & MEDIA (70%) ================= -->
-						<div class="w-full lg:w-[68%] xl:w-[70%] space-y-5">
+						<div class="w-full md:w-[62%] lg:w-[68%] xl:w-[70%] space-y-5">
 							
 							<!-- READ-ONLY VIEW -->
 							<template v-if="!isEditingContent">
 								<!-- Title & Edit Button -->
-								<div class="flex items-center gap-4">
-									<h2 class="flex-1 font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight">
+								<div class="flex items-start gap-4">
+									<h2 class="flex-1 min-w-0 font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight break-words">
 										{{ currentItem?.topic || 'Belum ada topik' }}
 									</h2>
-									<EditButtonTable @click="startEditContent" label="Edit Konten" />
+									<div class="shrink-0 pt-1">
+										<EditButtonTable @click="startEditContent" label="Edit Konten" />
+									</div>
 								</div>
 
 								<!-- Media & Content Display (Read Only) -->
@@ -725,7 +818,7 @@ const executeDeleteItem = () => {
 								</div>
 								
 								<!-- Fallback Legacy Display (If Not Saved As Cards Yet) -->
-								<div v-else>
+								<div v-else-if="currentItem?.description || currentItem?.file">
 									<!-- Media Display -->
 									<div v-if="currentItem?.file" class="w-full rounded-[10px] overflow-hidden mt-6">
 										<img 
@@ -746,23 +839,102 @@ const executeDeleteItem = () => {
 										{{ currentItem?.description }}
 									</div>
 								</div>
+								
+								<!-- Empty State Guide -->
+								<div v-else class="mt-8 flex flex-col items-center justify-center p-10 bg-[#f8fafc] border-2 border-dashed border-[#d6e0ee] rounded-[10px] text-center">
+									<h3 class="font-poppins text-[16px] sm:text-[18px] font-bold text-[#17334F] mb-2">Konten Materi Kosong</h3>
+									<p class="font-inter text-[13px] sm:text-[14px] text-[#64748b] max-w-sm mx-auto leading-relaxed">
+										Silakan klik tombol <strong class="text-[#183669] font-bold">Edit Konten</strong> di atas untuk mulai menambahkan teks, gambar, video YouTube, atau PDF.
+									</p>
+								</div>
+								
+								<!-- Task Activities Submission UI (Only for Tugas) -->
+								<div v-if="currentItem?.type === 'Tugas'" class="mt-8 border-t border-[#d6e0ee] pt-6">
+									<div class="flex items-center justify-between mb-5">
+										<h3 class="font-poppins text-lg font-bold text-[#17334F]">{{ getTaskInstructionText(currentItem) }}</h3>
+										<button @click="handleAddActivity" type="button" class="rounded-[6px] bg-[#183669] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#122b54] active:scale-95 transition shadow-sm">
+											Tambah
+										</button>
+									</div>
+									
+									<div class="flex flex-col gap-4">
+										<div v-for="(activity, index) in (currentItem.activities || [])" :key="activity.id" class="rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-sm">
+											<!-- Card Header -->
+											<div class="flex items-center justify-between bg-[#fafcff] px-5 py-3.5 border-b border-[#d6e0ee] cursor-pointer hover:bg-[#f4f7fb] transition" @click="activity.expanded = !activity.expanded">
+												<h4 class="font-poppins text-[15px] font-bold text-[#17334F]">Kegiatan {{ index + 1 }}</h4>
+												<svg class="h-5 w-5 text-[#17334F] transition-transform" :class="{'rotate-180': !activity.expanded}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+												</svg>
+											</div>
+											
+											<!-- Card Body -->
+											<div v-show="activity.expanded" class="p-5 flex flex-col gap-4 bg-white">
+												<p class="font-inter text-[13px] text-[#334155] leading-relaxed">
+													Masukkan bukti dan output yang kamu dapatkan dari kegiatan ini dalam bentuk PDF atau ketikkan pada kolom dibawah ini
+												</p>
+												
+												<textarea
+													v-model="activity.notes"
+													rows="4"
+													placeholder="Ketikkan apa yang kamu dapatkan disini:"
+													class="w-full rounded-[8px] border border-[#d6e0ee] bg-white p-3 font-inter text-[13px] text-[#334155] placeholder-[#94a3b8] focus:border-[#183669] focus:ring-1 focus:ring-[#183669] outline-none transition-colors resize-y"
+												></textarea>
+												
+												<div class="mt-2 flex flex-col gap-3">
+													<p class="font-inter text-[12px] text-[#64748b]">
+														Kamu juga bisa upload bukti atau rangkuman kegiatan yang disertai dokumentasi pada kolom dibawah ini
+													</p>
+													<div class="flex items-center gap-3 bg-[#fafcff] p-3 rounded-[8px] border border-dashed border-[#d6e0ee]">
+														<button type="button" class="shrink-0 rounded-[6px] bg-[#183669] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#122b54] transition shadow-sm">
+															Pilih File
+														</button>
+														<span class="font-inter text-[12px] text-[#64748b] truncate">
+															{{ activity.fileName || 'No File Chosen' }}
+														</span>
+													</div>
+												</div>
+												
+												<!-- Actions -->
+												<div class="mt-2 flex items-center justify-end gap-3 pt-4 border-t border-[#f1f5f9]">
+													<button type="button" @click="handleRemoveActivity(index)" class="flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#ff6b6b] text-white hover:bg-[#fa5252] transition shadow-sm" title="Hapus Kegiatan">
+														<svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+													</button>
+													<button type="button" @click="handleSubmitActivity(index)" class="rounded-[6px] bg-[#183669] px-7 py-2.5 text-[13px] font-bold text-white hover:bg-[#122b54] active:scale-95 transition shadow-sm">
+														Kirim
+													</button>
+												</div>
+											</div>
+										</div>
+										
+										<!-- Empty State for Activities -->
+										<div v-if="!currentItem.activities || currentItem.activities.length === 0" class="flex flex-col items-center justify-center p-8 bg-[#fafcff] border border-dashed border-[#d6e0ee] rounded-[10px]">
+											<p class="font-inter text-[13px] text-[#64748b] text-center">Belum ada kegiatan yang ditambahkan. Klik <strong class="text-[#183669]">Tambah</strong> untuk mulai.</p>
+										</div>
+									</div>
+								</div>
 							</template>
 
 							<!-- EDIT MODE -->
 							<template v-else>
 								<!-- 1. Topic Title Field -->
-								<div class="flex items-center gap-3 relative">
+								<div class="flex items-start gap-3 relative">
 									<!-- Editable Dashed Input Box -->
 									<div
 										:style="{ borderRadius: '10px' }"
-										class="flex-1 rounded-[10px] border-2 border-dashed border-[#183669] bg-white px-4 py-2.5 transition-colors focus-within:bg-[#fafcff]"
+										class="flex-1 flex items-start gap-2 rounded-[10px] border-2 border-dashed border-[#183669] bg-white pl-4 pr-3 py-2.5 transition-colors focus-within:bg-[#fafcff]"
 									>
-										<input
+										<textarea
+											ref="topicTextareaRef"
 											v-model="editTopic"
-											type="text"
+											rows="1"
+											maxlength="150"
 											placeholder="Cara Mendapatkan Return Usaha 100% dalam 1 Bulan"
-											class="w-full border-none bg-transparent p-0 font-poppins text-[15px] sm:text-[16px] font-bold text-[#183669] placeholder-[#94a3b8] focus:outline-none focus:ring-0"
-										/>
+											@input="adjustTopicTextarea"
+											class="w-full border-none bg-transparent p-0 font-poppins text-[15px] sm:text-[16px] font-bold text-[#183669] placeholder-[#94a3b8] focus:outline-none focus:ring-0 resize-none overflow-hidden leading-[1.4]"
+										></textarea>
+										<span class="text-[10px] sm:text-[11px] font-semibold text-[#8ca1b9] shrink-0 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 mt-0.5">
+											{{ editTopic.length }}/150
+										</span>
 									</div>
 
 									<!-- Add Card Dropdown Button -->
@@ -847,136 +1019,100 @@ const executeDeleteItem = () => {
 							</template>
 						</div>
 
-						<!-- ================= RIGHT COLUMN: MATERI & TUGAS LIST (30%) ================= -->
-						<div class="w-full lg:w-[32%] xl:w-[30%] space-y-3">
-							
-							<!-- List of Items in Active Month -->
-							<div class="space-y-2.5">
-								<div
-									v-for="item in currentMonth?.items || []"
-									:key="item.id"
-									@click="selectItem(item.id)"
-									:style="{ borderRadius: '10px' }"
-									:class="[
-										'group flex items-center justify-between rounded-[10px] p-2.5 px-3 transition-colors cursor-pointer select-none',
-										selectedItemId === item.id
-											? 'bg-[#183669] text-white shadow-xs'
-											: 'bg-white text-[#183669] border border-[#d6e0ee] hover:border-[#183669] shadow-xs'
-									]"
-								>
-									<!-- Left Title Block (default 1 line, expands up to 2 lines) -->
-									<div class="flex-1 min-w-0 py-0.5 px-1 mr-1">
-										<!-- Inline Edit Mode (dashed border field with transparent background) -->
-										<template v-if="editingItemId === item.id">
-											<textarea
-												:id="`inline-edit-item-${item.id}`"
-												v-model="editingItemTitle"
-												rows="1"
-												spellcheck="false"
-												autocomplete="off"
-												@input="adjustTextareaHeight($event.target)"
-												@click.stop
-												@keydown.enter.exact.prevent="saveInlineItemTitle(item, $event)"
-												@keydown.esc="cancelInlineEdit"
-												:style="{
-													wordBreak: 'break-word',
-													overflowWrap: 'anywhere'
-												}"
-												:class="[
-													'w-full resize-none rounded-[6px] border border-dashed bg-transparent px-2 py-0 font-poppins text-[13.5px] sm:text-[14px] font-bold leading-[24px] focus:outline-none focus:ring-0 transition-none block overflow-hidden',
-													selectedItemId === item.id
-														? 'border-white text-white placeholder-white/60 focus:border-white'
-														: 'border-[#183669] text-[#183669] placeholder-[#183669]/60 focus:border-[#183669]'
-												]"
-												placeholder="Nama materi/tugas..."
-											></textarea>
-										</template>
-
-										<!-- Normal Display Mode (1 line default, max 2 lines with ...) -->
-										<template v-else>
-											<span
-												:class="[
-													'font-poppins text-[13.5px] sm:text-[14px] font-bold leading-[26px] line-clamp-2 block px-2',
-													selectedItemId === item.id ? 'text-white' : 'text-[#183669]'
-												]"
-												:style="{
-													display: '-webkit-box',
-													WebkitLineClamp: 2,
-													WebkitBoxOrient: 'vertical',
-													overflow: 'hidden',
-													textOverflow: 'ellipsis',
-													wordBreak: 'break-word',
-													overflowWrap: 'anywhere'
-												}"
-												:title="item.title"
-											>
-												{{ item.title }}
-											</span>
-										</template>
-									</div>
-
-									<!-- Right Action Buttons (Edit/Submit & Delete) -->
-									<div class="flex items-center gap-1.5 shrink-0" @click.stop>
-										<!-- Submit Button when in Edit Mode -->
-										<button
-											v-if="editingItemId === item.id"
-											type="button"
-											@click="saveInlineItemTitle(item, $event)"
-											:class="[
-												'flex h-7 w-7 items-center justify-center rounded-[6px] transition hover:opacity-90 active:scale-95 focus:outline-none cursor-pointer shadow-xs',
-												selectedItemId === item.id
-													? 'bg-emerald-500 text-white hover:bg-emerald-600'
-													: 'bg-emerald-600 text-white hover:bg-emerald-700'
-											]"
-											:title="`Simpan perubahan ${item.title}`"
-										>
-											<svg class="h-4 w-4 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-											</svg>
-										</button>
-
-										<!-- Edit Button when Normal -->
-										<button
-											v-else
-											type="button"
-											@click="startInlineEdit(item, $event)"
-											class="flex h-7 w-7 items-center justify-center rounded-[6px] transition hover:opacity-85 active:scale-95 focus:outline-none cursor-pointer bg-[#ffd56a] text-[#f4a300]"
-											:title="`Edit ${item.title}`"
-										>
-											<img src="/assets/icons/edit.svg" alt="Edit" class="h-4 w-4 object-contain" />
-										</button>
-
-										<!-- Delete Item Button -->
-										<button
-											type="button"
-											@click="confirmDeleteItem(item, $event)"
-											class="flex h-7 w-7 items-center justify-center rounded-[6px] transition hover:opacity-85 active:scale-95 focus:outline-none cursor-pointer bg-[#ff9ca1] text-[#ff2f35]"
-											:title="`Hapus ${item.title}`"
-										>
-											<img src="/assets/icons/delete.svg" alt="Delete" class="h-4 w-4 object-contain" />
-										</button>
-									</div>
-								</div>
-							</div>
-
-							<!-- Add New Item Card Button [+] -->
-							<button
-								type="button"
-								@click="openAddModal"
-								:style="{ borderRadius: '10px' }"
-								class="flex w-full items-center justify-center rounded-[10px] border border-[#d6e0ee] bg-white py-3.5 text-[#183669] shadow-xs transition hover:border-[#183669] hover:bg-slate-50 active:scale-98 focus:outline-none cursor-pointer"
-								title="Tambah Materi / Tugas"
-							>
-								<svg class="h-6 w-6 text-[#183669] stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-								</svg>
-							</button>
+						<!-- ================= RIGHT COLUMN: MATERI & TUGAS LIST (30%) (DESKTOP / TABLET) ================= -->
+						<div class="hidden md:block w-full md:w-[38%] lg:w-[32%] xl:w-[30%] space-y-3">
+							<RoadmapMaterialNavigation
+								:items="currentMonth?.items || []"
+								v-model:selectedItemId="selectedItemId"
+								@update-item-title="updateItemTitle"
+								@delete-item="confirmDeleteItem"
+								@add-item="openAddModal"
+							/>
 						</div>
 
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<!-- ================= MOBILE BOTTOM NAVIGATION BAR ================= -->
+		<div 
+			v-if="currentMonth" 
+			class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-[#d6e0ee] shadow-[0_-8px_20px_-3px_rgba(0,0,0,0.08)] p-3 px-4 flex items-center justify-between"
+		>
+			<div class="flex flex-col mr-3 flex-1 min-w-0">
+				<span class="text-[10px] font-bold text-[#8ca1b9] uppercase tracking-wider mb-0.5">Materi Saat Ini</span>
+				<span class="text-[13px] font-extrabold text-[#17334F] line-clamp-1 truncate">{{ currentItem?.title || 'Belum ada' }}</span>
+			</div>
+			<button
+				type="button"
+				@click="isMobileNavOpen = true"
+				class="flex shrink-0 items-center gap-2 bg-[#183669] text-white px-5 py-2.5 rounded-full text-[12px] font-bold active:scale-95 transition hover:bg-[#122b54] cursor-pointer shadow-sm"
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+				</svg>
+				Daftar Materi
+			</button>
+		</div>
+
+		<!-- ================= MODAL: MOBILE NAVIGATION DRAWER ================= -->
+		<Teleport to="body">
+			<!-- Overlay with identical animation and background as SidebarAdmin -->
+			<Transition
+				enter-active-class="ease-out duration-300"
+				enter-from-class="opacity-0"
+				enter-to-class="opacity-100"
+				leave-active-class="ease-in duration-200"
+				leave-from-class="opacity-100"
+				leave-to-class="opacity-0"
+			>
+				<div
+					v-if="isMobileNavOpen"
+					class="fixed inset-0 z-[60] bg-[#102653]/35 backdrop-blur-xs cursor-pointer md:hidden"
+					aria-hidden="true"
+					@click="isMobileNavOpen = false"
+				></div>
+			</Transition>
+
+			<!-- Drawer Panel sliding from right -->
+			<Transition
+				enter-active-class="transform transition ease-out duration-300"
+				enter-from-class="translate-x-full"
+				enter-to-class="translate-x-0"
+				leave-active-class="transform transition ease-in duration-200"
+				leave-from-class="translate-x-0"
+				leave-to-class="translate-x-full"
+			>
+				<div
+					v-if="isMobileNavOpen"
+					class="fixed top-0 right-0 z-[61] h-full w-[85%] max-w-[360px] bg-white shadow-2xl flex flex-col md:hidden font-poppins"
+				>
+					<!-- Drawer Header -->
+					<div class="flex items-center justify-between p-5 bg-white border-b border-[#d6e0ee] shrink-0">
+						<div>
+							<h3 class="font-extrabold text-[#17334F] text-[18px]">Daftar Materi</h3>
+							<p class="text-[12px] text-[#64748b] mt-0.5">Navigasi bulan ini</p>
+						</div>
+						<button @click="isMobileNavOpen = false" class="p-2 rounded-[8px] hover:bg-slate-100 text-[#64748b] transition active:bg-slate-200">
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+					<!-- Drawer Body -->
+					<div class="flex-1 overflow-y-auto p-5 pb-20 bg-[#f8fafc]">
+						<RoadmapMaterialNavigation
+							:items="currentMonth?.items || []"
+							v-model:selectedItemId="selectedItemId"
+							@update-item-title="updateItemTitle"
+							@delete-item="confirmDeleteItem"
+							@add-item="openAddModal"
+						/>
+					</div>
+				</div>
+			</Transition>
+		</Teleport>
 
 		<!-- ================= MODAL: TAMBAH MATERI / TASK ================= -->
 		<ModalFormMateriTask
@@ -988,84 +1124,102 @@ const executeDeleteItem = () => {
 
 		<!-- ================= MODAL: DELETE MONTH CONFIRMATION ================= -->
 		<Teleport to="body">
-			<div
-				v-if="isDeleteMonthModalOpen"
-				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs"
-				@click.self="isDeleteMonthModalOpen = false"
+			<Transition
+				enter-active-class="transition duration-200 ease-out"
+				enter-from-class="opacity-0"
+				enter-to-class="opacity-100"
+				leave-active-class="transition duration-150 ease-in"
+				leave-from-class="opacity-100"
+				leave-to-class="opacity-0"
 			>
-				<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
-					<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
-						<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-						</svg>
-					</div>
+				<div
+					v-if="isDeleteMonthModalOpen"
+					class="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs"
+					@click.self="isDeleteMonthModalOpen = false"
+				>
+					<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
+						<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
+							<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+							</svg>
+						</div>
 
-					<h3 class="text-lg font-bold text-[#17334F]">
-						Hapus {{ monthToDelete?.name }}?
-					</h3>
-					<p class="mt-2 font-inter text-sm text-[#64748b]">
-						Semua materi dan tugas di dalam tab <span class="font-bold text-[#17334F]">"{{ monthToDelete?.name }}"</span> akan ikut terhapus.
-					</p>
+						<h3 class="text-lg font-bold text-[#17334F]">
+							Hapus {{ monthToDelete?.name }}?
+						</h3>
+						<p class="mt-2 font-inter text-sm text-[#64748b]">
+							Semua materi dan tugas di dalam tab <span class="font-bold text-[#17334F]">"{{ monthToDelete?.name }}"</span> akan ikut terhapus.
+						</p>
 
-					<div class="mt-6 flex items-center justify-center gap-3">
-						<button
-							type="button"
-							@click="isDeleteMonthModalOpen = false"
-							class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition"
-						>
-							Batal
-						</button>
-						<button
-							type="button"
-							@click="executeDeleteMonth"
-							class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shadow-sm"
-						>
-							Hapus Bulan
-						</button>
+						<div class="mt-6 flex items-center justify-center gap-3">
+							<button
+								type="button"
+								@click="isDeleteMonthModalOpen = false"
+								class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition cursor-pointer"
+							>
+								Batal
+							</button>
+							<button
+								type="button"
+								@click="executeDeleteMonth"
+								class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shadow-sm cursor-pointer"
+							>
+								Hapus Bulan
+							</button>
+						</div>
 					</div>
 				</div>
-			</div>
+			</Transition>
 		</Teleport>
 
 		<!-- ================= MODAL: DELETE ITEM CONFIRMATION ================= -->
 		<Teleport to="body">
-			<div
-				v-if="isDeleteItemModalOpen"
-				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs"
-				@click.self="isDeleteItemModalOpen = false"
+			<Transition
+				enter-active-class="transition duration-200 ease-out"
+				enter-from-class="opacity-0"
+				enter-to-class="opacity-100"
+				leave-active-class="transition duration-150 ease-in"
+				leave-from-class="opacity-100"
+				leave-to-class="opacity-0"
 			>
-				<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
-					<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
-						<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-						</svg>
-					</div>
+				<div
+					v-if="isDeleteItemModalOpen"
+					class="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 backdrop-blur-xs"
+					@click.self="isDeleteItemModalOpen = false"
+				>
+					<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl text-center font-poppins">
+						<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 mb-4">
+							<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+							</svg>
+						</div>
 
-					<h3 class="text-lg font-bold text-[#17334F]">
-						Hapus {{ itemToDelete?.title }}?
-					</h3>
-					<p class="mt-2 font-inter text-sm text-[#64748b]">
-						Apakah Anda yakin ingin menghapus <span class="font-bold text-[#17334F]">"{{ itemToDelete?.title }}"</span>? Tindakan ini tidak dapat dibatalkan.
-					</p>
+						<h3 class="text-lg font-bold text-[#17334F]">
+							Hapus {{ itemToDelete?.title }}?
+						</h3>
+						<p class="mt-2 font-inter text-sm text-[#64748b]">
+							Apakah Anda yakin ingin menghapus <span class="font-bold text-[#17334F]">"{{ itemToDelete?.title }}"</span>? Tindakan ini tidak dapat dibatalkan.
+						</p>
 
-					<div class="mt-6 flex items-center justify-center gap-3">
-						<button
-							type="button"
-							@click="isDeleteItemModalOpen = false"
-							class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition"
-						>
-							Batal
-						</button>
-						<button
-							type="button"
-							@click="executeDeleteItem"
-							class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shadow-sm"
-						>
-							Hapus Item
-						</button>
+						<div class="mt-6 flex items-center justify-center gap-3">
+							<button
+								type="button"
+								@click="isDeleteItemModalOpen = false"
+								class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition cursor-pointer"
+							>
+								Batal
+							</button>
+							<button
+								type="button"
+								@click="executeDeleteItem"
+								class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shadow-sm cursor-pointer"
+							>
+								Hapus Item
+							</button>
+						</div>
 					</div>
 				</div>
-			</div>
+			</Transition>
 		</Teleport>
 
 		<!-- Toast Notification -->

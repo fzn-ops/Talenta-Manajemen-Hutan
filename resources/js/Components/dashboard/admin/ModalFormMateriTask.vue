@@ -93,7 +93,7 @@ const handleSubmit = () => {
 		>
 			<div
 				v-if="show"
-				class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 p-4 backdrop-blur-xs font-poppins"
+				class="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 p-4 backdrop-blur-xs font-poppins"
 				@click.self="handleClose"
 			>
 				<!-- Modal Container -->
@@ -188,15 +188,23 @@ const handleSubmit = () => {
 
 						<!-- 2. Nama Materi/Task Field -->
 						<div>
-							<label class="block text-[13px] font-bold text-[#17334F]">
-								Nama Materi/Task<span class="text-red-500">*</span>
-							</label>
-							<p class="font-inter text-[11px] text-[#7188a3] mt-0.5">
-								Masukkan Nama Materi atau Tugas
-							</p>
+							<div class="flex items-end justify-between">
+								<div>
+									<label class="block text-[13px] font-bold text-[#17334F]">
+										Nama Materi/Task<span class="text-red-500">*</span>
+									</label>
+									<p class="font-inter text-[11px] text-[#7188a3] mt-0.5">
+										Masukkan Nama Materi atau Tugas
+									</p>
+								</div>
+								<span class="text-[11px] font-semibold text-[#8ca1b9] pb-0.5">
+									{{ form.title.length }}/50
+								</span>
+							</div>
 							<input
 								v-model="form.title"
 								type="text"
+								maxlength="50"
 								placeholder="Cara mendapatkan uang saku"
 								@input="errors.title = ''"
 								class="mt-1.5 h-[46px] w-full rounded-[10px] border bg-white px-4 font-inter text-[13.5px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"

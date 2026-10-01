@@ -105,7 +105,7 @@ const config = computed(() => {
 		>
 			<div
 				v-if="show"
-				class="pointer-events-none fixed top-4 inset-x-4 z-50 flex flex-col items-center sm:inset-x-auto sm:top-5 sm:right-5 sm:w-full sm:max-w-sm sm:items-end font-poppins"
+				class="pointer-events-none fixed top-4 inset-x-4 z-[100] flex flex-col items-center sm:inset-x-auto sm:top-5 sm:right-5 sm:w-full sm:max-w-sm sm:items-end font-poppins"
 			>
 				<div
 					:class="[

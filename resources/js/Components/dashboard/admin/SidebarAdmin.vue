@@ -104,7 +104,7 @@ const isParentActive = (item) => {
 				collapsed ? '-translate-x-full pointer-events-none' : 'translate-x-0 pointer-events-auto'
 			]
 			: [
-				'h-full self-stretch overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] flex shrink-0',
+				'h-full self-stretch overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] flex shrink-0 relative z-20',
 				collapsed ? 'w-[80px]' : 'w-[275px]'
 			]
 	]">
