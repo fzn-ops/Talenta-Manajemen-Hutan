@@ -221,7 +221,7 @@ const handleReject = (reason) => {
                 </tr>
               </thead>
               
-              <tbody class="divide-y divide-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
+              <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in processedKegiatan" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
                   <td class="px-3 py-2.5 text-center">{{ index + 1 }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>

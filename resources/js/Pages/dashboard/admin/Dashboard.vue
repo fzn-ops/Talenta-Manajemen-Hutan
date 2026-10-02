@@ -549,7 +549,7 @@ const sortedHasil = computed(() => {
 								</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
+						<tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedPengajuan"
 								:key="`pengajuan-${item.id}-${idx}`"
@@ -681,7 +681,7 @@ const sortedHasil = computed(() => {
 								</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
+						<tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedPendaftaran"
 								:key="`pendaftaran-${item.id}-${idx}`"
@@ -773,7 +773,7 @@ const sortedHasil = computed(() => {
 								</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
+						<tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedHasil"
 								:key="`hasil-${item.id}-${idx}`"
