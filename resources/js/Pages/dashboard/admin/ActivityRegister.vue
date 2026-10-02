@@ -9,6 +9,7 @@ import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import RejectModal from '@/Components/dashboard/RejectModal.vue';
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
+import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 
 // 10 Data Dummy Sesuai Gambar
 const kegiatan = ref([
@@ -219,9 +220,7 @@ const handleReject = (reason) => {
                   <div class="flex items-center justify-center gap-2">
                     <AcceptButton @click="handleApprove(item)" />
                     <RejectButton @click="openReject(item)" />
-                    <button @click="openDetail(item)" title="Lihat Detail" class="flex h-7 w-7 items-center justify-center rounded-md bg-[#60a5fa] text-white hover:bg-[#3b82f6] transition hover:scale-105 shadow-sm">
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                    </button>
+                    <PreviewButtonTable @click="openDetail(item)" />
                   </div>
                 </td>
               </tr>
