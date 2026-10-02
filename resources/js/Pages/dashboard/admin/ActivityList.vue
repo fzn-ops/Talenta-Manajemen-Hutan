@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Head } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
@@ -12,13 +12,16 @@ import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 // Data Dummy (Deadline diubah ke YYYY-MM-DD agar mudah difilter dengan kalender)
 const aktivitasData = ref([
-  { id: 1, judul: 'Pelatihan Kepemimpinan Dasar', kategori: ['Profesional', 'Bisnis'], deadline: '2029-07-10', gambar: ['123.jpg', '234.jpg', '456.jpg'], deskripsi: 'Deskripsi kegiatan...' },
+  { id: 1, judul: 'Pelatihan Kepemimpinan Dasar', kategori: ['Profesional', 'Bisnis', 'Akademisi', 'Birokrat'], deadline: '2029-07-10', gambar: ['123.jpg', '234.jpg', '456.jpg'], deskripsi: 'Deskripsi kegiatan...' },
   { id: 2, judul: 'Seminar Nasional Akademisi', kategori: ['Akademisi', 'Birokrat'], deadline: '2029-08-15', gambar: ['123.jpg', '234.jpg'], deskripsi: 'Deskripsi kegiatan...' },
   { id: 3, judul: 'Workshop Bisnis Digital', kategori: ['Bisnis'], deadline: '2029-07-10', gambar: ['123.jpg'], deskripsi: 'Deskripsi kegiatan...' },
 ]);
 
 const searchQuery = ref('');
 const showFilter = ref(false);
+
+const sortColumn = ref('id');
+const sortDirection = ref('asc');
 
 // State untuk Filter Kategori & Waktu
 const filters = ref({
@@ -64,6 +67,18 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('id-ID', options);
 };
 
+// ==============================
+// FUNGSI SORTING & FILTERING
+// ==============================
+const handleSort = (column) => {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
+  }
+};
+
 // Filter Data (Pencarian, Kategori, dan Waktu)
 const processedData = computed(() => {
   let data = [...aktivitasData.value];
@@ -86,8 +101,46 @@ const processedData = computed(() => {
     data = data.filter(item => item.deadline === filters.value.waktu);
   }
 
+  // 4. Sorting
+  if (sortColumn.value) {
+    data.sort((a, b) => {
+      let valA = a[sortColumn.value];
+      let valB = b[sortColumn.value];
+
+      if (Array.isArray(valA)) valA = valA.join(', ');
+      if (Array.isArray(valB)) valB = valB.join(', ');
+
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+
+      if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
   return data;
 });
+
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+
+onMounted(() => {
+  if (window.innerWidth < 768) {
+    rowsPerPage.value = 5;
+  }
+});
+
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * rowsPerPage.value;
+  return processedData.value.slice(start, start + rowsPerPage.value);
+});
+
+const totalPages = computed(() => Math.ceil(processedData.value.length / rowsPerPage.value) || 1);
+
+watch([searchQuery, filters, rowsPerPage], () => {
+  currentPage.value = 1;
+}, { deep: true });
 
 // Reset Filter
 const resetFilters = () => {
@@ -114,15 +167,15 @@ const confirmDelete = (item) => {
 };
 
 const openImage = (gambar) => {
-  // Antisipasi jika yg di-klik adalah objek file asli yg punya .url
   if (typeof gambar === 'object' && gambar.url) {
     selectedImage.value = gambar.url;
+  } else if (typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
+    selectedImage.value = gambar;
   } else {
     selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
   }
   showImageModal.value = true;
 };
-
 
 // ==========================================
 // LOGIC UPLOAD GAMBAR FISIK DARI PERANGKAT
@@ -139,12 +192,10 @@ const handleFileUpload = (event) => {
   const files = Array.from(event.target.files);
   if (!files.length) return;
 
-  // Hitung sisa slot
   const sisaSlot = 3 - form.value.gambar.length;
   const filesToAdd = files.slice(0, sisaSlot);
 
   filesToAdd.forEach(file => {
-    // Cek batas maksimal ukuran 10MB
     if (file.size > 10 * 1024 * 1024) {
       showToast(`File ${file.name} terlalu besar! Maksimal 10MB.`, 'error');
       return;
@@ -153,19 +204,17 @@ const handleFileUpload = (event) => {
     const previewUrl = URL.createObjectURL(file);
 
     form.value.gambar.push({
-      file: file,       // Ini yang bakal dikirim ke API/Inertia
-      url: previewUrl,  // URL preview sementara
-      isNew: true       // Tandai sbg file baru dari perangkat
+      file: file,
+      url: previewUrl,
+      isNew: true
     });
   });
 
-  // Reset input agar bisa pilih file yang sama lagi kalau dihapus
   event.target.value = '';
 };
 
 const removeImage = (index) => {
   const removed = form.value.gambar.splice(index, 1)[0];
-  // Bersihkan memory browser jika yg dihapus adalah file preview baru
   if (removed && removed.isNew) {
     URL.revokeObjectURL(removed.url); 
   }
@@ -173,16 +222,13 @@ const removeImage = (index) => {
 
 const getImageSrc = (gbr) => {
   if (typeof gbr === 'object' && gbr.url) {
-    return gbr.url; // Gambar baru hasil upload dari perangkat
+    return gbr.url;
   }
-  return `https://picsum.photos/seed/${gbr}/200/200`; // Gambar dummy database
+  return `https://picsum.photos/seed/${gbr}/200/200`;
 };
-// ==========================================
-
 
 // Aksi Submit
 const handleSave = () => {
-  // Catatan: Karena ada upload file, pastikan nanti pakai Inertia.post/put dengan format FormData
   showFormModal.value = false;
   showToast(isEditing.value ? 'Aktivitas berhasil diperbarui!' : 'Aktivitas berhasil ditambahkan!', 'success');
 };
@@ -197,111 +243,249 @@ const handleDelete = () => {
   <Head title="List Aktivitas"/>
 
   <AdminLayout>
-    <div class="p-8 font-sans bg-[#f9fafb] min-h-screen relative overflow-hidden">
-      
-      <!-- TOAST NOTIFICATION -->
-      <Transition enter-active-class="transition-all transform duration-500 ease-out" enter-from-class="translate-x-12 opacity-0" enter-to-class="translate-x-0 opacity-100" leave-active-class="transition-all transform duration-300 ease-in" leave-from-class="translate-x-0 opacity-100" leave-to-class="translate-x-12 opacity-0">
-        <div v-if="toast.show" class="fixed top-8 right-8 z-[100]">
-          <ToastNotification :message="toast.message" :show="true" :type="toast.type" @close="toast.show = false"/>
-        </div>
-      </Transition>
+    <section class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8">
+      <div class="space-y-6">
+        
+        <!-- TOAST NOTIFICATION -->
+        <Transition enter-active-class="transition-all transform duration-500 ease-out" enter-from-class="translate-x-12 opacity-0" enter-to-class="translate-x-0 opacity-100" leave-active-class="transition-all transform duration-300 ease-in" leave-from-class="translate-x-0 opacity-100" leave-to-class="translate-x-12 opacity-0">
+          <div v-if="toast.show" class="fixed top-8 right-8 z-[100]">
+            <ToastNotification :message="toast.message" :show="true" :type="toast.type" @close="toast.show = false"/>
+          </div>
+        </Transition>
 
-      <div class="mb-6">
-        <h1 class="text-3xl font-extrabold text-[#1a2b4c]">List Aktivitas</h1>
-        <p class="text-sm text-gray-500 mt-1">Lihat seberapa banyak mahasiswa yang mengikuti aktivitas Talenta!</p>
-      </div>
-
-      <!-- TOP BAR -->
-      <div class="mb-4 flex items-center gap-3 w-full relative">
-        <div class="flex-1 w-full flex">
-          <SearchBarTable class="w-full flex-1" placeholder="Cari Aktivitas disini" v-model="searchQuery"/>
+        <div class="space-y-1.5">
+          <h1 class="mt-1 text-[34px] font-bold leading-[1.02] tracking-[-0.03em] text-[#17334F] sm:text-[42px] lg:text-[48px]">List Aktivitas</h1>
+          <p class="mt-1.5 font-inter text-[14px] font-medium leading-tight text-[#4d6786] sm:text-[16px]">Lihat seberapa banyak mahasiswa yang mengikuti aktivitas Talenta!</p>
         </div>
 
-        <!-- Filter Dropdown Container -->
-        <div class="relative">
-          <button @click="showFilter = !showFilter" :class="['flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border transition shadow-sm', showFilter || filters.kategori.length > 0 || filters.waktu ? 'border-[#48796f] bg-[#f0fdf4] text-[#48796f]' : 'border-gray-400 bg-white text-gray-700 hover:bg-gray-50']">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" /></svg>
-          </button>
+        <!-- ACTION BAR (Searchbar with Action Buttons below on mobile, inline on desktop) -->
+        <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+          <!-- Search Input Component -->
+          <SearchBarTable
+            v-model="searchQuery"
+            placeholder="Cari Aktivitas disini..."
+          />
 
-          <!-- Dropdown Menu Filter -->
-          <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
-            <div v-if="showFilter" class="absolute right-0 top-14 w-80 rounded-xl border border-gray-200 bg-white p-5 shadow-xl z-40">
-              <div class="mb-5">
-                <label class="block text-sm font-bold text-[#1a2b4c] mb-3">Filter Kategori</label>
-                <div class="grid grid-cols-2 gap-3">
-                  <label v-for="kat in listKategori" :key="kat" class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" :value="kat" v-model="filters.kategori" class="h-4 w-4 rounded border-gray-300 text-[#48796f] focus:ring-[#48796f]">
-                    <span class="text-sm text-gray-700">{{ kat }}</span>
-                  </label>
-                </div>
-              </div>
-              <div class="mb-5">
-                <label class="block text-sm font-bold text-[#1a2b4c] mb-2">Filter Waktu (Deadline)</label>
-                <input type="date" v-model="filters.waktu" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#48796f] focus:ring-1 focus:ring-[#48796f] text-gray-700" />
-              </div>
-              <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
-                <button @click="resetFilters" class="text-sm font-medium text-red-500 hover:text-red-600 transition">Reset</button>
-                <button @click="showFilter = false" class="rounded-lg bg-[#1a2b4c] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#111d33]">Terapkan</button>
-              </div>
-            </div>
-          </Transition>
-        </div>
+          <!-- Action Buttons Row -->
+          <div class="flex items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+            <!-- Filter Dropdown Container -->
+            <div class="relative">
+              <button
+                type="button"
+                @click="showFilter = !showFilter"
+                class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors focus:outline-none select-none cursor-pointer"
+                :class="showFilter || filters.kategori.length > 0 || filters.waktu
+                  ? 'border-[#183669]'
+                  : 'border-[#d6e0ee] hover:border-[#8ea9cb]'"
+                title="Filter Aktivitas"
+              >
+                <img
+                  src="/assets/icons/filter.svg"
+                  alt="Filter Icon"
+                  class="h-5 w-5 shrink-0 object-contain pointer-events-none"
+                />
+                <!-- Red active indicator dot -->
+                <span
+                  v-if="filters.kategori.length > 0 || filters.waktu"
+                  class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"
+                ></span>
+              </button>
 
-        <button @click="openTambah" class="flex h-[42px] items-center justify-center rounded-lg bg-[#1a2b4c] px-6 text-sm font-semibold text-white transition hover:bg-[#111d33] shadow-sm">
-          Tambah
-        </button>
-      </div>
-
-      <!-- Overlay penutup filter jika klik di luar -->
-      <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-30"></div>
-
-      <!-- TABEL DATA -->
-      <div class="overflow-hidden rounded-t-xl border border-gray-200 bg-white shadow-sm mb-6 relative z-10">
-        <div class="overflow-x-auto">
-          <table class="w-full text-center text-sm whitespace-nowrap">
-            <thead class="bg-[#48796f] text-white select-none">
-              <tr>
-                <th class="px-4 py-4 font-semibold w-16">No</th>
-                <th class="px-4 py-4 font-semibold text-left">Judul</th>
-                <th class="px-4 py-4 font-semibold text-left">Kategori</th>
-                <th class="px-4 py-4 font-semibold">Deadline</th>
-                <th class="px-4 py-4 font-semibold text-left">Gambar</th>
-                <th class="px-4 py-4 font-semibold w-24">Aksi</th>
-              </tr>
-            </thead>
-            
-            <tbody class="text-gray-600">
-              <tr v-for="(item, index) in processedData" :key="item.id" class="border-b border-gray-200 hover:bg-gray-50/70 transition-colors">
-                <td class="px-4 py-4">{{ index + 1 }}</td>
-                <td class="px-4 py-4 text-left font-medium text-[#233547]">{{ item.judul }}</td>
-                <td class="px-4 py-4 text-left">{{ item.kategori.join(', ') }}</td>
-                <td class="px-4 py-4">{{ formatDate(item.deadline) }}</td>
-                <td class="px-4 py-4 text-left">
-                  <span v-for="(gbr, i) in item.gambar" :key="i" class="inline-block">
-                    <!-- Format tombol untuk array object/string -->
-                    <button @click="openImage(gbr)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium">
-                      {{ typeof gbr === 'object' ? gbr.file.name : gbr }}
+              <!-- Dropdown Menu Filter -->
+              <Transition
+                enter-active-class="transition duration-150 ease-out"
+                enter-from-class="transform scale-95 opacity-0 translate-y-1"
+                enter-to-class="transform scale-100 opacity-100 translate-y-0"
+                leave-active-class="transition duration-100 ease-in"
+                leave-from-class="transform scale-100 opacity-100 translate-y-0"
+                leave-to-class="transform scale-95 opacity-0 translate-y-1"
+              >
+                <div
+                  v-if="showFilter"
+                  class="absolute right-0 top-14 w-80 rounded-[14px] border border-[#d6e0ee] bg-white p-4 shadow-2xl ring-1 ring-black/10 z-40 font-inter"
+                >
+                  <div class="flex items-center justify-between border-b border-[#f0f4f9] pb-2 mb-3">
+                    <p class="font-poppins text-xs font-bold text-[#183669]">
+                      Filter Aktivitas
+                    </p>
+                    <button
+                      v-if="filters.kategori.length > 0 || filters.waktu"
+                      type="button"
+                      @click="resetFilters"
+                      class="font-inter text-[11px] font-semibold text-[#dc2626] hover:underline cursor-pointer"
+                    >
+                      Reset Semua
                     </button>
-                    <span v-if="i < item.gambar.length - 1" class="mr-1">, </span>
-                  </span>
-                </td>
-                <td class="px-4 py-4">
-                  <div class="flex items-center justify-center gap-2">
-                    <EditButtonTable @click="openEdit(item)" />
-                    <DeleteButtonTable @click="confirmDelete(item)" />
                   </div>
-                </td>
-              </tr>
-              <tr v-if="processedData.length === 0">
-                <td colspan="6" class="px-4 py-12 text-center text-gray-500 font-medium">Data tidak ditemukan sesuai filter/pencarian Anda.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <TablePagination :links="[]" :currentPage="1" :rowsPerPage="10"/>
-    </div>
+                  <div class="mb-3.5">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-[#7188a3] mb-2">
+                      Kategori
+                    </p>
+                    <div class="grid grid-cols-2 gap-2">
+                      <label v-for="kat in listKategori" :key="kat" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none">
+                        <input type="checkbox" :value="kat" v-model="filters.kategori" class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-0 cursor-pointer">
+                        <span class="text-xs font-medium text-[#334155]">{{ kat }}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="border-t border-[#f0f4f9] pt-3 mb-4">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-[#7188a3] mb-2">
+                      Waktu (Deadline)
+                    </p>
+                    <input type="date" v-model="filters.waktu" class="w-full rounded-lg border border-[#cbd5e1] px-3 py-2 text-xs outline-none focus:border-[#183669] text-gray-700 font-inter" />
+                  </div>
+
+                  <div class="flex items-center justify-end border-t border-[#f0f4f9] pt-3">
+                    <button @click="showFilter = false" class="rounded-lg bg-[#183669] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[#122b54] cursor-pointer">Tutup</button>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+
+            <!-- Tambah Button -->
+            <button
+              type="button"
+              @click="(e) => { e.currentTarget?.blur(); openTambah(); }"
+              class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center gap-2 rounded-[10px] bg-[#183669] px-0 sm:px-7 font-poppins text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#122b54] active:scale-95 focus:outline-none select-none cursor-pointer"
+              title="Tambah Aktivitas"
+            >
+              <svg class="h-5 w-5 shrink-0 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span class="hidden sm:inline">Tambah</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Overlay penutup filter jika klik di luar -->
+        <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-30"></div>
+
+        <!-- TABEL DATA -->
+        <div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+          <div class="overflow-x-auto lg:overflow-visible">
+            <table class="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
+              <thead class="bg-[#416f65]">
+                <tr class="h-[48px]">
+                  <th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
+                    <button type="button" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                      <span>No</span>
+                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+                        <svg v-if="sortColumn === 'id'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="w-[300px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+                    <button type="button" @click="handleSort('judul')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                      <span>Judul</span>
+                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+                        <svg v-if="sortColumn === 'judul'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="w-[230px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+                    <button type="button" @click="handleSort('kategori')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                      <span>Kategori</span>
+                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+                        <svg v-if="sortColumn === 'kategori'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+                    <button type="button" @click="handleSort('deadline')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                      <span>Deadline</span>
+                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+                        <svg v-if="sortColumn === 'deadline'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Gambar</th>
+                  <th class="w-[110px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+                </tr>
+              </thead>
+              
+              <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
+                <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
+                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
+                  <td class="px-3 py-2.5 text-left align-middle relative">
+                    <div class="flex items-center gap-1.5 flex-nowrap w-full" v-if="item.kategori">
+                      <template v-for="(cat, catIdx) in (Array.isArray(item.kategori) ? item.kategori : item.kategori.split(',').map(s => s.trim())).slice(0, 2)" :key="catIdx">
+                        <span :class="[
+                          'shrink-0 inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+                          cat === 'Profesional' || cat === 'Professional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                          cat === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          cat === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          cat === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          'bg-slate-100 text-slate-700 border-slate-200'
+                        ]">
+                          {{ cat }}
+                        </span>
+                      </template>
+                      
+                      <div v-if="(Array.isArray(item.kategori) ? item.kategori : item.kategori.split(',')).length > 2" class="group relative flex shrink-0">
+                        <button type="button" class="inline-flex h-5 items-center justify-center rounded-full bg-slate-100 px-1.5 border border-slate-200 text-[10px] font-bold text-slate-600 transition hover:bg-slate-200 focus:outline-none focus:bg-slate-200 cursor-pointer">
+                          +{{ (Array.isArray(item.kategori) ? item.kategori : item.kategori.split(',')).length - 2 }}
+                        </button>
+                        
+                        <div class="hidden group-hover:block group-focus-within:block absolute left-0 top-full z-[60] mt-1.5 shadow-lg rounded-lg border border-gray-200 bg-white p-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                          <div class="flex flex-col gap-1.5 min-w-fit whitespace-nowrap">
+                            <span v-for="(cat, catIdx) in (Array.isArray(item.kategori) ? item.kategori : item.kategori.split(',').map(s => s.trim())).slice(2)" :key="catIdx" :class="[
+                              'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+                              cat === 'Profesional' || cat === 'Professional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                              cat === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              cat === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              cat === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                              'bg-slate-100 text-slate-700 border-slate-200'
+                            ]">
+                              {{ cat }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2.5 text-center">{{ formatDate(item.deadline) }}</td>
+                  <td class="px-3 py-2.5 text-center">
+                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                      <span v-for="(gbr, i) in item.gambar" :key="i" class="inline-flex items-center">
+                        <button @click="openImage(gbr)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium text-xs cursor-pointer">
+                          {{ typeof gbr === 'object' && gbr.file ? gbr.file.name : (typeof gbr === 'string' ? gbr : 'gambar') }}
+                        </button>
+                        <span v-if="i < item.gambar.length - 1" class="text-gray-400 ml-1">,</span>
+                      </span>
+                      <span v-if="!item.gambar || item.gambar.length === 0" class="text-gray-400 text-xs">-</span>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2.5 text-center">
+                    <div class="flex items-center justify-center gap-2">
+                      <EditButtonTable @click="openEdit(item)" />
+                      <DeleteButtonTable @click="confirmDelete(item)" />
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="paginatedData.length === 0">
+                  <td colspan="6" class="px-4 py-12 text-center text-gray-500 font-medium">Data tidak ditemukan sesuai filter/pencarian Anda.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <TablePagination 
+          :current-page="currentPage" 
+          :total-pages="totalPages" 
+          :rows-per-page="rowsPerPage"
+          @update:current-page="currentPage = $event"
+          @update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+        />
+      </div>
+    </section>
 
     <!-- MODAL FORM TAMBAH / EDIT AKTIVITAS -->
     <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
@@ -414,22 +598,59 @@ const handleDelete = () => {
     </Transition>
 
     <DeleteModal 
-      :show="showDeleteModal"
-      title="Hapus Aktivitas"
-      message="Apakah Anda yakin ingin menghapus aktivitas ini? Data yang dihapus tidak dapat dikembalikan." 
+      :show="showDeleteModal" 
       @close="showDeleteModal = false" 
       @confirm="handleDelete" 
     />
 
-    <!-- MODAL PREVIEW GAMBAR DARI TABEL -->
-    <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showImageModal" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" @click="showImageModal = false">
-        <div class="relative max-w-4xl rounded-2xl bg-white p-2 shadow-2xl" @click.stop>
-          <button @click="showImageModal = false" class="absolute -top-4 -right-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white shadow-lg hover:bg-red-600 border-2 border-white transition-transform hover:scale-110 z-10">✕</button>
-          <img :src="selectedImage" alt="Preview Gambar" class="w-full max-h-[80vh] object-contain rounded-xl" />
+    <!-- MODAL GAMBAR (LIGHTBOX) -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="ease-out duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="ease-in duration-150"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="showImageModal"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all"
+          @click="showImageModal = false"
+        >
+          <Transition
+            enter-active-class="ease-out duration-200"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="ease-in duration-150"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+          >
+            <div
+              v-if="showImageModal"
+              class="relative flex items-center justify-center bg-transparent"
+              @click.stop
+            >
+              <button
+                type="button"
+                @click="showImageModal = false"
+                class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
+                title="Tutup Preview"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <img
+                :src="selectedImage"
+                alt="Zoomed Preview"
+                class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
+              />
+            </div>
+          </Transition>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
 
   </AdminLayout>
 </template>

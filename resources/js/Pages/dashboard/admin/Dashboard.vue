@@ -521,7 +521,7 @@ const sortedHasil = computed(() => {
 					</Link>
 				</div>
 
-				<div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+				<div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
 					<table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
 						<thead class="bg-[#416f65] font-inter text-[15px] font-semibold text-white whitespace-nowrap">
 							<tr class="h-[52px]">
@@ -653,7 +653,7 @@ const sortedHasil = computed(() => {
 					</Link>
 				</div>
 
-				<div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+				<div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
 					<table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
 						<thead class="bg-[#416f65] font-inter text-[15px] font-semibold text-white whitespace-nowrap">
 							<tr class="h-[52px]">
@@ -745,7 +745,7 @@ const sortedHasil = computed(() => {
 					</Link>
 				</div>
 
-				<div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+				<div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
 					<table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
 						<thead class="bg-[#416f65] font-inter text-[15px] font-semibold text-white whitespace-nowrap">
 							<tr class="h-[52px]">

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
@@ -27,6 +27,7 @@ const kegiatan = ref([
 ]);
 
 const searchQuery = ref('');
+const filterStatus = ref('');
 const showFilter = ref(false);
 
 const sortColumn = ref('id');
@@ -63,12 +64,15 @@ const handleSort = (column) => {
 const processedKegiatan = computed(() => {
   let data = [...kegiatan.value];
 
+  if (filterStatus.value) {
+    data = data.filter(item => item.status === filterStatus.value);
+  }
+
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     data = data.filter(item => 
       item.judul.toLowerCase().includes(query) ||
-      item.kategori.toLowerCase().includes(query) ||
-      item.status.toLowerCase().includes(query)
+      item.kategori.toLowerCase().includes(query)
     );
   }
 
@@ -87,6 +91,26 @@ const processedKegiatan = computed(() => {
   }
 
   return data;
+});
+
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+
+onMounted(() => {
+  if (window.innerWidth < 768) {
+    rowsPerPage.value = 5;
+  }
+});
+
+const paginatedKegiatan = computed(() => {
+  const start = (currentPage.value - 1) * rowsPerPage.value;
+  return processedKegiatan.value.slice(start, start + rowsPerPage.value);
+});
+
+const totalPages = computed(() => Math.ceil(processedKegiatan.value.length / rowsPerPage.value));
+
+watch([searchQuery, filterStatus, rowsPerPage], () => {
+  currentPage.value = 1;
 });
 
 // ==============================
@@ -139,23 +163,24 @@ const handleReject = (reason) => {
         </div>
 
         <!-- TOP BAR -->
-        <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
-          <SearchBarTable class="w-full sm:flex-1" placeholder="Cari Aktivitas disini..." v-model="searchQuery"/>
+        <div class="flex flex-row items-center gap-2.5 sm:gap-3 w-full">
+          <SearchBarTable class="w-full flex-1 min-w-0" placeholder="Cari Aktivitas disini..." v-model="searchQuery"/>
 
           <!-- Filter Dropdown Container -->
-          <div class="flex items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+          <div class="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
             <div class="relative">
-              <button @click="showFilter = !showFilter" class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors hover:border-[#8ea9cb] focus:outline-none select-none cursor-pointer" :class="showFilter ? 'border-[#183669]' : 'border-[#d6e0ee]'">
+              <button @click="showFilter = !showFilter" class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors hover:border-[#8ea9cb] focus:outline-none select-none cursor-pointer" :class="showFilter || filterStatus ? 'border-[#183669]' : 'border-[#d6e0ee]'">
                 <img src="/assets/icons/filter.svg" alt="Filter Icon" class="h-5 w-5 shrink-0 object-contain pointer-events-none" />
+                <span v-if="filterStatus" class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"></span>
               </button>
 
               <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
                 <div v-if="showFilter" class="absolute right-0 top-14 z-40 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
                   <p class="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase">Filter Status</p>
-                  <button @click="searchQuery = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium">Semua Data</button>
-                  <button @click="searchQuery = 'Menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium">Menunggu</button>
-                  <button @click="searchQuery = 'Disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium">Disetujui</button>
-                  <button @click="searchQuery = 'Ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium">Ditolak</button>
+                  <button @click="filterStatus = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium" :class="!filterStatus ? 'bg-gray-100' : ''">Semua Data</button>
+                  <button @click="filterStatus = 'Menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium" :class="filterStatus === 'Menunggu' ? 'bg-gray-100' : ''">Menunggu</button>
+                  <button @click="filterStatus = 'Disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium" :class="filterStatus === 'Disetujui' ? 'bg-green-50' : ''">Disetujui</button>
+                  <button @click="filterStatus = 'Ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium" :class="filterStatus === 'Ditolak' ? 'bg-red-50' : ''">Ditolak</button>
                 </div>
               </Transition>
             </div>
@@ -166,8 +191,8 @@ const handleReject = (reason) => {
         <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-30"></div>
 
         <!-- TABEL DATA -->
-        <div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
-          <div class="overflow-visible">
+        <div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+          <div class="overflow-x-auto lg:overflow-visible">
             <table class="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
               <thead class="bg-[#416f65]">
                 <tr class="h-[48px]">
@@ -222,8 +247,8 @@ const handleReject = (reason) => {
               </thead>
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
-                <tr v-for="(item, index) in processedKegiatan" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ index + 1 }}</td>
+                <tr v-for="(item, index) in paginatedKegiatan" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
+                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left align-middle relative">
                     <div class="flex items-center gap-1.5 flex-nowrap w-full" v-if="item.kategori">
@@ -299,7 +324,7 @@ const handleReject = (reason) => {
                     </div>
                   </td>
                 </tr>
-                <tr v-if="processedKegiatan.length === 0">
+                <tr v-if="paginatedKegiatan.length === 0">
                   <td colspan="7" class="px-4 py-12 text-center text-gray-500 font-medium">Data tidak ditemukan sesuai filter/pencarian Anda.</td>
                 </tr>
               </tbody>
@@ -307,7 +332,13 @@ const handleReject = (reason) => {
           </div>
         </div>
 
-        <TablePagination :links="[]" :currentPage="1" :rowsPerPage="10"/>
+        <TablePagination 
+          :current-page="currentPage" 
+          :total-pages="totalPages" 
+          :rows-per-page="rowsPerPage"
+          @update:current-page="currentPage = $event"
+          @update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+        />
       </div>
     </section>
 
