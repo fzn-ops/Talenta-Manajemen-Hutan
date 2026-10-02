@@ -19,7 +19,7 @@ defineProps({
 		:aria-label="label"
 		:disabled="disabled"
 		:class="[
-			'inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[8px] transition-colors',
+			'inline-flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[5px] transition-colors',
 			disabled
 				? 'cursor-not-allowed bg-slate-200 opacity-50 shadow-none'
 				: 'bg-[#ffd56a] text-[#f4a300] hover:bg-[#ffcc54]'

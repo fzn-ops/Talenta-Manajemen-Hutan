@@ -4,6 +4,9 @@ import { Head, Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import Modal from '@/Components/dashboard/Modal.vue';
+import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
+import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
+import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 
 // Chart.js registration
 import { Pie } from 'vue-chartjs';
@@ -505,7 +508,7 @@ const sortedHasil = computed(() => {
 			<div>
 				<div class="mb-4 flex items-center justify-between gap-3">
 					<h2 class="text-[16px] sm:text-[18px] md:text-[20px] font-bold leading-tight sm:leading-none text-[#17334F]">
-						Pengajuan Aktivitas
+						Persetujuan Aktivitas
 					</h2>
 					<Link
 						href="/admin/aktivitas/persetujuan"
@@ -518,52 +521,82 @@ const sortedHasil = computed(() => {
 					</Link>
 				</div>
 
-				<div class="overflow-x-auto rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
-					<table class="w-full min-w-[1080px] table-fixed">
+				<div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+					<table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
 						<thead class="bg-[#416f65] font-inter text-[15px] font-semibold text-white whitespace-nowrap">
 							<tr class="h-[52px]">
 								<th
 									v-for="col in columnsPengajuan"
 									:key="col.key"
-									class="px-4 py-3 text-center whitespace-nowrap"
-									:class="col.width"
+									:class="[
+										'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 first:rounded-tl-[12px] last:rounded-tr-[12px]',
+										col.width
+									]"
 								>
-									<div
-										class="flex items-center justify-center gap-1.5 whitespace-nowrap"
-										:class="col.sortable ? 'cursor-pointer select-none hover:text-white/85 transition-colors' : ''"
-										@click="col.sortable ? toggleSort1(col.key) : null"
+									<button
+										v-if="col.sortable"
+										type="button"
+										@click="toggleSort1(col.key)"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer"
 									>
-										<span v-if="col.sortable" class="w-3.5 shrink-0" aria-hidden="true"></span>
 										<span>{{ col.label }}</span>
-										<svg
-											v-if="col.sortable"
-											class="h-3.5 w-3.5 transition-transform duration-200 shrink-0"
-											:class="[
-												sortKey1 === col.key ? 'text-white' : 'text-white/60',
-												sortKey1 === col.key && sortDirection1 === 'asc' ? 'rotate-180' : ''
-											]"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											stroke-width="2.2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<path d="M12 4.5v15m0 0l-5-5m5 5l5-5" />
-										</svg>
-									</div>
+										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+											<svg v-if="sortKey1 === col.key" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection1 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+										</span>
+									</button>
+									<span v-else>{{ col.label }}</span>
 								</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
+						<tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedPengajuan"
 								:key="`pengajuan-${item.id}-${idx}`"
 								class="h-[52px] hover:bg-[#f7f9fd] transition-colors"
 							>
 								<td class="px-4 py-3 text-center font-medium w-[60px]">{{ idx + 1 }}</td>
-								<td class="px-4 py-3 text-left font-medium text-[#2f4b6e] truncate w-[260px]" :title="item.judul">{{ item.judul }}</td>
-								<td class="px-4 py-3 text-left truncate w-[230px]" :title="item.kategori">{{ item.kategori }}</td>
+								<td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate w-[260px]" :title="item.judul">{{ item.judul }}</td>
+								<td class="px-3 py-2.5 text-left align-middle relative w-[230px]">
+									<div class="flex items-center gap-1.5 flex-nowrap w-full" v-if="item.kategori">
+										<!-- Render first 2 chips -->
+										<template v-for="(cat, catIdx) in item.kategori.split(',').map(s => s.trim()).slice(0, 2)" :key="catIdx">
+											<span :class="[
+												'shrink-0 inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+												cat === 'Profesional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+												cat === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+												cat === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+												cat === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+												'bg-slate-100 text-slate-700 border-slate-200'
+											]">
+												{{ cat }}
+											</span>
+										</template>
+										
+										<!-- +X Chip for remainder -->
+										<div v-if="item.kategori.split(',').length > 2" class="group relative flex shrink-0">
+											<button type="button" class="inline-flex h-5 items-center justify-center rounded-full bg-slate-100 px-1.5 border border-slate-200 text-[10px] font-bold text-slate-600 transition hover:bg-slate-200 focus:outline-none focus:bg-slate-200 cursor-pointer">
+												+{{ item.kategori.split(',').length - 2 }}
+											</button>
+											
+											<!-- Hover Tooltip Container (Hidden by default to prevent vertical scroll overflow) -->
+											<div class="hidden group-hover:block group-focus-within:block absolute left-0 top-full z-[60] mt-1.5 shadow-lg rounded-lg border border-gray-200 bg-white p-2 animate-in fade-in slide-in-from-top-1 duration-200">
+												<div class="flex flex-col gap-1.5 min-w-fit whitespace-nowrap">
+													<span v-for="(cat, catIdx) in item.kategori.split(',').map(s => s.trim()).slice(2)" :key="catIdx" :class="[
+														'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+														cat === 'Profesional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+														cat === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+														cat === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+														cat === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+														'bg-slate-100 text-slate-700 border-slate-200'
+													]">
+														{{ cat }}
+													</span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</td>
 								<td class="whitespace-nowrap px-4 py-3 text-center w-[130px]">{{ item.deadline }}</td>
 								<td class="px-4 py-3 text-center w-[120px]">
 									<button
@@ -575,40 +608,23 @@ const sortedHasil = computed(() => {
 									</button>
 								</td>
 								<td class="px-4 py-3 text-center w-[140px]">
-									<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
-										<svg class="h-3.5 w-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<circle cx="12" cy="12" r="9" />
-											<polyline points="12 7 12 12 15 15" />
-										</svg>
-										<span>{{ item.status }}</span>
-									</span>
+									<div class="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border"
+										:class="{
+											'bg-slate-50 text-slate-600 border-slate-200': item.status === 'Menunggu',
+											'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
+											'bg-red-50 text-red-600 border-red-200': item.status === 'Ditolak'
+										}">
+										<svg v-if="item.status === 'Menunggu'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" /></svg>
+										<svg v-if="item.status === 'Disetujui'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+										<svg v-if="item.status === 'Ditolak'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+										{{ item.status }}
+									</div>
 								</td>
 								<td class="px-4 py-3 text-center w-[140px]">
 									<div class="flex items-center justify-center gap-2">
-										<button
-											type="button"
-											@click="handleApprove(item)"
-											title="Setujui"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-setuju.svg" alt="Setuju" class="h-7 w-7 rounded-[5px]" />
-										</button>
-										<button
-											type="button"
-											@click="handleReject(item)"
-											title="Tolak"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-tolak.svg" alt="Tolak" class="h-7 w-7 rounded-[5px]" />
-										</button>
-										<button
-											type="button"
-											@click="handlePreview(item)"
-											title="Lihat Detail"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-preview.svg" alt="Preview" class="h-7 w-7 rounded-[5px]" />
-										</button>
+										<AcceptButton @click="handleApprove(item)" />
+										<RejectButton @click="handleReject(item)" />
+										<PreviewButtonTable @click="handlePreview(item)" />
 									</div>
 								</td>
 							</tr>
@@ -637,44 +653,35 @@ const sortedHasil = computed(() => {
 					</Link>
 				</div>
 
-				<div class="overflow-x-auto rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
-					<table class="w-full min-w-[1080px] table-fixed">
+				<div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+					<table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
 						<thead class="bg-[#416f65] font-inter text-[15px] font-semibold text-white whitespace-nowrap">
 							<tr class="h-[52px]">
 								<th
 									v-for="col in columnsPendaftaran"
 									:key="col.key"
-									class="px-4 py-3 text-center whitespace-nowrap"
-									:class="col.width"
+									:class="[
+										'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 first:rounded-tl-[12px] last:rounded-tr-[12px]',
+										col.width
+									]"
 								>
-									<div
-										class="flex items-center justify-center gap-1.5 whitespace-nowrap"
-										:class="col.sortable ? 'cursor-pointer select-none hover:text-white/85 transition-colors' : ''"
-										@click="col.sortable ? toggleSort2(col.key) : null"
+									<button
+										v-if="col.sortable"
+										type="button"
+										@click="toggleSort2(col.key)"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer"
 									>
-										<span v-if="col.sortable" class="w-3.5 shrink-0" aria-hidden="true"></span>
 										<span>{{ col.label }}</span>
-										<svg
-											v-if="col.sortable"
-											class="h-3.5 w-3.5 transition-transform duration-200 shrink-0"
-											:class="[
-												sortKey2 === col.key ? 'text-white' : 'text-white/60',
-												sortKey2 === col.key && sortDirection2 === 'asc' ? 'rotate-180' : ''
-											]"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											stroke-width="2.2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<path d="M12 4.5v15m0 0l-5-5m5 5l5-5" />
-										</svg>
-									</div>
+										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+											<svg v-if="sortKey2 === col.key" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection2 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+										</span>
+									</button>
+									<span v-else>{{ col.label }}</span>
 								</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
+						<tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedPendaftaran"
 								:key="`pendaftaran-${item.id}-${idx}`"
@@ -693,40 +700,23 @@ const sortedHasil = computed(() => {
 									</button>
 								</td>
 								<td class="px-4 py-3 text-center w-[130px]">
-									<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
-										<svg class="h-3.5 w-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<circle cx="12" cy="12" r="9" />
-											<polyline points="12 7 12 12 15 15" />
-										</svg>
-										<span>{{ item.status }}</span>
-									</span>
+									<div class="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border"
+										:class="{
+											'bg-slate-50 text-slate-600 border-slate-200': item.status === 'Menunggu',
+											'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
+											'bg-red-50 text-red-600 border-red-200': item.status === 'Ditolak'
+										}">
+										<svg v-if="item.status === 'Menunggu'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" /></svg>
+										<svg v-if="item.status === 'Disetujui'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+										<svg v-if="item.status === 'Ditolak'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+										{{ item.status }}
+									</div>
 								</td>
 								<td class="px-4 py-3 text-center w-[140px]">
 									<div class="flex items-center justify-center gap-2">
-										<button
-											type="button"
-											@click="handleApprove(item)"
-											title="Setujui"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-setuju.svg" alt="Setuju" class="h-7 w-7 rounded-[5px]" />
-										</button>
-										<button
-											type="button"
-											@click="handleReject(item)"
-											title="Tolak"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-tolak.svg" alt="Tolak" class="h-7 w-7 rounded-[5px]" />
-										</button>
-										<button
-											type="button"
-											@click="handlePreview(item)"
-											title="Lihat Detail"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-preview.svg" alt="Preview" class="h-7 w-7 rounded-[5px]" />
-										</button>
+										<AcceptButton @click="handleApprove(item)" />
+										<RejectButton @click="handleReject(item)" />
+										<PreviewButtonTable @click="handlePreview(item)" />
 									</div>
 								</td>
 							</tr>
@@ -755,44 +745,35 @@ const sortedHasil = computed(() => {
 					</Link>
 				</div>
 
-				<div class="overflow-x-auto rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
-					<table class="w-full min-w-[1080px] table-fixed">
+				<div class="overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+					<table class="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
 						<thead class="bg-[#416f65] font-inter text-[15px] font-semibold text-white whitespace-nowrap">
 							<tr class="h-[52px]">
 								<th
 									v-for="col in columnsHasil"
 									:key="col.key"
-									class="px-4 py-3 text-center whitespace-nowrap"
-									:class="col.width"
+									:class="[
+										'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 first:rounded-tl-[12px] last:rounded-tr-[12px]',
+										col.width
+									]"
 								>
-									<div
-										class="flex items-center justify-center gap-1.5 whitespace-nowrap"
-										:class="col.sortable ? 'cursor-pointer select-none hover:text-white/85 transition-colors' : ''"
-										@click="col.sortable ? toggleSort3(col.key) : null"
+									<button
+										v-if="col.sortable"
+										type="button"
+										@click="toggleSort3(col.key)"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer"
 									>
-										<span v-if="col.sortable" class="w-3.5 shrink-0" aria-hidden="true"></span>
 										<span>{{ col.label }}</span>
-										<svg
-											v-if="col.sortable"
-											class="h-3.5 w-3.5 transition-transform duration-200 shrink-0"
-											:class="[
-												sortKey3 === col.key ? 'text-white' : 'text-white/60',
-												sortKey3 === col.key && sortDirection3 === 'asc' ? 'rotate-180' : ''
-											]"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											stroke-width="2.2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<path d="M12 4.5v15m0 0l-5-5m5 5l5-5" />
-										</svg>
-									</div>
+										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+											<svg v-if="sortKey3 === col.key" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+										</span>
+									</button>
+									<span v-else>{{ col.label }}</span>
 								</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
+						<tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[15px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedHasil"
 								:key="`hasil-${item.id}-${idx}`"
@@ -813,40 +794,23 @@ const sortedHasil = computed(() => {
 									</button>
 								</td>
 								<td class="px-4 py-3 text-center w-[130px]">
-									<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
-										<svg class="h-3.5 w-3.5 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<circle cx="12" cy="12" r="9" />
-											<polyline points="12 7 12 12 15 15" />
-										</svg>
-										<span>{{ item.status }}</span>
-									</span>
+									<div class="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border"
+										:class="{
+											'bg-slate-50 text-slate-600 border-slate-200': item.status === 'Menunggu',
+											'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
+											'bg-red-50 text-red-600 border-red-200': item.status === 'Ditolak'
+										}">
+										<svg v-if="item.status === 'Menunggu'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" /></svg>
+										<svg v-if="item.status === 'Disetujui'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+										<svg v-if="item.status === 'Ditolak'" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+										{{ item.status }}
+									</div>
 								</td>
 								<td class="px-4 py-3 text-center w-[140px]">
 									<div class="flex items-center justify-center gap-2">
-										<button
-											type="button"
-											@click="handleApprove(item)"
-											title="Setujui"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-setuju.svg" alt="Setuju" class="h-7 w-7 rounded-[5px]" />
-										</button>
-										<button
-											type="button"
-											@click="handleReject(item)"
-											title="Tolak"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-tolak.svg" alt="Tolak" class="h-7 w-7 rounded-[5px]" />
-										</button>
-										<button
-											type="button"
-											@click="handlePreview(item)"
-											title="Lihat Detail"
-											class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
-										>
-											<img src="/assets/icons/button-preview.svg" alt="Preview" class="h-7 w-7 rounded-[5px]" />
-										</button>
+										<AcceptButton @click="handleApprove(item)" />
+										<RejectButton @click="handleReject(item)" />
+										<PreviewButtonTable @click="handlePreview(item)" />
 									</div>
 								</td>
 							</tr>

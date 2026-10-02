@@ -3,11 +3,10 @@
 
 <template>
   <button 
+    type="button"
     title="Setujui" 
-    class="flex h-7 w-7 items-center justify-center rounded-md bg-[#51d28c] text-white transition hover:scale-105 hover:bg-[#3fb874]"
+    class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 hover:brightness-75 active:brightness-60 focus:outline-none cursor-pointer"
   >
-    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+    <img src="/assets/icons/button-setuju.svg" alt="Setuju" class="h-7 w-7 rounded-[5px]" />
   </button>
 </template>

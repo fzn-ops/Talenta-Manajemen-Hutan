@@ -20,13 +20,13 @@ defineProps({
 		:title="label"
 		:disabled="disabled"
 		:class="[
-			'inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[8px] transition-all duration-150',
+			'inline-flex items-center justify-center rounded-[6px] transition-all duration-150 focus:outline-none',
 			disabled
-				? 'cursor-not-allowed bg-slate-200 opacity-50 shadow-none'
-				: 'hover:brightness-90 active:scale-95 cursor-pointer'
+				? 'cursor-not-allowed opacity-50 shadow-none'
+				: 'hover:brightness-75 active:brightness-60 cursor-pointer'
 		]"
 		@click="!disabled && $emit('click')"
 	>
-		<img src="/assets/icons/button-preview.svg" alt="" class="h-[32px] w-[32px] rounded-[8px] object-contain" aria-hidden="true" />
+		<img src="/assets/icons/button-preview.svg" alt="" class="h-7 w-7 rounded-[5px]" aria-hidden="true" />
 	</button>
 </template>
