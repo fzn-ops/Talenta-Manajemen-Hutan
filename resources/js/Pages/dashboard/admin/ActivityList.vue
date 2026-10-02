@@ -414,7 +414,9 @@ const handleDelete = () => {
     </Transition>
 
     <DeleteModal 
-      :show="showDeleteModal" 
+      :show="showDeleteModal"
+      title="Hapus Aktivitas"
+      message="Apakah Anda yakin ingin menghapus aktivitas ini? Data yang dihapus tidak dapat dikembalikan." 
       @close="showDeleteModal = false" 
       @confirm="handleDelete" 
     />

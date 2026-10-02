@@ -93,9 +93,9 @@ watch(searchQuery, () => {
           
           <!-- Input Search (Mengisi sisa ruang kiri) -->
           <div class="relative flex-1">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <svg class="h-5 w-5 text-[#152c5b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4">
+              <svg class="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
             <input 
@@ -103,7 +103,7 @@ watch(searchQuery, () => {
               @keyup.enter="applyFilters"
               type="text" 
               placeholder="Cari Berita disini" 
-              class="w-full rounded-xl border border-gray-200 bg-white py-3.5 pl-11 pr-4 text-sm font-medium text-gray-700 shadow-sm outline-none transition-colors focus:border-[#152c5b] focus:ring-1 focus:ring-[#152c5b]"
+              class="w-full rounded-xl border border-gray-300 py-2.5 sm:py-3 pl-10 sm:pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-colors focus:border-[#152c5b] focus:ring-1 focus:ring-[#152c5b]"
             >
           </div>
 
@@ -111,11 +111,10 @@ watch(searchQuery, () => {
           <div class="relative shrink-0">
             <button 
               @click="isFilterOpen = !isFilterOpen"
-              class="flex h-[52px] w-[52px] items-center justify-center rounded-xl bg-[#152c5b] text-white shadow-sm transition-all duration-300 hover:bg-[#0f1f43]"
+              class="flex h-[42px] w-[42px] sm:h-[46px] sm:w-[46px] items-center justify-center rounded-xl bg-[#4b857a] text-white transition-colors hover:bg-[#3a685e] shadow-sm"
             >
-              <!-- Icon Funnel (Filter) -->
-              <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+              <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
               </svg>
             </button>
 

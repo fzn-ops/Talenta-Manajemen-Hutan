@@ -35,7 +35,7 @@ import { Link } from '@inertiajs/vue3';
             Aku Siap
         </Link>
 
-        <div class="absolute left-1/2 top-1/2 z-10 w-[450px] -translate-x-[50%] translate-y-[45%] pointer-events-none flex justify-center sm:w-[800px] sm:-translate-x-[55%] sm:translate-y-[10%] md:w-[1000px] lg:w-[1300px] lg:-translate-x-[58%]">
+        <div class="absolute left-1/2 top-1/2 z-10 w-[450px] -translate-x-[60%] translate-y-[45%] pointer-events-none flex justify-center sm:w-[800px] sm:-translate-x-[55%] sm:translate-y-[10%] md:w-[1000px] lg:w-[1300px] lg:-translate-x-[64%]">
             <img 
                 src="/assets/images/cta_pic.svg" 
                 alt="Dekorasi Pesawat Kertas" 
