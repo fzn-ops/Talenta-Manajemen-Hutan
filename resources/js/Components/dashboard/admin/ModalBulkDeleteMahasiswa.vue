@@ -83,16 +83,22 @@ const handleConfirm = () => {
 
 const handleKeyDown = (e) => {
 	if (e.key === 'Escape' && props.show) {
+		e.preventDefault();
+		e.stopPropagation();
+		e.stopImmediatePropagation();
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
 		handleClose();
 	}
 };
 
 onMounted(() => {
-	document.addEventListener('keydown', handleKeyDown);
+	window.addEventListener('keydown', handleKeyDown, true);
 });
 
 onBeforeUnmount(() => {
-	document.removeEventListener('keydown', handleKeyDown);
+	window.removeEventListener('keydown', handleKeyDown, true);
 });
 </script>
 

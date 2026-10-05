@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { onBeforeUnmount, onMounted } from 'vue';
+
+const props = defineProps({
   show: {
     type: Boolean,
     default: false
@@ -19,6 +21,28 @@ defineProps({
 });
 
 const emit = defineEmits(['close', 'confirm']);
+
+const handleKeyDown = (e) => {
+  if (e.key === 'Escape' && props.show) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    if (!props.isLoading) {
+      emit('close');
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown, true);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeyDown, true);
+});
 </script>
 
 <template>
@@ -59,7 +83,8 @@ const emit = defineEmits(['close', 'confirm']);
                 type="button"
                 :disabled="isLoading"
                 @click="emit('close')" 
-                class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+                class="rounded-lg border border-[#d6e0ee] px-4 py-2.5 text-sm font-medium text-[#475569] hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer outline-none focus:outline-none focus:ring-0"
+                style="outline: none !important; box-shadow: none !important;"
               >
                 Batal
               </button>
@@ -67,7 +92,8 @@ const emit = defineEmits(['close', 'confirm']);
                 type="button"
                 :disabled="isLoading"
                 @click="emit('confirm')" 
-                class="flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                class="flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer outline-none focus:outline-none focus:ring-0"
+                style="outline: none !important; box-shadow: none !important;"
               >
                 <svg v-if="isLoading" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

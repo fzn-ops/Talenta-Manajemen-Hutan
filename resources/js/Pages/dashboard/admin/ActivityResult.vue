@@ -1,12 +1,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import RejectModal from '@/Components/dashboard/RejectModal.vue';
+import ModalFormHasilAktivitas from '@/Components/dashboard/admin/ModalFormHasilAktivitas.vue';
 
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
@@ -109,7 +110,7 @@ const paginatedKegiatan = computed(() => {
   return processedKegiatan.value.slice(start, start + rowsPerPage.value);
 });
 
-const totalPages = computed(() => Math.ceil(processedKegiatan.value.length / rowsPerPage.value));
+const totalPages = computed(() => Math.ceil(processedKegiatan.value.length / rowsPerPage.value) || 1);
 
 watch([searchQuery, filterStatus, rowsPerPage], () => {
   currentPage.value = 1;
@@ -124,21 +125,41 @@ const openDetail = (item) => {
 };
 
 const openReject = (item) => {
-  if(item) selectedItem.value = item; 
+  if (item) selectedItem.value = item; 
   showRejectModal.value = true;
 };
 
 const openImage = (gambar) => {
-  selectedImage.value = gambar;
+  if (gambar && typeof gambar === 'object' && gambar.url) {
+    selectedImage.value = gambar.url;
+  } else if (gambar && typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
+    selectedImage.value = gambar;
+  } else {
+    selectedImage.value = `https://picsum.photos/seed/${gambar || 'dummy'}/800/600`;
+  }
   showImageModal.value = true;
 };
 
-const handleApprove = () => {
+const handleApprove = (item) => {
+  const target = item || selectedItem.value;
+  if (target) {
+    const idx = kegiatan.value.findIndex(k => k.id === target.id);
+    if (idx !== -1) {
+      kegiatan.value[idx].status = 'Disetujui';
+    }
+  }
   showDetailModal.value = false;
   showToast('Hasil aktivitas berhasil disetujui!', 'success');
 };
 
 const handleReject = (reason) => {
+  if (selectedItem.value) {
+    const idx = kegiatan.value.findIndex(k => k.id === selectedItem.value.id);
+    if (idx !== -1) {
+      kegiatan.value[idx].status = 'Ditolak';
+      kegiatan.value[idx].alasan_tolak = reason;
+    }
+  }
   showRejectModal.value = false;
   showDetailModal.value = false; 
   showToast(`Hasil aktivitas ditolak. Alasan: ${reason || 'Tidak ada'}`, 'error');
@@ -146,7 +167,7 @@ const handleReject = (reason) => {
 </script>
 
 <template>
-  <Head title="Daftar Hasil Aktivitas Mahasiswa"/>
+  <Head title="Hasil Aktivitas Mahasiswa"/>
 
   <AdminLayout>
     <section class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8">
@@ -160,7 +181,7 @@ const handleReject = (reason) => {
         </Transition>
 
         <div class="space-y-1.5">
-          <h1 class="mt-1 text-[34px] font-bold leading-[1.02] tracking-[-0.03em] text-[#17334F] sm:text-[42px] lg:text-[48px]">Daftar Hasil Aktivitas Mahasiswa</h1>
+          <h1 class="mt-1 text-[34px] font-bold leading-[1.02] tracking-[-0.03em] text-[#17334F] sm:text-[42px] lg:text-[48px]">Hasil Aktivitas Mahasiswa</h1>
           <p class="mt-1.5 font-inter text-[14px] font-medium leading-tight text-[#4d6786] sm:text-[16px]">Lihat seberapa banyak mahasiswa yang mengikuti aktivitas Talenta!</p>
         </div>
 
@@ -177,12 +198,12 @@ const handleReject = (reason) => {
               </button>
 
               <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
-                <div v-if="showFilter" class="absolute right-0 top-14 z-40 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                <div v-if="showFilter" class="absolute right-0 top-14 z-40 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg font-inter">
                   <p class="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase">Filter Status</p>
-                  <button @click="filterStatus = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium" :class="!filterStatus ? 'bg-gray-100' : ''">Semua Data</button>
-                  <button @click="filterStatus = 'Menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium" :class="filterStatus === 'Menunggu' ? 'bg-gray-100' : ''">Menunggu</button>
-                  <button @click="filterStatus = 'Disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium" :class="filterStatus === 'Disetujui' ? 'bg-green-50' : ''">Disetujui</button>
-                  <button @click="filterStatus = 'Ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium" :class="filterStatus === 'Ditolak' ? 'bg-red-50' : ''">Ditolak</button>
+                  <button @click="filterStatus = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium cursor-pointer" :class="!filterStatus ? 'bg-gray-100' : ''">Semua Data</button>
+                  <button @click="filterStatus = 'Menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium cursor-pointer" :class="filterStatus === 'Menunggu' ? 'bg-gray-100' : ''">Menunggu</button>
+                  <button @click="filterStatus = 'Disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium cursor-pointer" :class="filterStatus === 'Disetujui' ? 'bg-green-50' : ''">Disetujui</button>
+                  <button @click="filterStatus = 'Ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium cursor-pointer" :class="filterStatus === 'Ditolak' ? 'bg-red-50' : ''">Ditolak</button>
                 </div>
               </Transition>
             </div>
@@ -234,18 +255,18 @@ const handleReject = (reason) => {
                       </span>
                     </button>
                   </th>
-                  <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Jenis Roadmap </th>
-                  <th class="w-[120px] px-2 px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti </th>
-                  <th class="w-[130px] px-2 px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Status </th>
+                  <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Jenis Roadmap</th>
+                  <th class="w-[120px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti</th>
+                  <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Status</th>
                   <th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in paginatedKegiatan" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_mahasiswa">{{ item.nama_mahasiswa }}</td>
-                  <td class="px-3 py-2.5 text-center">{{ item.nim }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ item.nim }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="item.nama_kegiatan">{{ item.nama_kegiatan }}</td>
                   <td class="px-3 py-2.5 text-center">
                     <span :class="[
@@ -260,12 +281,12 @@ const handleReject = (reason) => {
                     </span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium">
+                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[100px] inline-block align-middle" :title="item.gambar">
                       {{ item.gambar }}
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border"
+                    <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
                          :class="{
                            'bg-gray-100 text-gray-600 border-gray-200': item.status === 'Menunggu',
                            'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
@@ -310,7 +331,16 @@ const handleReject = (reason) => {
       </div>
     </section>
 
-    <!-- MODAL GAMBAR (LIGHTBOX) -->
+    <!-- MODAL DETAIL / PREVIEW HASIL KEGIATAN MAHASISWA -->
+    <ModalFormHasilAktivitas
+      :show="showDetailModal"
+      :data="selectedItem"
+      @close="showDetailModal = false"
+      @approve="handleApprove"
+      @reject="openReject"
+    />
+
+    <!-- MODAL GAMBAR (LIGHTBOX) DARI TABEL -->
     <Teleport to="body">
       <Transition
         enter-active-class="ease-out duration-200"
@@ -349,7 +379,7 @@ const handleReject = (reason) => {
                 </svg>
               </button>
               <img
-                :src="`https://picsum.photos/seed/${selectedImage}/800/600`"
+                :src="selectedImage"
                 alt="Zoomed Preview"
                 class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
               />
@@ -358,75 +388,6 @@ const handleReject = (reason) => {
         </div>
       </Transition>
     </Teleport>
-
-    <!-- MODAL DETAIL (HASIL KEGIATAN) -->
-    <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm md:p-8">
-        <div class="absolute inset-0" @click="showDetailModal = false"></div>
-        <Transition enter-active-class="transition duration-300 ease-out delay-75" enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 translate-y-4 scale-95">
-          <div v-if="showDetailModal" class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
-            
-            <h2 class="mb-8 text-2xl font-bold text-[#1a2b4c]">Hasil Kegiatan</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <!-- Kolom Kiri -->
-              <div class="flex flex-col gap-5">
-                <div class="flex gap-4">
-                  <div class="flex-1">
-                    <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Nama</label>
-                    <input type="text" readonly :value="selectedItem?.nama_mahasiswa" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-500 outline-none" />
-                  </div>
-                  <div class="flex-1">
-                    <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">NIM</label>
-                    <input type="text" readonly :value="selectedItem?.nim" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-500 outline-none" />
-                  </div>
-                </div>
-                <div class="flex gap-4">
-                  <div class="flex-1">
-                    <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Nama Kegiatan</label>
-                    <input type="text" readonly :value="selectedItem?.nama_kegiatan" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-500 outline-none" />
-                  </div>
-                  <div class="flex-1">
-                    <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Jenis Roadmap</label>
-                    <input type="text" readonly :value="selectedItem?.jenis_roadmap" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-500 outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Deskripsi Output</label>
-                  <textarea readonly rows="8" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-500 outline-none leading-relaxed">{{ selectedItem?.deskripsi }}</textarea>
-                </div>
-              </div>
-
-              <!-- Kolom Kanan -->
-              <div class="flex flex-col gap-6">
-                <div>
-                  <label class="mb-2 block text-sm font-bold text-[#1a2b4c]">Bukti Kegiatan</label>
-                  <div @click="openImage(selectedItem?.gambar || 'dummy.jpeg')" class="flex h-[260px] w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-white p-5 cursor-pointer group transition hover:bg-gray-50">
-                    <div class="flex h-36 w-36 flex-shrink-0 items-center justify-center rounded-lg bg-gray-300 group-hover:scale-105 transition-all shadow-sm">
-                      <svg class="h-14 w-14 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Catatan Penolakan Sebelumnya</label>
-                  <p class="mb-2 text-[10px] text-gray-400">Berikut adalah catatan penolakan sebelumnya (Catatan kosong apabila submisi belum pernah ditolak)</p>
-                  <div class="w-full rounded-lg border border-red-300 bg-[#fecaca] p-4 text-sm font-medium text-red-600 min-h-[120px]">
-                    {{ selectedItem?.status === 'Ditolak' ? (selectedItem?.alasan_tolak || 'Data tidak lengkap atau format gambar kurang jelas.') : '' }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tombol Aksi -->
-            <div class="mt-10 flex justify-end gap-4">
-              <button @click="showDetailModal = false" class="rounded-lg border border-gray-300 bg-white px-8 py-2.5 text-sm font-bold text-gray-500 transition hover:bg-gray-50 hover:text-gray-700">Kembali</button>
-              <button @click="handleApprove" class="rounded-lg bg-[#51d28c] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-[#3fb874] hover:shadow-md">Setuju</button>
-              <button @click="openReject(null)" class="rounded-lg bg-[#ef4444] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-red-600 hover:shadow-md">Tolak</button>
-            </div>
-          </div>
-        </Transition>
-      </div>
-    </Transition>
 
     <!-- Modal Penolakan -->
     <RejectModal :show="showRejectModal" @close="showRejectModal = false" @submit="handleReject"/>

@@ -426,12 +426,12 @@ const submitForm = () => {
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
-                  <td class="px-3 py-2.5 text-center">{{ formatTanggal(item.tanggal) }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ formatTanggal(item.tanggal) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="item.isi">{{ item.isi }}</td>
                   <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium text-xs cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.gambar === 'object' ? item.gambar.name : item.gambar">
+                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.gambar === 'object' ? item.gambar.name : item.gambar">
                       {{ (item.gambar && typeof item.gambar === 'object' && item.gambar.name) ? item.gambar.name : item.gambar }}
                     </button>
                   </td>

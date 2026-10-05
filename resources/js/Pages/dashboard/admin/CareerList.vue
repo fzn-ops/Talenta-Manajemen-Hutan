@@ -411,15 +411,6 @@ const submitForm = () => {
                     </button>
                   </th>
                   <th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('posisi')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
-                      <span>Posisi</span>
-                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'posisi'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                      </span>
-                    </button>
-                  </th>
-                  <th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
                     <button type="button" @click="handleSort('instansi')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
                       <span>Instansi</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -428,7 +419,16 @@ const submitForm = () => {
                       </span>
                     </button>
                   </th>
-                  <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Logo</th>
+                  <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+                    <button type="button" @click="handleSort('posisi')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                      <span>Posisi</span>
+                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+                        <svg v-if="sortColumn === 'posisi'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </button>
+                  </th>
+                  <!-- <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Logo</th> -->
                   <th class="w-[150px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
                     <button type="button" @click="handleSort('deadline')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
                       <span>Deadline</span>
@@ -446,21 +446,21 @@ const submitForm = () => {
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
-                  <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.posisi">{{ item.posisi }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.instansi">{{ item.instansi }}</td>
-                  <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.logo)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium text-xs cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.logo === 'object' ? item.logo.name : item.logo">
+                  <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.posisi">{{ item.posisi }}</td>
+                  <!-- <td class="px-3 py-2.5 text-center">
+                    <button @click="openImage(item.logo)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.logo === 'object' ? item.logo.name : item.logo">
                       {{ (item.logo && typeof item.logo === 'object' && item.logo.name) ? item.logo.name : item.logo }}
                     </button>
-                  </td>
-                  <td class="px-3 py-2.5 text-center">{{ formatDate(item.deadline) }}</td>
+                  </td> -->
+                  <td class="px-3 py-2.5 text-center font-medium">{{ formatDate(item.deadline) }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="item.kualifikasi">{{ item.kualifikasi }}</td>
                   <td class="px-3 py-2.5 text-center">
-                    <a v-if="item.tautan" :href="item.tautan" target="_blank" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium text-xs truncate max-w-[130px] inline-block align-middle" :title="item.tautan">
+                    <a v-if="item.tautan" :href="item.tautan" target="_blank" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors truncate max-w-[130px] inline-block align-middle" :title="item.tautan">
                       {{ item.tautan }}
                     </a>
-                    <span v-else class="text-gray-400 text-xs">-</span>
+                    <span v-else class="font-inter text-[14px] text-gray-400">-</span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">

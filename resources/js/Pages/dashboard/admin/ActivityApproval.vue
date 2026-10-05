@@ -12,6 +12,8 @@ import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 
+import ModalFormPersetujuanAktivitas from '@/Components/dashboard/admin/ModalFormPersetujuanAktivitas.vue';
+
 // 10 Data Dummy
 const kegiatan = ref([
   { id: 1, judul: 'Lorem Ipsum dolor sit amet consectetur', deskripsi: 'Deskripsi kegiatan 1...', kategori: 'Profesional, Bisnis, Birokrat, Akademisi', deadline: '10 Juli 2029', gambar: '123.jpg', status: 'Menunggu' },
@@ -122,21 +124,41 @@ const openDetail = (item) => {
 };
 
 const openReject = (item) => {
-  if(item) selectedItem.value = item; 
+  if (item) selectedItem.value = item; 
   showRejectModal.value = true;
 };
 
 const openImage = (gambar) => {
-  selectedImage.value = gambar;
+  if (gambar && typeof gambar === 'object' && gambar.url) {
+    selectedImage.value = gambar.url;
+  } else if (gambar && typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
+    selectedImage.value = gambar;
+  } else {
+    selectedImage.value = `https://picsum.photos/seed/${gambar || 'dummy'}/800/600`;
+  }
   showImageModal.value = true;
 };
 
-const handleApprove = () => {
+const handleApprove = (item) => {
+  const target = item || selectedItem.value;
+  if (target) {
+    const idx = kegiatan.value.findIndex(k => k.id === target.id);
+    if (idx !== -1) {
+      kegiatan.value[idx].status = 'Disetujui';
+    }
+  }
   showDetailModal.value = false;
   showToast('Kegiatan berhasil disetujui!', 'success');
 };
 
 const handleReject = (reason) => {
+  if (selectedItem.value) {
+    const idx = kegiatan.value.findIndex(k => k.id === selectedItem.value.id);
+    if (idx !== -1) {
+      kegiatan.value[idx].status = 'Ditolak';
+      kegiatan.value[idx].alasan_tolak = reason;
+    }
+  }
   showRejectModal.value = false;
   showDetailModal.value = false; 
   showToast(`Kegiatan ditolak. Alasan: ${reason || 'Tidak ada'}`, 'error');
@@ -276,12 +298,12 @@ const handleReject = (reason) => {
                   </td>
                   <td class="px-3 py-2.5 text-center">{{ item.deadline }}</td>
                   <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium">
-                      {{ item.gambar }}
+                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.gambar === 'object' ? item.gambar.name : item.gambar">
+                      {{ (item.gambar && typeof item.gambar === 'object' && item.gambar.name) ? item.gambar.name : item.gambar }}
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border"
+                    <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
                          :class="{
                            'bg-gray-100 text-gray-600 border-gray-200': item.status === 'Menunggu',
                            'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
@@ -365,7 +387,7 @@ const handleReject = (reason) => {
                 </svg>
               </button>
               <img
-                :src="`https://picsum.photos/seed/${selectedImage}/800/600`"
+                :src="selectedImage"
                 alt="Zoomed Preview"
                 class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
               />
@@ -376,64 +398,15 @@ const handleReject = (reason) => {
     </Teleport>
 
     <!-- MODAL DETAIL (PERSETUJUAN AKTIVITAS) -->
-    <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm md:p-8">
-        <div class="absolute inset-0" @click="showDetailModal = false"></div>
-        <Transition enter-active-class="transition duration-300 ease-out delay-75" enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 translate-y-4 scale-95">
-          <div v-if="showDetailModal" class="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl">
-            <h2 class="mb-8 text-2xl font-bold text-[#1a2b4c]">Persetujuan Aktivitas</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div class="flex flex-col gap-5">
-                <div>
-                  <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Judul Aktivitas<span class="text-red-500">*</span></label>
-                  <input type="text" readonly :value="selectedItem?.judul" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-500 outline-none" />
-                </div>
-                <div>
-                  <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Deskripsi<span class="text-red-500">*</span></label>
-                  <textarea readonly rows="6" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-500 outline-none leading-relaxed">{{ selectedItem?.deskripsi }}</textarea>
-                </div>
-                <div>
-                  <label class="mb-1.5 block text-sm font-bold text-[#1a2b4c]">Deadline<span class="text-red-500">*</span></label>
-                  <input type="text" readonly :value="selectedItem?.deadline" class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-500 outline-none" />
-                </div>
-                <div>
-                  <label class="mb-3 block text-sm font-bold text-[#1a2b4c]">Kategori<span class="text-red-500">*</span></label>
-                  <div class="flex flex-wrap gap-5 text-xs font-semibold text-gray-500">
-                    <label class="flex items-center gap-1.5 cursor-not-allowed"><input type="checkbox" :checked="selectedItem?.kategori.includes('Profesional')" disabled class="rounded border-gray-300 text-[#1a2b4c]" /> Professional</label>
-                    <label class="flex items-center gap-1.5 cursor-not-allowed"><input type="checkbox" :checked="selectedItem?.kategori.includes('Bisnis')" disabled class="rounded border-gray-300 text-[#1a2b4c]" /> Bisnis</label>
-                    <label class="flex items-center gap-1.5 cursor-not-allowed"><input type="checkbox" :checked="selectedItem?.kategori.includes('Akademisi')" disabled class="rounded border-gray-300 text-[#1a2b4c]" /> Akademisi</label>
-                    <label class="flex items-center gap-1.5 cursor-not-allowed"><input type="checkbox" :checked="selectedItem?.kategori.includes('Birokrat')" disabled class="rounded border-gray-300 text-[#1a2b4c]" /> Birokrat</label>
-                  </div>
-                </div>
-              </div>
-              <div class="flex flex-col gap-6">
-                <div>
-                  <label class="mb-2 block text-sm font-bold text-[#1a2b4c]">Gambar<span class="text-red-500">*</span></label>
-                  <div class="flex flex-wrap gap-4 rounded-xl border-2 border-dashed border-gray-300 p-5 items-center justify-center">
-                    <div v-for="i in 3" :key="i" @click="openImage(selectedItem?.gambar || `dummy-${i}.jpg`)" class="flex h-32 w-32 flex-shrink-0 items-center justify-center rounded-lg bg-gray-300 cursor-pointer hover:scale-105 hover:bg-gray-400 transition-all shadow-sm">
-                      <svg class="h-10 w-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Catatan Penolakan Sebelumnya</label>
-                  <p class="mb-2 text-[10px] text-gray-400">Berikut adalah catatan penolakan sebelumnya (Catatan kosong apabila submisi belum pernah ditolak)</p>
-                  <div class="w-full rounded-lg border border-red-300 bg-[#fecaca] p-4 text-sm font-medium text-red-600 min-h-[120px]">
-                    {{ selectedItem?.status === 'Ditolak' ? 'Data tidak lengkap atau format gambar kurang jelas.' : '' }}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="mt-10 flex justify-end gap-4">
-              <button @click="showDetailModal = false" class="rounded-lg border border-gray-300 bg-white px-8 py-2.5 text-sm font-bold text-gray-500 transition hover:bg-gray-50">Kembali</button>
-              <button @click="handleApprove" class="rounded-lg bg-[#51d28c] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-[#3fb874]">Setuju</button>
-              <button @click="openReject(null)" class="rounded-lg bg-[#ef4444] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-red-600">Tolak</button>
-            </div>
-          </div>
-        </Transition>
-      </div>
-    </Transition>
+    <ModalFormPersetujuanAktivitas
+      :show="showDetailModal"
+      :data="selectedItem"
+      @close="showDetailModal = false"
+      @approve="handleApprove"
+      @reject="openReject"
+    />
 
+    <!-- MODAL REJECT -->
     <RejectModal :show="showRejectModal" @close="showRejectModal = false" @submit="handleReject"/>
 
   </AdminLayout>

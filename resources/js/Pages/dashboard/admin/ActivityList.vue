@@ -371,7 +371,7 @@ const openImage = (gambar) => {
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left align-middle relative">
                     <div class="flex items-center gap-1.5 flex-nowrap w-full" v-if="item.kategori">
@@ -410,16 +410,16 @@ const openImage = (gambar) => {
                       </div>
                     </div>
                   </td>
-                  <td class="px-3 py-2.5 text-center">{{ formatDate(item.deadline) }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ formatDate(item.deadline) }}</td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-1.5 flex-wrap">
                       <span v-for="(gbr, i) in item.gambar" :key="i" class="inline-flex items-center">
-                        <button @click="openImage(gbr)" class="text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors font-medium text-xs cursor-pointer">
+                        <button @click="openImage(gbr)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer">
                           {{ typeof gbr === 'object' && gbr.file ? gbr.file.name : (typeof gbr === 'string' ? gbr : 'gambar') }}
                         </button>
                         <span v-if="i < item.gambar.length - 1" class="text-gray-400 ml-1">,</span>
                       </span>
-                      <span v-if="!item.gambar || item.gambar.length === 0" class="text-gray-400 text-xs">-</span>
+                      <span v-if="!item.gambar || item.gambar.length === 0" class="font-inter text-[14px] text-gray-400">-</span>
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center">

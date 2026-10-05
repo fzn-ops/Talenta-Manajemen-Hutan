@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 
 const props = defineProps({
 	show: {
@@ -13,6 +13,28 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'confirm']);
+
+const handleKeyDown = (e) => {
+	if (e.key === 'Escape' && props.show) {
+		e.preventDefault();
+		e.stopPropagation();
+		e.stopImmediatePropagation();
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
+		if (!props.loading) {
+			emit('close');
+		}
+	}
+};
+
+onMounted(() => {
+	window.addEventListener('keydown', handleKeyDown, true);
+});
+
+onBeforeUnmount(() => {
+	window.removeEventListener('keydown', handleKeyDown, true);
+});
 </script>
 
 <template>
