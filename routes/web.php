@@ -90,11 +90,11 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
     });
 
     Route::get('/karir', function () {
-        return Inertia::render('dashboard/admin/Dashboard');
+        return Inertia::render('dashboard/admin/CareerList');
     })->name('karir');
 
     Route::get('/berita', function () {
-        return Inertia::render('dashboard/admin/Dashboard');
+        return Inertia::render('dashboard/admin/NewsList');
     })->name('berita');
 });
 
