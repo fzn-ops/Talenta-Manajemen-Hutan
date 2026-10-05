@@ -9,6 +9,7 @@ import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue'; 
+import ModalFormListAktivitas from '@/Components/dashboard/admin/ModalFormListAktivitas.vue';
 
 // Data Dummy (Deadline diubah ke YYYY-MM-DD agar mudah difilter dengan kalender)
 const aktivitasData = ref([
@@ -35,18 +36,9 @@ const showImageModal = ref(false);
 const showDeleteModal = ref(false);
 
 const selectedItem = ref(null);
+const selectedActivityData = ref(null);
 const selectedImage = ref('');
 const isEditing = ref(false);
-
-// State Form Tambah/Edit
-const form = ref({
-  id: null,
-  judul: '',
-  deskripsi: '',
-  deadline: '',
-  kategori: [],
-  gambar: []
-});
 
 const listKategori = ['Profesional', 'Bisnis', 'Akademisi', 'Birokrat'];
 
@@ -151,19 +143,55 @@ const resetFilters = () => {
 // Aksi Modals
 const openTambah = () => {
   isEditing.value = false;
-  form.value = { id: null, judul: '', deskripsi: '', deadline: '', kategori: [], gambar: [] };
+  selectedActivityData.value = {
+    id: null,
+    judul: '',
+    deskripsi: '',
+    deadline: '',
+    kategori: [],
+    gambar: [],
+  };
   showFormModal.value = true;
 };
 
 const openEdit = (item) => {
   isEditing.value = true;
-  form.value = { ...item, kategori: [...item.kategori], gambar: [...item.gambar] };
+  selectedActivityData.value = {
+    ...item,
+    kategori: Array.isArray(item.kategori) ? [...item.kategori] : item.kategori.split(',').map(s => s.trim()),
+    gambar: Array.isArray(item.gambar) ? [...item.gambar] : [item.gambar],
+  };
   showFormModal.value = true;
+};
+
+const handleFormSubmit = (formData) => {
+  if (isEditing.value) {
+    const idx = aktivitasData.value.findIndex(a => a.id === formData.id);
+    if (idx !== -1) {
+      aktivitasData.value[idx] = { ...formData };
+    }
+  } else {
+    aktivitasData.value.unshift({
+      ...formData,
+      id: Date.now(),
+    });
+  }
+
+  showFormModal.value = false;
+  showToast(isEditing.value ? 'Aktivitas berhasil diperbarui!' : 'Aktivitas berhasil ditambahkan!', 'success');
 };
 
 const confirmDelete = (item) => {
   selectedItem.value = item;
   showDeleteModal.value = true;
+};
+
+const handleDelete = () => {
+  if (selectedItem.value) {
+    aktivitasData.value = aktivitasData.value.filter(item => item.id !== selectedItem.value.id);
+  }
+  showDeleteModal.value = false;
+  showToast('Aktivitas berhasil dihapus!', 'success');
 };
 
 const openImage = (gambar) => {
@@ -175,67 +203,6 @@ const openImage = (gambar) => {
     selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
   }
   showImageModal.value = true;
-};
-
-// ==========================================
-// LOGIC UPLOAD GAMBAR FISIK DARI PERANGKAT
-// ==========================================
-const fileInput = ref(null);
-
-const triggerFileInput = () => {
-  if (fileInput.value) {
-    fileInput.value.click();
-  }
-};
-
-const handleFileUpload = (event) => {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-
-  const sisaSlot = 3 - form.value.gambar.length;
-  const filesToAdd = files.slice(0, sisaSlot);
-
-  filesToAdd.forEach(file => {
-    if (file.size > 10 * 1024 * 1024) {
-      showToast(`File ${file.name} terlalu besar! Maksimal 10MB.`, 'error');
-      return;
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-
-    form.value.gambar.push({
-      file: file,
-      url: previewUrl,
-      isNew: true
-    });
-  });
-
-  event.target.value = '';
-};
-
-const removeImage = (index) => {
-  const removed = form.value.gambar.splice(index, 1)[0];
-  if (removed && removed.isNew) {
-    URL.revokeObjectURL(removed.url); 
-  }
-};
-
-const getImageSrc = (gbr) => {
-  if (typeof gbr === 'object' && gbr.url) {
-    return gbr.url;
-  }
-  return `https://picsum.photos/seed/${gbr}/200/200`;
-};
-
-// Aksi Submit
-const handleSave = () => {
-  showFormModal.value = false;
-  showToast(isEditing.value ? 'Aktivitas berhasil diperbarui!' : 'Aktivitas berhasil ditambahkan!', 'success');
-};
-
-const handleDelete = () => {
-  showDeleteModal.value = false;
-  showToast('Aktivitas berhasil dihapus!', 'success');
 };
 </script>
 
@@ -258,16 +225,17 @@ const handleDelete = () => {
           <p class="mt-1.5 font-inter text-[14px] font-medium leading-tight text-[#4d6786] sm:text-[16px]">Lihat seberapa banyak mahasiswa yang mengikuti aktivitas Talenta!</p>
         </div>
 
-        <!-- ACTION BAR (Searchbar with Action Buttons below on mobile, inline on desktop) -->
-        <div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+        <!-- ACTION BAR -->
+        <div class="flex flex-row items-center gap-2 sm:gap-3 w-full">
           <!-- Search Input Component -->
           <SearchBarTable
+            class="w-full flex-1 min-w-0"
             v-model="searchQuery"
             placeholder="Cari Aktivitas disini..."
           />
 
           <!-- Action Buttons Row -->
-          <div class="flex items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+          <div class="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
             <!-- Filter Dropdown Container -->
             <div class="relative">
               <button
@@ -386,15 +354,7 @@ const handleDelete = () => {
                       </span>
                     </button>
                   </th>
-                  <th class="w-[230px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('kategori')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
-                      <span>Kategori</span>
-                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'kategori'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                      </span>
-                    </button>
-                  </th>
+                  <th class="w-[230px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Kategori</th>
                   <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
                     <button type="button" @click="handleSort('deadline')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
                       <span>Deadline</span>
@@ -487,116 +447,16 @@ const handleDelete = () => {
       </div>
     </section>
 
-    <!-- MODAL FORM TAMBAH / EDIT AKTIVITAS -->
-    <Transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showFormModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-        <div class="absolute inset-0" @click="showFormModal = false"></div>
-        <Transition enter-active-class="transition duration-300 ease-out delay-75" enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 translate-y-4 scale-95">
-          <div v-if="showFormModal" class="relative w-full max-w-5xl rounded-2xl bg-white p-8 shadow-2xl overflow-y-auto max-h-[95vh]">
-            
-            <h2 class="mb-6 text-2xl font-bold text-[#1a2b4c]">{{ isEditing ? 'Edit Aktivitas' : 'Form Tambah Aktivitas' }}</h2>
+    <!-- Modal Form Tambah / Edit Aktivitas Component -->
+    <ModalFormListAktivitas
+      :show="showFormModal"
+      :is-editing="isEditing"
+      :initial-data="selectedActivityData"
+      @close="showFormModal = false"
+      @submit="handleFormSubmit"
+    />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-              <!-- Kolom Kiri -->
-              <div class="flex flex-col gap-4">
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Judul Aktivitas<span class="text-red-500">*</span></label>
-                  <p class="text-[11px] text-gray-400 mb-1.5">Masukkan judul aktivitas yang kamu ajukan di sini yah!</p>
-                  <input v-model="form.judul" type="text" placeholder="Pelatihan manajer KDMP" class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-[#48796f] focus:ring-1 focus:ring-[#48796f]" />
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Deskripsi<span class="text-red-500">*</span></label>
-                  <p class="text-[11px] text-gray-400 mb-1.5">Jelaskan gambaran kegiatan ini yah!</p>
-                  <textarea v-model="form.deskripsi" placeholder="Pelatihan manajer KDMP" rows="6" class="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none focus:border-[#48796f] focus:ring-1 focus:ring-[#48796f] resize-none"></textarea>
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Deadline<span class="text-red-500">*</span></label>
-                  <p class="text-[11px] text-gray-400 mb-1.5">Masukkan tanggal batas registrasi dari aktivitas kamu yah!</p>
-                  <input v-model="form.deadline" type="date" class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-[#48796f] focus:ring-1 focus:ring-[#48796f] text-gray-700" />
-                </div>
-              </div>
-
-              <!-- Kolom Kanan -->
-              <div class="flex flex-col gap-6">
-                
-                <!-- Section Gambar Dropzone -->
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Gambar<span class="text-red-500">*</span></label>
-                  <p class="text-[11px] text-gray-400 mb-3">Masukkan gambar pendukung berupa jpg/png/jpeg! (MAX 10MB, 3 Gambar)</p>
-                  
-                  <!-- Area Putus-Putus (Menyatukan Upload & Preview) -->
-                  <div class="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-white p-5 min-h-[220px] transition-colors relative">
-                    
-                    <!-- INPUT FILE TERSEMBUNYI -->
-                    <input 
-                      type="file" 
-                      ref="fileInput" 
-                      accept="image/png, image/jpeg, image/jpg" 
-                      multiple 
-                      class="hidden" 
-                      @change="handleFileUpload"
-                    />
-
-                    <!-- Area Preview Gambar (Jika ada gambar) -->
-                    <div v-if="form.gambar.length > 0" class="mb-6 flex flex-wrap justify-center gap-4 w-full">
-                      <div v-for="(gbr, idx) in form.gambar" :key="idx" class="relative h-24 w-24 rounded-xl border border-gray-200 overflow-hidden group shadow-md bg-white">
-                        <img :src="getImageSrc(gbr)" class="h-full w-full object-cover" />
-                        <!-- Hover Hapus -->
-                        <button @click.prevent="removeImage(idx)" class="absolute inset-0 bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm" title="Hapus gambar">
-                          <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Area Tombol Upload/Icon -->
-                    <div v-if="form.gambar.length < 3" class="flex flex-col items-center justify-center w-full">
-                      <svg v-if="form.gambar.length === 0" class="mb-3 h-12 w-12 text-[#8b9bb4]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.748 3.748 0 0118 19.5H6.75z" />
-                      </svg>
-                      <p v-if="form.gambar.length === 0" class="text-sm text-gray-500 mb-4 text-center">Upload gambar dari perangkat</p>
-                      
-                      <!-- Tombol untuk buka galeri/file explorer -->
-                      <button @click.prevent="triggerFileInput" class="rounded-lg border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-[#1a2b4c] shadow-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
-                        <span v-if="form.gambar.length > 0" class="text-lg leading-none mt-[-2px]">+</span>
-                        {{ form.gambar.length > 0 ? 'Tambah Gambar' : 'Pilih File' }}
-                      </button>
-                    </div>
-
-                    <!-- Notifikasi Batas Maksimal -->
-                    <div v-if="form.gambar.length >= 3" class="flex items-center gap-2 text-sm text-green-600 font-medium bg-green-50 px-4 py-2 rounded-lg border border-green-200">
-                      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                      Batas maksimal 3 gambar terpenuhi.
-                    </div>
-
-                  </div>
-                </div>
-
-                <!-- Kategori Checkbox -->
-                <div>
-                  <label class="mb-1 block text-sm font-bold text-[#1a2b4c]">Kategori<span class="text-red-500">*</span></label>
-                  <p class="text-[11px] text-gray-400 mb-2">Masukkan kemungkinan kategori dari aktivitas kamu yah!</p>
-                  <div class="flex flex-wrap gap-x-6 gap-y-3 mt-2">
-                    <label v-for="kat in listKategori" :key="kat" class="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" :value="kat" v-model="form.kategori" class="h-4 w-4 rounded border-gray-300 text-[#1a2b4c] focus:ring-[#1a2b4c]">
-                      <span class="text-sm text-[#3b4754] font-medium">{{ kat }}</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tombol Aksi Form -->
-            <div class="mt-10 flex justify-end gap-4">
-              <button @click="showFormModal = false" class="rounded-lg border border-gray-300 bg-white px-8 py-2.5 text-sm font-bold text-[#1a2b4c] transition hover:bg-gray-50">Kembali</button>
-              <button @click="handleSave" class="rounded-lg bg-[#1a2b4c] px-8 py-2.5 text-sm font-bold text-white transition hover:bg-[#111d33] shadow-md">Simpan</button>
-            </div>
-          </div>
-        </Transition>
-      </div>
-    </Transition>
-
+    <!-- Modal Delete Confirmation for Activity -->
     <DeleteModal 
       :show="showDeleteModal" 
       @close="showDeleteModal = false" 

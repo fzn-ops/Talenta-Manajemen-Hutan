@@ -14,6 +14,14 @@ const props = defineProps({
 		type: String,
 		default: '130px',
 	},
+	hasError: {
+		type: Boolean,
+		default: false,
+	},
+	error: {
+		type: [Boolean, String],
+		default: false,
+	},
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -208,7 +216,11 @@ const setBlockFormat = (tag) => {
 	} else if (tag === 'blockquote') {
 		document.execCommand('formatBlock', false, '<blockquote>');
 	} else {
-		document.execCommand('formatBlock', false, `<${tag}>`);
+		try {
+			document.execCommand('formatBlock', false, `<${tag}>`);
+		} catch (e) {
+			document.execCommand('formatBlock', false, tag);
+		}
 	}
 	handleInput();
 	updateActiveFormats();
@@ -334,7 +346,12 @@ onUnmounted(() => {
 <template>
 	<div
 		ref="containerRef"
-		class="relative flex flex-col rounded-[10px] border border-[#d6e0ee] bg-white transition-colors duration-150 hover:border-[#a6b7cb] focus-within:border-[#183669]"
+		:class="[
+			'relative flex flex-col rounded-[10px] border bg-white transition-colors duration-150',
+			(hasError || error)
+				? 'border-red-400 focus-within:border-red-500 bg-red-50/10'
+				: 'border-[#d6e0ee] hover:border-[#a6b7cb] focus-within:border-[#183669]'
+		]"
 	>
 		<!-- Compact Single-Row Toolbar -->
 		<div class="border-b border-[#e6edf6] bg-[#f8fafc] px-2 py-1.5 rounded-t-[9px] select-none text-[#435b76]">
@@ -344,6 +361,7 @@ onUnmounted(() => {
 				<div class="relative">
 					<button
 						type="button"
+						@mousedown.prevent
 						@click.stop="showHeadingMenu = !showHeadingMenu; showMoreMenu = false"
 						class="flex h-7 items-center gap-1.5 rounded-[6px] px-2 text-[12px] font-medium text-[#2f4b6e] transition hover:bg-[#e8eef8]"
 						title="Format Teks"
@@ -361,6 +379,7 @@ onUnmounted(() => {
 					>
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="setBlockFormat('p')"
 							:class="['flex w-full items-center px-3 py-1.5 text-left text-xs transition hover:bg-[#f0f4f9]', !activeFormats.h1 && !activeFormats.h2 && !activeFormats.h3 && !activeFormats.blockquote ? 'font-bold text-[#183669] bg-[#f0f4f9]' : 'text-[#435b76]']"
 						>
@@ -368,6 +387,7 @@ onUnmounted(() => {
 						</button>
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="setBlockFormat('h1')"
 							:class="['flex w-full items-center px-3 py-1.5 text-left text-xs transition hover:bg-[#f0f4f9]', activeFormats.h1 ? 'font-bold text-[#183669] bg-[#f0f4f9]' : 'text-[#435b76]']"
 						>
@@ -375,6 +395,7 @@ onUnmounted(() => {
 						</button>
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="setBlockFormat('h2')"
 							:class="['flex w-full items-center px-3 py-1.5 text-left text-xs transition hover:bg-[#f0f4f9]', activeFormats.h2 ? 'font-bold text-[#183669] bg-[#f0f4f9]' : 'text-[#435b76]']"
 						>
@@ -382,6 +403,7 @@ onUnmounted(() => {
 						</button>
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="setBlockFormat('h3')"
 							:class="['flex w-full items-center px-3 py-1.5 text-left text-xs transition hover:bg-[#f0f4f9]', activeFormats.h3 ? 'font-bold text-[#183669] bg-[#f0f4f9]' : 'text-[#435b76]']"
 						>
@@ -389,6 +411,7 @@ onUnmounted(() => {
 						</button>
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="setBlockFormat('blockquote')"
 							:class="['flex w-full items-center px-3 py-1.5 text-left text-xs transition hover:bg-[#f0f4f9]', activeFormats.blockquote ? 'font-bold text-[#183669] bg-[#f0f4f9]' : 'text-[#435b76]']"
 						>
@@ -403,6 +426,7 @@ onUnmounted(() => {
 				<div class="flex items-center gap-0.5">
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('bold')"
 						:class="['flex h-7 w-7 items-center justify-center rounded-[6px] text-xs font-bold transition', activeFormats.bold ? 'bg-[#183669] text-white' : 'hover:bg-[#e8eef8] hover:text-[#183669]']"
 						title="Tebal (Ctrl+B)"
@@ -411,6 +435,7 @@ onUnmounted(() => {
 					</button>
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('italic')"
 						:class="['flex h-7 w-7 items-center justify-center rounded-[6px] text-xs italic font-serif transition', activeFormats.italic ? 'bg-[#183669] text-white' : 'hover:bg-[#e8eef8] hover:text-[#183669]']"
 						title="Miring (Ctrl+I)"
@@ -419,6 +444,7 @@ onUnmounted(() => {
 					</button>
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('underline')"
 						:class="['flex h-7 w-7 items-center justify-center rounded-[6px] text-xs underline font-semibold transition', activeFormats.underline ? 'bg-[#183669] text-white' : 'hover:bg-[#e8eef8] hover:text-[#183669]']"
 						title="Garis Bawah (Ctrl+U)"
@@ -433,6 +459,7 @@ onUnmounted(() => {
 				<div class="flex items-center gap-0.5">
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('insertUnorderedList')"
 						:class="['flex h-7 w-7 items-center justify-center rounded-[6px] transition', activeFormats.insertUnorderedList ? 'bg-[#183669] text-white' : 'hover:bg-[#e8eef8] hover:text-[#183669]']"
 						title="Bullet List"
@@ -443,6 +470,7 @@ onUnmounted(() => {
 					</button>
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('insertOrderedList')"
 						:class="['flex h-7 w-7 items-center justify-center rounded-[6px] transition', activeFormats.insertOrderedList ? 'bg-[#183669] text-white' : 'hover:bg-[#e8eef8] hover:text-[#183669]']"
 						title="Numbered List"
@@ -470,6 +498,7 @@ onUnmounted(() => {
 					<button
 						v-if="activeFormats.isLink"
 						type="button"
+						@mousedown.prevent
 						@click="removeLink"
 						class="flex h-7 w-7 items-center justify-center rounded-[6px] text-red-500 hover:bg-red-50 transition"
 						title="Hapus Link"
@@ -506,6 +535,7 @@ onUnmounted(() => {
 							<div class="mt-1 flex items-center justify-between rounded-[6px] bg-[#f8fafc] p-0.5 border border-[#e6edf6]">
 								<button
 									type="button"
+									@mousedown.prevent
 									@click="exec('justifyLeft')"
 									:class="['flex h-6 flex-1 items-center justify-center rounded-[4px] transition', activeFormats.justifyLeft ? 'bg-[#183669] text-white' : 'text-[#435b76] hover:bg-[#e8eef8]']"
 									title="Rata Kiri"
@@ -516,6 +546,7 @@ onUnmounted(() => {
 								</button>
 								<button
 									type="button"
+									@mousedown.prevent
 									@click="exec('justifyCenter')"
 									:class="['flex h-6 flex-1 items-center justify-center rounded-[4px] transition', activeFormats.justifyCenter ? 'bg-[#183669] text-white' : 'text-[#435b76] hover:bg-[#e8eef8]']"
 									title="Rata Tengah"
@@ -526,6 +557,7 @@ onUnmounted(() => {
 								</button>
 								<button
 									type="button"
+									@mousedown.prevent
 									@click="exec('justifyRight')"
 									:class="['flex h-6 flex-1 items-center justify-center rounded-[4px] transition', activeFormats.justifyRight ? 'bg-[#183669] text-white' : 'text-[#435b76] hover:bg-[#e8eef8]']"
 									title="Rata Kanan"
@@ -536,6 +568,7 @@ onUnmounted(() => {
 								</button>
 								<button
 									type="button"
+									@mousedown.prevent
 									@click="exec('justifyFull')"
 									:class="['flex h-6 flex-1 items-center justify-center rounded-[4px] transition', activeFormats.justifyFull ? 'bg-[#183669] text-white' : 'text-[#435b76] hover:bg-[#e8eef8]']"
 									title="Rata Kanan Kiri"
@@ -552,6 +585,7 @@ onUnmounted(() => {
 						<!-- Strikethrough -->
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="exec('strikeThrough'); showMoreMenu = false"
 							class="flex w-full items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-xs text-[#435b76] transition hover:bg-[#f0f4f9] hover:text-[#183669]"
 						>
@@ -562,6 +596,7 @@ onUnmounted(() => {
 						<!-- Code Block -->
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="insertCodeBlock"
 							class="flex w-full items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-xs text-[#435b76] transition hover:bg-[#f0f4f9] hover:text-[#183669]"
 						>
@@ -572,6 +607,7 @@ onUnmounted(() => {
 						<!-- Divider / Garis -->
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="insertHorizontalRule"
 							class="flex w-full items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-xs text-[#435b76] transition hover:bg-[#f0f4f9] hover:text-[#183669]"
 						>
@@ -584,6 +620,7 @@ onUnmounted(() => {
 						<!-- Clear Formatting -->
 						<button
 							type="button"
+							@mousedown.prevent
 							@click="exec('removeFormat'); showMoreMenu = false"
 							class="flex w-full items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-xs text-red-600 transition hover:bg-red-50"
 						>
@@ -597,6 +634,7 @@ onUnmounted(() => {
 				<div class="flex items-center gap-0.5 ml-auto">
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('undo')"
 						class="flex h-7 w-7 items-center justify-center rounded-[6px] transition hover:bg-[#e8eef8] hover:text-[#183669]"
 						title="Undo (Ctrl+Z)"
@@ -607,6 +645,7 @@ onUnmounted(() => {
 					</button>
 					<button
 						type="button"
+						@mousedown.prevent
 						@click="exec('redo')"
 						class="flex h-7 w-7 items-center justify-center rounded-[6px] transition hover:bg-[#e8eef8] hover:text-[#183669]"
 						title="Redo (Ctrl+Y)"
@@ -702,106 +741,124 @@ onUnmounted(() => {
 	</div>
 </template>
 
-<style scoped>
-.editor-content :deep(h1) {
-	font-size: 1.25rem;
-	font-weight: 700;
-	color: #183669;
-	margin: 0.35rem 0;
-	line-height: 1.2;
+<style>
+/* Rich Text Editor Content Styling (Overrides Tailwind CSS Reset) */
+.editor-content {
+	word-break: break-word;
+	white-space: pre-wrap;
 }
 
-.editor-content :deep(h2) {
-	font-size: 1.1rem;
-	font-weight: 600;
-	color: #183669;
-	margin: 0.25rem 0;
-	line-height: 1.25;
+.editor-content h1 {
+	display: block !important;
+	font-size: 1.55rem !important; /* ~24-25px */
+	font-weight: 700 !important;
+	color: #183669 !important;
+	margin-top: 0.5rem !important;
+	margin-bottom: 0.35rem !important;
+	line-height: 1.25 !important;
 }
 
-.editor-content :deep(h3) {
-	font-size: 0.95rem;
-	font-weight: 600;
-	color: #183669;
-	margin: 0.2rem 0;
-	line-height: 1.3;
+.editor-content h2 {
+	display: block !important;
+	font-size: 1.3rem !important; /* ~20-21px */
+	font-weight: 700 !important;
+	color: #183669 !important;
+	margin-top: 0.4rem !important;
+	margin-bottom: 0.25rem !important;
+	line-height: 1.3 !important;
 }
 
-.editor-content :deep(p) {
-	margin: 0.2rem 0;
+.editor-content h3 {
+	display: block !important;
+	font-size: 1.125rem !important; /* ~18px */
+	font-weight: 600 !important;
+	color: #183669 !important;
+	margin-top: 0.35rem !important;
+	margin-bottom: 0.2rem !important;
+	line-height: 1.35 !important;
 }
 
-.editor-content :deep(ul) {
-	list-style-type: disc;
-	padding-left: 1.4rem;
-	margin: 0.3rem 0;
+.editor-content p,
+.editor-content div {
+	margin: 0.2rem 0 !important;
+	line-height: 1.6 !important;
 }
 
-.editor-content :deep(ol) {
-	list-style-type: decimal;
-	padding-left: 1.4rem;
-	margin: 0.3rem 0;
+.editor-content b,
+.editor-content strong {
+	font-weight: 700 !important;
+	color: #0f2347 !important;
 }
 
-.editor-content :deep(li) {
-	margin: 0.15rem 0;
+.editor-content i,
+.editor-content em {
+	font-style: italic !important;
 }
 
-.editor-content :deep(b),
-.editor-content :deep(strong) {
-	font-weight: 700;
-	color: #173653;
+.editor-content u {
+	text-decoration: underline !important;
 }
 
-.editor-content :deep(s),
-.editor-content :deep(strike) {
-	text-decoration: line-through;
+.editor-content s,
+.editor-content strike {
+	text-decoration: line-through !important;
 }
 
-.editor-content :deep(u) {
-	text-decoration: underline;
+.editor-content ul {
+	display: block !important;
+	list-style-type: disc !important;
+	padding-left: 1.5rem !important;
+	margin: 0.35rem 0 !important;
 }
 
-.editor-content :deep(i),
-.editor-content :deep(em) {
-	font-style: italic;
+.editor-content ol {
+	display: block !important;
+	list-style-type: decimal !important;
+	padding-left: 1.5rem !important;
+	margin: 0.35rem 0 !important;
 }
 
-.editor-content :deep(a) {
-	color: #2563eb;
-	text-decoration: underline;
-	font-weight: 500;
-	cursor: pointer;
+.editor-content li {
+	display: list-item !important;
+	margin: 0.15rem 0 !important;
 }
 
-.editor-content :deep(a:hover) {
-	color: #1d4ed8;
+.editor-content a {
+	color: #2563eb !important;
+	text-decoration: underline !important;
+	font-weight: 500 !important;
+	cursor: pointer !important;
 }
 
-.editor-content :deep(blockquote) {
-	border-left: 3px solid #183669;
-	background: #f8fafc;
-	padding: 0.35rem 0.75rem;
-	margin: 0.4rem 0;
-	color: #475569;
-	font-style: italic;
-	border-radius: 0 6px 6px 0;
+.editor-content a:hover {
+	color: #1d4ed8 !important;
 }
 
-.editor-content :deep(code) {
-	background: #eef2f6;
-	color: #c2410c;
-	padding: 0.15rem 0.35rem;
-	border-radius: 4px;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	font-size: 0.85em;
+.editor-content blockquote {
+	display: block !important;
+	border-left: 3.5px solid #183669 !important;
+	background: #f1f5f9 !important;
+	padding: 0.4rem 0.85rem !important;
+	margin: 0.45rem 0 !important;
+	color: #334155 !important;
+	font-style: italic !important;
+	border-radius: 0 6px 6px 0 !important;
 }
 
-.editor-content :deep(hr) {
-	border: 0;
-	height: 1px;
-	background: #d6e0ee;
-	margin: 0.75rem 0;
+.editor-content code {
+	background: #e2e8f0 !important;
+	color: #b91c1c !important;
+	padding: 0.15rem 0.35rem !important;
+	border-radius: 4px !important;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+	font-size: 0.875em !important;
+}
+
+.editor-content hr {
+	border: 0 !important;
+	height: 1px !important;
+	background: #cbd5e1 !important;
+	margin: 0.75rem 0 !important;
 }
 </style>
 
