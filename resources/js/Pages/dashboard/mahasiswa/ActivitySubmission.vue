@@ -123,7 +123,7 @@ const handleModalSubmit = (formData) => {
   <Head title="Pengajuan Aktivitas"/>
 
   <MahasiswaLayout>
-    <div class="font-sans bg-[#fcfcfc] min-h-screen relative overflow-hidden">
+    <div class="font-sans bg-[#fcfcfc] min-h-screen relative overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       
       <Transition enter-active-class="transition-all transform duration-500 ease-out" enter-from-class="translate-x-12 opacity-0" enter-to-class="translate-x-0 opacity-100" leave-active-class="transition-all transform duration-300 ease-in" leave-from-class="translate-x-0 opacity-100" leave-to-class="translate-x-12 opacity-0">
         <div v-if="toast.show" class="fixed top-8 right-8 z-[100]"><ToastNotification :message="toast.message" :show="true" :type="toast.type" @close="toast.show = false"/></div>
@@ -145,8 +145,7 @@ const handleModalSubmit = (formData) => {
               <div v-if="showFilter" @click="showFilter = false; isStatusDropdownOpen = false" class="fixed inset-0 z-30"></div>
 
               <button @click="showFilter = !showFilter" class="relative z-40 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors focus:outline-none select-none cursor-pointer" :class="showFilter || filterStatus ? 'border-[#183669]' : 'border-[#d6e0ee] hover:border-[#8ea9cb]'">
-                <svg v-if="!showFilter && !filterStatus" class="h-5 w-5 shrink-0 object-contain pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                <img v-else src="/assets/icons/filter.svg" class="h-5 w-5 shrink-0 object-contain pointer-events-none" onerror="this.style.display='none'" />
+                <img src="/assets/icons/filter.svg" class="h-5 w-5 shrink-0 object-contain pointer-events-none" onerror="this.style.display='none'" />
                 <span v-if="filterStatus" class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"></span>
               </button>
               

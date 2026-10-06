@@ -110,8 +110,12 @@ Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasis
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
         Route::get('/list', function () {
-            return Inertia::render('dashboard/mahasiswa/Dashboard');
+            return Inertia::render('dashboard/mahasiswa/ActivityList');
         })->name('list');
+
+        Route::get('/pendaftaran', function () {
+            return Inertia::render('dashboard/mahasiswa/ActivityRegister');
+        })->name('pendaftaran');
 
         Route::get('/pengajuan', function () {
             return Inertia::render('dashboard/mahasiswa/ActivitySubmission');
