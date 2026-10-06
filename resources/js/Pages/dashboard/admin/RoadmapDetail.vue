@@ -225,6 +225,36 @@ const handleAddCard = async (type) => {
 const initialTopic = ref('');
 const initialCardsString = ref('');
 
+// Helper to reliably render base64 PDF in iframe/object by converting to Blob URL
+const blobUrlCache = new Map();
+const getPdfUrl = (dataUrl) => {
+	if (!dataUrl) return '';
+	if (dataUrl.startsWith('http') || dataUrl.startsWith('/')) return dataUrl;
+	
+	if (dataUrl.startsWith('data:application/pdf;base64,')) {
+		if (blobUrlCache.has(dataUrl)) {
+			return blobUrlCache.get(dataUrl);
+		}
+		try {
+			const parts = dataUrl.split(',');
+			const bstr = atob(parts[1]);
+			let n = bstr.length;
+			const u8arr = new Uint8Array(n);
+			while(n--) {
+				u8arr[n] = bstr.charCodeAt(n);
+			}
+			const blob = new Blob([u8arr], { type: 'application/pdf' });
+			const url = URL.createObjectURL(blob);
+			blobUrlCache.set(dataUrl, url);
+			return url;
+		} catch (e) {
+			console.error('Failed to convert base64 to Blob URL', e);
+			return dataUrl;
+		}
+	}
+	return dataUrl;
+};
+
 const stripError = (cards) => {
 	return cards.map(c => ({
 		id: c.id,
@@ -790,14 +820,29 @@ const executeDeleteItem = () => {
 										</div>
 										
 										<!-- PDF -->
-										<div v-else-if="card.type === 'pdf' && card.fileName" class="flex items-center gap-4 bg-[#fafcff] p-4 sm:p-5 border border-[#d6e0ee] rounded-[10px] shadow-sm">
-											<svg class="h-10 w-10 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-												<path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
-												<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.447 15.867c-.201.764-.787 1.137-1.468 1.137h-.083v2h-1.14v-5.263c.272-.042.663-.06 1.054-.06.882 0 1.503.415 1.503 1.155 0 .587-.332 1.019-.866 1.031zm3.799 1.83h-.148c-.29 0-.586-.03-.846-.071v-4.108c.284-.047.622-.065.989-.065 1.332 0 2.256.705 2.256 2.155 0 1.487-.96 2.089-2.251 2.089zm3.504-2.812h-1.344v2.545h-1.151v-5.228h2.64v1.013h-1.489v1.658h1.344v1.012z" />
-											</svg>
-											<div class="flex-1 min-w-0">
-												<p class="font-poppins font-bold text-[#183669] truncate text-[14px] sm:text-[15px]">{{ card.fileName }}</p>
-												<p class="font-inter text-[12px] text-[#7188a3] mt-0.5">Dokumen PDF</p>
+										<div v-else-if="card.type === 'pdf' && card.fileName" class="w-full flex flex-col rounded-[10px] border border-[#d6e0ee] shadow-sm bg-white overflow-hidden">
+											<!-- Header: Icon, Name, Download -->
+											<div class="flex items-center justify-between bg-[#fafcff] px-4 py-3 border-b border-[#d6e0ee]">
+												<div class="flex items-center gap-3 min-w-0">
+													<svg class="h-7 w-7 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+													</svg>
+													<div class="flex-1 min-w-0">
+														<p class="font-poppins font-bold text-[#183669] truncate text-[13px] sm:text-[14px]">{{ card.fileName }}</p>
+													</div>
+												</div>
+												<a :href="getPdfUrl(card.content)" target="_blank" :download="card.fileName" class="shrink-0 rounded-[6px] bg-[#183669] px-3 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-[12px] font-bold text-white hover:bg-[#122b54] transition shadow-sm whitespace-nowrap flex items-center gap-1.5">
+													<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+													Unduh
+												</a>
+											</div>
+											<!-- Browser Native PDF Viewer -->
+											<div class="w-full h-[450px] sm:h-[550px] md:h-[650px] bg-slate-50 relative">
+												<object :data="getPdfUrl(card.content)" type="application/pdf" class="w-full h-full">
+													<iframe :src="getPdfUrl(card.content)" class="w-full h-full border-none" title="PDF Viewer">
+														<p class="p-4 text-[13px] text-center text-slate-500">Browser Anda tidak mendukung preview PDF. Silakan klik tombol Unduh.</p>
+													</iframe>
+												</object>
 											</div>
 										</div>
 										

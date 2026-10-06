@@ -11,6 +11,36 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'error']);
 
+// Helper to reliably render base64 PDF in iframe/object by converting to Blob URL
+const blobUrlCache = new Map();
+const getPdfUrl = (dataUrl) => {
+	if (!dataUrl) return '';
+	if (dataUrl.startsWith('http') || dataUrl.startsWith('/')) return dataUrl;
+	
+	if (dataUrl.startsWith('data:application/pdf;base64,')) {
+		if (blobUrlCache.has(dataUrl)) {
+			return blobUrlCache.get(dataUrl);
+		}
+		try {
+			const parts = dataUrl.split(',');
+			const bstr = atob(parts[1]);
+			let n = bstr.length;
+			const u8arr = new Uint8Array(n);
+			while(n--) {
+				u8arr[n] = bstr.charCodeAt(n);
+			}
+			const blob = new Blob([u8arr], { type: 'application/pdf' });
+			const url = URL.createObjectURL(blob);
+			blobUrlCache.set(dataUrl, url);
+			return url;
+		} catch (e) {
+			console.error('Failed to convert base64 to Blob URL', e);
+			return dataUrl;
+		}
+	}
+	return dataUrl;
+};
+
 // Sync with v-model
 const cards = computed({
 	get: () => props.modelValue,
@@ -371,12 +401,27 @@ const getVideoEmbedUrl = (url) => {
 									<img :src="card.content" class="w-full h-full object-cover" />
 								</div>
 								<!-- Preview PDF -->
-								<div v-else class="flex items-center gap-3 bg-white p-3 border border-[#d6e0ee] rounded-[8px] shadow-sm w-full max-w-sm">
-									<svg class="h-8 w-8 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
-										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.447 15.867c-.201.764-.787 1.137-1.468 1.137h-.083v2h-1.14v-5.263c.272-.042.663-.06 1.054-.06.882 0 1.503.415 1.503 1.155 0 .587-.332 1.019-.866 1.031zm3.799 1.83h-.148c-.29 0-.586-.03-.846-.071v-4.108c.284-.047.622-.065.989-.065 1.332 0 2.256.705 2.256 2.155 0 1.487-.96 2.089-2.251 2.089zm3.504-2.812h-1.344v2.545h-1.151v-5.228h2.64v1.013h-1.489v1.658h1.344v1.012z" />
-									</svg>
-									<span class="font-poppins text-sm font-semibold text-[#183669] truncate flex-1 text-left">{{ card.fileName }}</span>
+								<div v-else class="w-full flex flex-col rounded-[10px] border border-[#d6e0ee] shadow-sm bg-white overflow-hidden">
+									<!-- Header: Icon, Name -->
+									<div class="flex items-center justify-between bg-[#fafcff] px-4 py-3 border-b border-[#d6e0ee]">
+										<div class="flex items-center gap-3 min-w-0">
+											<svg class="h-7 w-7 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+											</svg>
+											<div class="flex-1 min-w-0">
+												<p class="font-poppins font-bold text-[#183669] truncate text-[13px] sm:text-[14px]">{{ card.fileName }}</p>
+												<p class="font-inter text-[11px] text-[#7188a3] mt-0.5">Preview PDF</p>
+											</div>
+										</div>
+									</div>
+									<!-- Browser Native PDF Viewer -->
+									<div class="w-full h-[400px] sm:h-[500px] bg-slate-50 relative">
+										<object :data="getPdfUrl(card.content)" type="application/pdf" class="w-full h-full">
+											<iframe :src="getPdfUrl(card.content)" class="w-full h-full border-none" title="PDF Viewer Preview">
+												<p class="p-4 text-[13px] text-center text-slate-500">Browser Anda tidak mendukung preview PDF.</p>
+											</iframe>
+										</object>
+									</div>
 								</div>
 								
 								<button
