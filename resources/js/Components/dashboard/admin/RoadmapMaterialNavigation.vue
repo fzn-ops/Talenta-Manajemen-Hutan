@@ -60,19 +60,19 @@ const cancelInlineEdit = () => {
 </script>
 
 <template>
-	<div class="space-y-3">
-		<!-- List of Items -->
-		<div class="space-y-2.5">
+	<div class="space-y-2.5 sm:space-y-3 font-poppins">
+		<!-- List of Items with responsive scrollbar on desktop and natural height in mobile drawer -->
+		<div class="space-y-2 sm:space-y-2.5 md:max-h-[calc(100vh-220px)] md:overflow-y-auto md:pr-1.5 custom-scrollbar">
 			<div
 				v-for="item in items"
 				:key="item.id"
 				@click="emit('update:selectedItemId', item.id)"
 				:style="{ borderRadius: '10px' }"
 				:class="[
-					'group flex items-center justify-between rounded-[10px] p-2.5 px-3 transition-colors cursor-pointer select-none',
+					'group flex min-h-[44px] sm:min-h-[48px] items-center justify-between rounded-[10px] p-2.5 px-3 sm:px-3.5 transition-colors duration-150 cursor-pointer select-none border',
 					selectedItemId === item.id
-						? 'bg-[#183669] text-white shadow-xs'
-						: 'bg-white text-[#183669] border border-[#d6e0ee] hover:border-[#183669] shadow-xs'
+						? 'bg-[#183669] text-white border-[#183669] shadow-xs'
+						: 'bg-white text-[#183669] border-[#d6e0ee] hover:border-[#183669] shadow-xs'
 				]"
 			>
 				<!-- Left Title Block -->
@@ -118,7 +118,7 @@ const cancelInlineEdit = () => {
 					<template v-else>
 						<span
 							:class="[
-								'font-poppins text-[13.5px] sm:text-[14px] font-bold leading-[26px] line-clamp-2 block px-2',
+								'font-poppins text-[13.5px] sm:text-[14px] font-bold leading-[24px] line-clamp-2 block px-1',
 								selectedItemId === item.id ? 'text-white' : 'text-[#183669]'
 							]"
 							:style="{
@@ -186,12 +186,29 @@ const cancelInlineEdit = () => {
 			type="button"
 			@click="emit('add-item')"
 			:style="{ borderRadius: '10px' }"
-			class="flex w-full items-center justify-center rounded-[10px] border border-[#d6e0ee] bg-white py-3.5 text-[#183669] shadow-xs transition hover:border-[#183669] hover:bg-slate-50 active:scale-98 focus:outline-none cursor-pointer"
+			class="flex w-full items-center justify-center rounded-[10px] border border-[#d6e0ee] bg-white py-3 sm:py-3.5 text-[#183669] shadow-xs transition hover:border-[#183669] hover:bg-slate-50 active:scale-98 focus:outline-none cursor-pointer"
 			title="Tambah Materi / Tugas"
 		>
-			<svg class="h-6 w-6 text-[#183669] stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="h-5 w-5 sm:h-6 sm:w-6 text-[#183669] stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 			</svg>
 		</button>
 	</div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+	width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: #cbd5e1;
+	border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: #94a3b8;
+}
+</style>
+

@@ -708,7 +708,7 @@ const executeDeleteItem = () => {
 	<Head :title="`Detail ${currentRoadmap.title} - Admin`" />
 
 	<AdminLayout>
-		<div class="flex flex-col gap-6 min-h-[calc(100vh-80px)] mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8 pb-24 sm:pb-20">
+		<div class="flex flex-col gap-6 min-h-[calc(100vh-80px)] mx-auto w-full max-w-[1520px] px-4 pt-8 sm:pt-[52px] pb-24 sm:pb-20 font-poppins sm:px-6 lg:px-8">
 			<!-- Top Breadcrumb -->
 			<nav class="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#183669]">
 				<Link href="/admin/roadmap" class="hover:underline text-[#183669] transition-colors">
@@ -728,7 +728,7 @@ const executeDeleteItem = () => {
 				</p>
 			</div>
 
-			<div class="mt-6 w-full max-w-full overflow-hidden">
+			<div class="mt-6 w-full max-w-full overflow-visible">
 				<!-- Folder Header Tabs Row (Seamless 0 gap between tabs and + button, horizontal scroll for many tabs) -->
 				<div 
 					ref="tabsContainerRef"
@@ -1072,7 +1072,7 @@ const executeDeleteItem = () => {
 						</div>
 
 						<!-- ================= RIGHT COLUMN: MATERI & TUGAS LIST (30%) (DESKTOP / TABLET) ================= -->
-						<div class="hidden md:block w-full md:w-[38%] lg:w-[32%] xl:w-[30%] space-y-3">
+						<div class="hidden md:block w-full md:w-[38%] lg:w-[32%] xl:w-[30%] sticky top-6 self-start space-y-3">
 							<RoadmapMaterialNavigation
 								:items="currentMonth?.items || []"
 								v-model:selectedItemId="selectedItemId"
@@ -1138,28 +1138,33 @@ const executeDeleteItem = () => {
 			>
 				<div
 					v-if="isMobileNavOpen"
-					class="fixed top-0 right-0 z-[61] h-full w-[85%] max-w-[360px] bg-white shadow-2xl flex flex-col md:hidden font-poppins"
+					class="fixed top-0 right-0 z-[61] h-full w-[85%] max-w-[350px] bg-white shadow-2xl flex flex-col md:hidden font-poppins"
 				>
 					<!-- Drawer Header -->
-					<div class="flex items-center justify-between p-5 bg-white border-b border-[#d6e0ee] shrink-0">
+					<div class="flex items-center justify-between p-4 sm:p-5 bg-white border-b border-[#d6e0ee] shrink-0">
 						<div>
-							<h3 class="font-extrabold text-[#17334F] text-[18px]">Daftar Materi</h3>
+							<h3 class="font-extrabold text-[#17334F] text-[17px] sm:text-[18px]">Daftar Materi</h3>
 							<p class="text-[12px] text-[#64748b] mt-0.5">Navigasi bulan ini</p>
 						</div>
-						<button @click="isMobileNavOpen = false" class="p-2 rounded-[8px] hover:bg-slate-100 text-[#64748b] transition active:bg-slate-200">
+						<button 
+							type="button"
+							@click="isMobileNavOpen = false" 
+							class="p-2 rounded-[8px] hover:bg-slate-100 text-[#64748b] transition active:bg-slate-200 cursor-pointer"
+						>
 							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 							</svg>
 						</button>
 					</div>
 					<!-- Drawer Body -->
-					<div class="flex-1 overflow-y-auto p-5 pb-20 bg-[#f8fafc]">
+					<div class="flex-1 overflow-y-auto p-4 sm:p-5 bg-[#fafcff] space-y-2">
 						<RoadmapMaterialNavigation
 							:items="currentMonth?.items || []"
 							v-model:selectedItemId="selectedItemId"
 							@update-item-title="updateItemTitle"
 							@delete-item="confirmDeleteItem"
 							@add-item="openAddModal"
+							@update:selectedItemId="isMobileNavOpen = false"
 						/>
 					</div>
 				</div>

@@ -105,8 +105,14 @@ Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasis
     })->name('dashboard');
 
     Route::get('/roadmap', function () {
-        return Inertia::render('dashboard/mahasiswa/Dashboard');
+        return Inertia::render('dashboard/mahasiswa/Roadmap');
     })->name('roadmap');
+
+    Route::get('/roadmap/{id}', function ($id = 1) {
+        return Inertia::render('dashboard/mahasiswa/RoadmapDetail', [
+            'roadmapId' => $id,
+        ]);
+    })->name('roadmap.detail');
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
         Route::get('/list', function () {
