@@ -50,6 +50,50 @@ const formatTanggal = (dateString) => {
   return new Date(dateString).toLocaleDateString('id-ID', options);
 };
 
+// Mapping bulan Indonesia untuk parsing tanggal
+const monthMapIndo = {
+  januari: 0, jan: 0,
+  februari: 1, feb: 1,
+  maret: 2, mar: 2,
+  april: 3, apr: 3,
+  mei: 4, may: 4,
+  juni: 5, jun: 5,
+  juli: 6, jul: 6,
+  agustus: 7, agu: 7, ags: 7, aug: 7,
+  september: 8, sep: 8, sept: 8,
+  oktober: 9, okt: 9, oct: 9,
+  november: 10, nov: 10,
+  desember: 11, des: 11, dec: 11,
+};
+
+const parseDateValue = (val) => {
+  if (!val) return 0;
+  if (val instanceof Date) return val.getTime();
+  if (typeof val === 'number') return val;
+  
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    // Coba format tanggal bahasa Indonesia: "10 Juli 2029", "01 November 2029"
+    const parts = trimmed.split(/[\s,/-]+/);
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const monthStr = parts[1].toLowerCase();
+      const year = parseInt(parts[2], 10);
+      
+      if (!isNaN(day) && monthMapIndo[monthStr] !== undefined && !isNaN(year)) {
+        return new Date(year, monthMapIndo[monthStr], day).getTime();
+      }
+    }
+
+    // Coba format standar ISO (YYYY-MM-DD)
+    const parsedTime = Date.parse(trimmed);
+    if (!isNaN(parsedTime)) {
+      return parsedTime;
+    }
+  }
+  return 0;
+};
+
 // ==========================================
 // 3. LOGIC FILTERING & SORTING
 // ==========================================
@@ -72,6 +116,12 @@ const processedNews = computed(() => {
     data.sort((a, b) => {
       let valA = a[sortColumn.value];
       let valB = b[sortColumn.value];
+
+      if (sortColumn.value === 'deadline' || sortColumn.value === 'tanggal' || sortColumn.value === 'waktu' || sortColumn.value === 'created_at') {
+        const timeA = parseDateValue(valA);
+        const timeB = parseDateValue(valB);
+        return sortDirection.value === 'asc' ? timeA - timeB : timeB - timeA;
+      }
 
       if (typeof valA === 'string') valA = valA.toLowerCase();
       if (typeof valB === 'string') valB = valB.toLowerCase();
