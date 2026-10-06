@@ -119,7 +119,7 @@ Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasis
     });
 
     Route::get('/profile', function () {
-        return Inertia::render('dashboard/mahasiswa/Dashboard');
+        return Inertia::render('dashboard/mahasiswa/Profile');
     })->name('profile');
 });
 

@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
 			<!-- Main Page Content (Putih Bersih) -->
 			<main
 				ref="mainContentRef"
-				class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white p-6 sm:p-8"
+				class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white"
 			>
 				<slot />
 			</main>
