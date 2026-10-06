@@ -8,10 +8,10 @@ const page = usePage();
 const showingAccountMenu = ref(false);
 const imageLoadError = ref(false);
 
-const userName = computed(() => page.props.auth?.user?.name || 'Mahasiswa');
+const userName = computed(() => page.props.auth?.user?.nama || page.props.auth?.user?.name || 'Mahasiswa');
 const userProfilePicture = computed(() => {
 	if (imageLoadError.value) return null;
-	return page.props.auth?.user?.profile_picture || null;
+	return page.props.auth?.user?.profile_picture || page.props.auth?.user?.foto || null;
 });
 
 const onImageError = () => {

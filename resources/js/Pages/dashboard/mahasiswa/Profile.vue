@@ -78,10 +78,10 @@ onMounted(() => {
 
 // 1. State Data Diri
 const formPersonal = ref({
-	name: currentUser.value.name || '',
+	name: currentUser.value.nama || currentUser.value.name || '',
 	nim: currentUser.value.nim || currentUser.value.NIM || '',
 	angkatan: currentUser.value.angkatan || '',
-	photoPreview: currentUser.value.profile_picture || null,
+	photoPreview: currentUser.value.profile_picture || currentUser.value.foto || null,
 	photo: null,
 });
 
@@ -147,7 +147,7 @@ const savedAccountData = ref({
 
 const formAccount = ref({
 	email: currentUser.value.email || '',
-	phone: currentUser.value.phone || '',
+	phone: currentUser.value.no_handphone || currentUser.value.phone || '',
 });
 
 const isEditingEmail = ref(false);
@@ -161,16 +161,17 @@ watch(
 	() => currentUser.value,
 	(val) => {
 		if (val) {
-			formPersonal.value.name = val.name || '';
+			formPersonal.value.name = val.nama || val.name || '';
 			formPersonal.value.nim = val.nim || val.NIM || '';
 			formPersonal.value.angkatan = val.angkatan || '';
-			formPersonal.value.photoPreview = val.profile_picture || null;
+			formPersonal.value.photoPreview = val.profile_picture || val.foto || null;
 
 			if (!isEditingEmail.value) {
 				formAccount.value.email = savedAccountData.value.email ?? (val.email && val.email !== '-' ? val.email : '');
 			}
 			if (!isEditingPhone.value) {
-				formAccount.value.phone = savedAccountData.value.phone ?? (val.phone && val.phone !== '-' ? val.phone : '');
+				const currentPhone = val.no_handphone || val.phone;
+				formAccount.value.phone = savedAccountData.value.phone ?? (currentPhone && currentPhone !== '-' ? currentPhone : '');
 			}
 		}
 	},
@@ -182,7 +183,7 @@ const hasInitialEmail = computed(() => {
 	return !!email && email !== '-';
 });
 const hasInitialPhone = computed(() => {
-	const phone = savedAccountData.value.phone ?? currentUser.value?.phone;
+	const phone = savedAccountData.value.phone ?? (currentUser.value?.no_handphone || currentUser.value?.phone);
 	return !!phone && phone !== '-';
 });
 
@@ -202,7 +203,8 @@ const cancelEditEmail = () => {
 
 const cancelEditPhone = () => {
 	const current = currentUser.value || {};
-	const origPhone = savedAccountData.value.phone ?? (current.phone && current.phone !== '-' ? current.phone : '');
+	const currentPhone = current.no_handphone || current.phone;
+	const origPhone = savedAccountData.value.phone ?? (currentPhone && currentPhone !== '-' ? currentPhone : '');
 	formAccount.value.phone = origPhone;
 	isEditingPhone.value = false;
 	if (accountErrors.value?.phone) {
@@ -283,8 +285,9 @@ const isSavingPassword = ref(false);
 // State periksa apakah ada perubahan data akun dibanding data semula
 const isAccountChanged = computed(() => {
 	const current = currentUser.value || {};
+	const currentPhone = current.no_handphone || current.phone;
 	const origEmail = (savedAccountData.value.email ?? (current.email && current.email !== '-' ? current.email : '')).trim();
-	const origPhone = (savedAccountData.value.phone ?? (current.phone && current.phone !== '-' ? current.phone : '')).trim();
+	const origPhone = (savedAccountData.value.phone ?? (currentPhone && currentPhone !== '-' ? currentPhone : '')).trim();
 
 	const newEmail = (formAccount.value.email || '').trim();
 	const newPhone = (formAccount.value.phone || '').trim();

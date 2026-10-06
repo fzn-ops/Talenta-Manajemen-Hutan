@@ -21,9 +21,19 @@ class UserDummy extends Seeder
             'email' => 'fauzan@apps.ipb.ac.id',
             'password' => Hash::make('password123'),
             'role' => 'mahasiswa',
-            'angkatan' => 2023,
+            'angkatan' => 60,
             'talent_mapping' => 'Web Development',
             'no_handphone' => '08123456789'
+        ]);
+        User::create([
+            'nama' => 'Farhan Hakim',
+            'nim' => 'J0403231075',
+            'email' => '',
+            'password' => Hash::make('password123'),
+            'role' => 'mahasiswa',
+            'angkatan' => 60,
+            'talent_mapping' => 'Profesional',
+            'no_handphone' => ''
         ]);
         User::create([
             'nama' => 'admin doksli',
