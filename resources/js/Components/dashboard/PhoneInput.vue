@@ -34,8 +34,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'blur', 'focus']);
 
-// Daftar kode negara umum dengan nama (Indonesia default)
+// Daftar kode negara umum dengan nama (Indonesia default + negara-negara Asia mainstream & global)
 const countries = [
+	// Asia Tenggara (ASEAN)
 	{ code: 'ID', name: 'Indonesia', dial_code: '+62', placeholder: '812-3456-7890' },
 	{ code: 'MY', name: 'Malaysia', dial_code: '+60', placeholder: '12-345-6789' },
 	{ code: 'SG', name: 'Singapura (Singapore)', dial_code: '+65', placeholder: '8123-4567' },
@@ -43,18 +44,55 @@ const countries = [
 	{ code: 'TH', name: 'Thailand', dial_code: '+66', placeholder: '81-234-5678' },
 	{ code: 'PH', name: 'Filipina (Philippines)', dial_code: '+63', placeholder: '912-345-6789' },
 	{ code: 'VN', name: 'Vietnam', dial_code: '+84', placeholder: '91-234-5678' },
-	{ code: 'AU', name: 'Australia', dial_code: '+61', placeholder: '412-345-678' },
+	{ code: 'KH', name: 'Kamboja (Cambodia)', dial_code: '+855', placeholder: '12-345-678' },
+	{ code: 'LA', name: 'Laos', dial_code: '+856', placeholder: '20-2345-6789' },
+	{ code: 'MM', name: 'Myanmar', dial_code: '+95', placeholder: '9-234-5678' },
+	{ code: 'TL', name: 'Timor-Leste', dial_code: '+670', placeholder: '7712-3456' },
+
+	// Asia Selatan
+	{ code: 'BD', name: 'Bangladesh', dial_code: '+880', placeholder: '1712-345678' },
+	{ code: 'IN', name: 'India', dial_code: '+91', placeholder: '98765-43210' },
+	{ code: 'PK', name: 'Pakistan', dial_code: '+92', placeholder: '301-2345678' },
+	{ code: 'LK', name: 'Sri Lanka', dial_code: '+94', placeholder: '71-234-5678' },
+	{ code: 'NP', name: 'Nepal', dial_code: '+977', placeholder: '984-1234567' },
+	{ code: 'MV', name: 'Maladewa (Maldives)', dial_code: '+960', placeholder: '771-2345' },
+	{ code: 'AF', name: 'Afghanistan', dial_code: '+93', placeholder: '70-123-4567' },
+
+	// Asia Timur
 	{ code: 'JP', name: 'Jepang (Japan)', dial_code: '+81', placeholder: '90-1234-5678' },
 	{ code: 'KR', name: 'Korea Selatan (South Korea)', dial_code: '+82', placeholder: '10-1234-5678' },
+	{ code: 'CN', name: 'Tiongkok (China)', dial_code: '+86', placeholder: '138-0013-8000' },
+	{ code: 'TW', name: 'Taiwan', dial_code: '+886', placeholder: '912-345-678' },
+	{ code: 'HK', name: 'Hong Kong', dial_code: '+852', placeholder: '9123-4567' },
+	{ code: 'MO', name: 'Makau (Macau)', dial_code: '+853', placeholder: '6123-4567' },
+	{ code: 'MN', name: 'Mongolia', dial_code: '+976', placeholder: '8812-3456' },
+
+	// Timur Tengah & Asia Barat
 	{ code: 'SA', name: 'Arab Saudi (Saudi Arabia)', dial_code: '+966', placeholder: '50-123-4567' },
+	{ code: 'AE', name: 'Uni Emirat Arab (UAE)', dial_code: '+971', placeholder: '50-123-4567' },
+	{ code: 'QA', name: 'Qatar', dial_code: '+974', placeholder: '3312-3456' },
+	{ code: 'KW', name: 'Kuwait', dial_code: '+965', placeholder: '9123-4567' },
+	{ code: 'BH', name: 'Bahrain', dial_code: '+973', placeholder: '3912-3456' },
+	{ code: 'OM', name: 'Oman', dial_code: '+968', placeholder: '9123-4567' },
+	{ code: 'YE', name: 'Yaman (Yemen)', dial_code: '+967', placeholder: '71-234-5678' },
+	{ code: 'JO', name: 'Yordania (Jordan)', dial_code: '+962', placeholder: '7-9012-3456' },
+	{ code: 'LB', name: 'Lebanon', dial_code: '+961', placeholder: '70-123-456' },
+	{ code: 'IQ', name: 'Irak (Iraq)', dial_code: '+964', placeholder: '790-123-4567' },
+	{ code: 'IR', name: 'Iran', dial_code: '+98', placeholder: '912-345-6789' },
+	{ code: 'PS', name: 'Palestina (Palestine)', dial_code: '+970', placeholder: '59-912-3456' },
+	{ code: 'SY', name: 'Suriah (Syria)', dial_code: '+963', placeholder: '944-123-456' },
+	{ code: 'TR', name: 'Turki (Turkey)', dial_code: '+90', placeholder: '532-123-4567' },
+
+	// Asia Tengah
+	{ code: 'UZ', name: 'Uzbekistan', dial_code: '+998', placeholder: '90-123-4567' },
+	{ code: 'KZ', name: 'Kazakhstan', dial_code: '+7', placeholder: '701-234-5678' },
+
+	// Negara Populer Lainnya
+	{ code: 'AU', name: 'Australia', dial_code: '+61', placeholder: '412-345-678' },
 	{ code: 'GB', name: 'Inggris (United Kingdom)', dial_code: '+44', placeholder: '7123-456789' },
 	{ code: 'US', name: 'Amerika Serikat (USA)', dial_code: '+1', placeholder: '202-555-0123' },
 	{ code: 'DE', name: 'Jerman (Germany)', dial_code: '+49', placeholder: '151-23456789' },
 	{ code: 'NL', name: 'Belanda (Netherlands)', dial_code: '+31', placeholder: '6-12345678' },
-	{ code: 'CN', name: 'Tiongkok (China)', dial_code: '+86', placeholder: '138-0013-8000' },
-	{ code: 'TW', name: 'Taiwan', dial_code: '+886', placeholder: '912-345-678' },
-	{ code: 'IN', name: 'India', dial_code: '+91', placeholder: '98765-43210' },
-	{ code: 'TR', name: 'Turki (Turkey)', dial_code: '+90', placeholder: '532-123-4567' },
 	{ code: 'EG', name: 'Mesir (Egypt)', dial_code: '+20', placeholder: '10-1234-5678' },
 ];
 
@@ -103,14 +141,79 @@ const flagSvgMap = {
 			h('rect', { width: '640', height: '480', fill: '#DA251D' }),
 			h('polygon', { points: '320,120 355,230 470,230 378,298 412,410 320,342 228,410 262,298 170,230 285,230', fill: '#FFFF00' }),
 		]),
-	AU: () =>
+	KH: () =>
 		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
-			h('rect', { width: '640', height: '480', fill: '#00008B' }),
-			h('rect', { width: '320', height: '240', fill: '#012169' }),
-			h('path', { stroke: '#fff', 'stroke-width': '40', d: 'M0 0l320 240M320 0L0 240' }),
-			h('path', { stroke: '#C8102E', 'stroke-width': '24', d: 'M0 0l320 240M320 0L0 240' }),
-			h('path', { stroke: '#fff', 'stroke-width': '60', d: 'M160 0v240M0 120h320' }),
-			h('path', { stroke: '#C8102E', 'stroke-width': '36', d: 'M160 0v240M0 120h320' }),
+			h('rect', { width: '640', height: '480', fill: '#032EA1' }),
+			h('rect', { y: '120', width: '640', height: '240', fill: '#E00025' }),
+			h('polygon', { points: '320,170 300,290 340,290', fill: '#FFFFFF' }),
+			h('rect', { x: '270', y: '220', width: '100', height: '70', fill: '#FFFFFF' }),
+		]),
+	LA: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#CE1126' }),
+			h('rect', { y: '120', width: '640', height: '240', fill: '#002868' }),
+			h('circle', { cx: '320', cy: '240', r: '80', fill: '#FFFFFF' }),
+		]),
+	MM: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#FECB00' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#34B233' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#EA2839' }),
+			h('polygon', { points: '320,130 350,225 450,225 368,285 400,380 320,320 240,380 272,285 190,225 290,225', fill: '#FFFFFF' }),
+		]),
+	TL: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#DC241F' }),
+			h('polygon', { points: '0,0 320,240 0,480', fill: '#FFC72C' }),
+			h('polygon', { points: '0,0 200,240 0,480', fill: '#000000' }),
+			h('polygon', { points: '70,210 80,240 110,240 85,260 95,290 70,270 45,290 55,260 30,240 60,240', fill: '#FFFFFF' }),
+		]),
+	BD: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#006A4E' }),
+			h('circle', { cx: '280', cy: '240', r: '140', fill: '#F42A41' }),
+		]),
+	IN: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#FF9933' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#138808' }),
+			h('circle', { cx: '320', cy: '240', r: '50', fill: '#000080' }),
+		]),
+	PK: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#01411C' }),
+			h('rect', { width: '160', height: '480', fill: '#FFFFFF' }),
+			h('circle', { cx: '410', cy: '240', r: '110', fill: '#FFFFFF' }),
+			h('circle', { cx: '440', cy: '220', r: '100', fill: '#01411C' }),
+			h('polygon', { points: '450,160 460,190 490,190 465,210 475,240 450,220 425,240 435,210 410,190 440,190', fill: '#FFFFFF' }),
+		]),
+	LK: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#FFBE29' }),
+			h('rect', { x: '30', y: '30', width: '70', height: '420', fill: '#00534E' }),
+			h('rect', { x: '110', y: '30', width: '70', height: '420', fill: '#EB7400' }),
+			h('rect', { x: '200', y: '30', width: '410', height: '420', fill: '#8D153A' }),
+		]),
+	NP: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#FFFFFF' }),
+			h('polygon', { points: '60,20 380,220 180,220 400,460 60,460', fill: '#003893' }),
+			h('polygon', { points: '80,50 340,210 160,210 360,440 80,440', fill: '#DC143C' }),
+			h('circle', { cx: '180', cy: '340', r: '40', fill: '#FFFFFF' }),
+		]),
+	MV: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#D21034' }),
+			h('rect', { x: '100', y: '80', width: '440', height: '320', fill: '#007E3A' }),
+			h('circle', { cx: '340', cy: '240', r: '75', fill: '#FFFFFF' }),
+			h('circle', { cx: '370', cy: '240', r: '75', fill: '#007E3A' }),
+		]),
+	AF: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '213', height: '480', fill: '#000000' }),
+			h('rect', { x: '213', width: '214', height: '480', fill: '#D32011' }),
+			h('rect', { x: '427', width: '213', height: '480', fill: '#007A3D' }),
 		]),
 	JP: () =>
 		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
@@ -123,11 +226,149 @@ const flagSvgMap = {
 			h('circle', { cx: '320', cy: '240', r: '100', fill: '#CD2E3A' }),
 			h('path', { d: 'M220 240a100 100 0 0 0 200 0c0 55-45 100-100 100s-100-45-100-100z', fill: '#0047A0' }),
 		]),
+	CN: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#DE2910' }),
+			h('circle', { cx: '110', cy: '110', r: '40', fill: '#FFDE00' }),
+		]),
+	TW: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#FE0000' }),
+			h('rect', { width: '320', height: '240', fill: '#000095' }),
+			h('circle', { cx: '160', cy: '120', r: '50', fill: '#FFFFFF' }),
+		]),
+	HK: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#DE2910' }),
+			h('circle', { cx: '320', cy: '240', r: '80', fill: '#FFFFFF' }),
+			h('circle', { cx: '320', cy: '240', r: '50', fill: '#DE2910' }),
+		]),
+	MO: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#007B5F' }),
+			h('circle', { cx: '320', cy: '240', r: '60', fill: '#FFFFFF' }),
+		]),
+	MN: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '213', height: '480', fill: '#E4002B' }),
+			h('rect', { x: '213', width: '214', height: '480', fill: '#0033A0' }),
+			h('rect', { x: '427', width: '213', height: '480', fill: '#E4002B' }),
+			h('circle', { cx: '106', cy: '240', r: '30', fill: '#FFD100' }),
+		]),
 	SA: () =>
 		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
 			h('rect', { width: '640', height: '480', fill: '#006C35' }),
 			h('rect', { x: '180', y: '330', width: '280', height: '20', rx: '10', fill: '#FFFFFF' }),
 			h('text', { x: '50%', y: '50%', 'text-anchor': 'middle', fill: '#fff', 'font-size': '110', 'font-weight': 'bold', 'font-family': 'sans-serif' }, 'SA'),
+		]),
+	AE: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#00732F' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#000000' }),
+			h('rect', { width: '160', height: '480', fill: '#FF0000' }),
+		]),
+	QA: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#8D1B3D' }),
+			h('polygon', { points: '0,0 180,0 220,53 180,106 220,160 180,213 220,266 180,320 220,373 180,426 220,480 0,480', fill: '#FFFFFF' }),
+		]),
+	KW: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#007A3D' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#CE1126' }),
+			h('polygon', { points: '0,0 160,160 160,320 0,480', fill: '#000000' }),
+		]),
+	BH: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#CE1126' }),
+			h('polygon', { points: '0,0 160,0 200,48 160,96 200,144 160,192 200,240 160,288 200,336 160,384 200,432 160,480 0,480', fill: '#FFFFFF' }),
+		]),
+	OM: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#DB161B' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#008000' }),
+			h('rect', { width: '160', height: '480', fill: '#DB161B' }),
+		]),
+	YE: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#CE1126' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#000000' }),
+		]),
+	JO: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#000000' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#007A3D' }),
+			h('polygon', { points: '0,0 240,240 0,480', fill: '#CE1126' }),
+			h('circle', { cx: '80', cy: '240', r: '20', fill: '#FFFFFF' }),
+		]),
+	LB: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '120', fill: '#ED1C24' }),
+			h('rect', { y: '120', width: '640', height: '240', fill: '#FFFFFF' }),
+			h('rect', { y: '360', width: '640', height: '120', fill: '#ED1C24' }),
+			h('polygon', { points: '320,150 250,330 390,330', fill: '#00A651' }),
+		]),
+	IQ: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#CE1126' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#000000' }),
+			h('text', { x: '50%', y: '56%', 'text-anchor': 'middle', fill: '#007A3D', 'font-size': '65', 'font-weight': 'bold', 'font-family': 'sans-serif' }, 'ALLAH'),
+		]),
+	IR: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#239F40' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#DA0000' }),
+			h('circle', { cx: '320', cy: '240', r: '40', fill: '#DA0000' }),
+		]),
+	PS: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#000000' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#007A3D' }),
+			h('polygon', { points: '0,0 240,240 0,480', fill: '#E4312B' }),
+		]),
+	SY: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#CE1126' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#000000' }),
+			h('circle', { cx: '230', cy: '240', r: '25', fill: '#007A3D' }),
+			h('circle', { cx: '410', cy: '240', r: '25', fill: '#007A3D' }),
+		]),
+	TR: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#E30A17' }),
+			h('circle', { cx: '280', cy: '240', r: '120', fill: '#FFFFFF' }),
+			h('circle', { cx: '310', cy: '240', r: '96', fill: '#E30A17' }),
+		]),
+	UZ: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '160', fill: '#0099B5' }),
+			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
+			h('rect', { y: '320', width: '640', height: '160', fill: '#1EB53A' }),
+			h('circle', { cx: '120', cy: '80', r: '40', fill: '#FFFFFF' }),
+			h('circle', { cx: '135', cy: '80', r: '35', fill: '#0099B5' }),
+		]),
+	KZ: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#00AFCA' }),
+			h('circle', { cx: '320', cy: '200', r: '60', fill: '#FEC50C' }),
+		]),
+	AU: () =>
+		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
+			h('rect', { width: '640', height: '480', fill: '#00008B' }),
+			h('rect', { width: '320', height: '240', fill: '#012169' }),
+			h('path', { stroke: '#fff', 'stroke-width': '40', d: 'M0 0l320 240M320 0L0 240' }),
+			h('path', { stroke: '#C8102E', 'stroke-width': '24', d: 'M0 0l320 240M320 0L0 240' }),
+			h('path', { stroke: '#fff', 'stroke-width': '60', d: 'M160 0v240M0 120h320' }),
+			h('path', { stroke: '#C8102E', 'stroke-width': '36', d: 'M160 0v240M0 120h320' }),
 		]),
 	GB: () =>
 		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
@@ -154,30 +395,6 @@ const flagSvgMap = {
 			h('rect', { width: '640', height: '160', fill: '#AE1C28' }),
 			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
 			h('rect', { y: '320', width: '640', height: '160', fill: '#21468B' }),
-		]),
-	CN: () =>
-		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
-			h('rect', { width: '640', height: '480', fill: '#DE2910' }),
-			h('circle', { cx: '110', cy: '110', r: '40', fill: '#FFDE00' }),
-		]),
-	TW: () =>
-		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
-			h('rect', { width: '640', height: '480', fill: '#FE0000' }),
-			h('rect', { width: '320', height: '240', fill: '#000095' }),
-			h('circle', { cx: '160', cy: '120', r: '50', fill: '#FFFFFF' }),
-		]),
-	IN: () =>
-		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
-			h('rect', { width: '640', height: '160', fill: '#FF9933' }),
-			h('rect', { y: '160', width: '640', height: '160', fill: '#FFFFFF' }),
-			h('rect', { y: '320', width: '640', height: '160', fill: '#138808' }),
-			h('circle', { cx: '320', cy: '240', r: '50', fill: '#000080' }),
-		]),
-	TR: () =>
-		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
-			h('rect', { width: '640', height: '480', fill: '#E30A17' }),
-			h('circle', { cx: '280', cy: '240', r: '120', fill: '#FFFFFF' }),
-			h('circle', { cx: '310', cy: '240', r: '96', fill: '#E30A17' }),
 		]),
 	EG: () =>
 		h('svg', { viewBox: '0 0 640 480', class: 'h-3.5 w-5 rounded-[2px] shadow-xs shrink-0 border border-slate-200' }, [
@@ -588,7 +805,7 @@ defineExpose({
 						v-model="searchQuery"
 						type="text"
 						placeholder="Cari negara atau kode..."
-						class="h-[34px] w-full rounded-[8px] border border-[#d6e0ee] bg-[#f8fafc] pl-8 pr-2.5 font-inter text-[12px] text-[#173a63] placeholder-[#8c9eb5] transition focus:border-[#183669] focus:bg-white focus:outline-none"
+						class="phone-search-input h-[34px] w-full rounded-[8px] border border-[#d6e0ee] bg-[#f8fafc] pl-8 pr-2.5 font-inter text-[12px] text-[#173a63] placeholder-[#8c9eb5] transition focus:border-[#183669] focus:bg-white focus:outline-none"
 					/>
 				</div>
 
@@ -628,6 +845,28 @@ defineExpose({
 </template>
 
 <style scoped>
+/* Reset total dari @tailwindcss/forms pada search input */
+.phone-search-input {
+	outline: none !important;
+	box-shadow: none !important;
+	--tw-ring-shadow: none !important;
+	--tw-ring-offset-shadow: none !important;
+	--tw-ring-color: transparent !important;
+	--tw-ring-offset-color: transparent !important;
+}
+
+.phone-search-input:focus,
+.phone-search-input:focus-visible,
+.phone-search-input:active {
+	outline: none !important;
+	box-shadow: none !important;
+	--tw-ring-shadow: none !important;
+	--tw-ring-offset-shadow: none !important;
+	--tw-ring-color: transparent !important;
+	--tw-ring-offset-color: transparent !important;
+	border-color: #183669 !important;
+}
+
 /* Reset total dari @tailwindcss/forms pada input nomor */
 .phone-raw-input {
 	border: 0 !important;
