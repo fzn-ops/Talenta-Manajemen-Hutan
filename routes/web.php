@@ -114,7 +114,7 @@ Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasis
         })->name('list');
 
         Route::get('/pengajuan', function () {
-            return Inertia::render('dashboard/mahasiswa/Dashboard');
+            return Inertia::render('dashboard/mahasiswa/ActivitySubmission');
         })->name('pengajuan');
     });
 
