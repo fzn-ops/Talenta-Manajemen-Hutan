@@ -28,13 +28,26 @@ const handleClick = (e) => {
 		:class="[
 			'inline-flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[5px] transition-colors outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 delete-table-btn',
 			disabled
-				? 'cursor-not-allowed bg-slate-200 opacity-50 shadow-none'
+				? 'cursor-not-allowed bg-[#e8edf5] shadow-none'
 				: 'bg-[#ff9ca1] text-[#ff2f35] active:bg-[#ff888e]'
 		]"
 		style="outline: none !important; box-shadow: none !important;"
 		@click="!disabled && handleClick($event)"
 	>
-		<img src="/assets/icons/delete.svg" alt="" class="h-[18px] w-[18px] object-contain" aria-hidden="true" />
+		<svg
+			width="14"
+			height="18"
+			viewBox="0 0 14 18"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+			class="h-[18px] w-[14px] shrink-0 object-contain transition-colors"
+			aria-hidden="true"
+		>
+			<path
+				d="M0.942857 15.6444C0.942857 16.72 1.79143 17.6 2.82857 17.6H10.3714C11.4086 17.6 12.2571 16.72 12.2571 15.6444V5.86667C12.2571 4.79111 11.4086 3.91111 10.3714 3.91111H2.82857C1.79143 3.91111 0.942857 4.79111 0.942857 5.86667V15.6444ZM12.2571 0.977778H9.9L9.23057 0.283556C9.06086 0.107556 8.81571 0 8.57057 0H4.62943C4.38429 0 4.13914 0.107556 3.96943 0.283556L3.3 0.977778H0.942857C0.424286 0.977778 0 1.41778 0 1.95556C0 2.49333 0.424286 2.93333 0.942857 2.93333H12.2571C12.7757 2.93333 13.2 2.49333 13.2 1.95556C13.2 1.41778 12.7757 0.977778 12.2571 0.977778Z"
+				:fill="disabled ? '#8c9ba5' : '#FF0F0F'"
+			/>
+		</svg>
 	</button>
 </template>
 
@@ -45,3 +58,4 @@ const handleClick = (e) => {
 	}
 }
 </style>
+

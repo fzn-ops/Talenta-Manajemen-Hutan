@@ -602,61 +602,6 @@ const submit = () => {
                                         </p>
                                     </div>
 
-                                    <!-- DESKRIPSI -->
-                                    <div>
-                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-                                            Deskripsi
-                                            <span class="text-red-500">*</span>
-                                        </label>
-
-                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5">
-                                            Jelaskan gambaran kegiatan ini yah!
-                                        </p>
-
-                                        <RichTextEditor
-                                            v-model="form.deskripsi"
-                                            placeholder="Pelatihan manajer KDMP"
-                                            min-height="115px"
-                                            :has-error="!!errors.deskripsi"
-                                            @update:modelValue="errors.deskripsi = ''"
-                                        />
-
-                                        <p
-                                            v-if="errors.deskripsi"
-                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
-                                        >
-                                            {{ errors.deskripsi }}
-                                        </p>
-                                    </div>
-
-                                    <!-- DEADLINE -->
-                                    <div>
-                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-                                            Deadline
-                                            <span class="text-red-500">*</span>
-                                        </label>
-
-                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-                                            Masukkan tanggal batas registrasi dari aktivitas kamu yah!
-                                        </p>
-
-                                        <div class="mt-1 sm:mt-1.5">
-                                            <DatePicker
-                                                v-model="form.deadline"
-                                                :has-error="!!errors.deadline"
-                                                placeholder="Pilih tanggal deadline"
-                                                @update:modelValue="errors.deadline = ''"
-                                            />
-                                        </div>
-
-                                        <p
-                                            v-if="errors.deadline"
-                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
-                                        >
-                                            {{ errors.deadline }}
-                                        </p>
-                                    </div>
-
                                     <!-- KATEGORI -->
                                     <div>
                                         <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
@@ -702,13 +647,40 @@ const submit = () => {
                                             {{ errors.kategori }}
                                         </p>
                                     </div>
+
+                                    <!-- DESKRIPSI -->
+                                    <div>
+                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+                                            Deskripsi
+                                            <span class="text-red-500">*</span>
+                                        </label>
+
+                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5">
+                                            Jelaskan gambaran kegiatan ini yah!
+                                        </p>
+
+                                        <RichTextEditor
+                                            v-model="form.deskripsi"
+                                            placeholder="Pelatihan manajer KDMP"
+                                            min-height="115px"
+                                            :has-error="!!errors.deskripsi"
+                                            @update:modelValue="errors.deskripsi = ''"
+                                        />
+
+                                        <p
+                                            v-if="errors.deskripsi"
+                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
+                                        >
+                                            {{ errors.deskripsi }}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <!-- ================================================= -->
                                 <!-- KOLOM KANAN -->
                                 <!-- ================================================= -->
 
-                                <div class="flex flex-col gap-4">
+                                <div class="flex flex-col gap-3.5 sm:gap-4">
 
                                     <!-- GAMBAR -->
                                     <div>
@@ -925,6 +897,34 @@ const submit = () => {
                                             class="mt-1 font-inter text-[11px] font-medium text-red-500"
                                         >
                                             {{ errors.gambar }}
+                                        </p>
+                                    </div>
+
+                                    <!-- DEADLINE -->
+                                    <div>
+                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+                                            Deadline
+                                            <span class="text-red-500">*</span>
+                                        </label>
+
+                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+                                            Masukkan tanggal batas registrasi dari aktivitas kamu yah!
+                                        </p>
+
+                                        <div class="mt-1 sm:mt-1.5">
+                                            <DatePicker
+                                                v-model="form.deadline"
+                                                :has-error="!!errors.deadline"
+                                                placeholder="Pilih tanggal deadline"
+                                                @update:modelValue="errors.deadline = ''"
+                                            />
+                                        </div>
+
+                                        <p
+                                            v-if="errors.deadline"
+                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
+                                        >
+                                            {{ errors.deadline }}
                                         </p>
                                     </div>
 
