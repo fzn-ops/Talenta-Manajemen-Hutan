@@ -342,7 +342,7 @@ const handleCardClick = (roadmap) => {
 </script>
 
 <template>
-	<Head title="List Roadmap - Mahasiswa" />
+	<Head title="Roadmap - Mahasiswa" />
 
 	<MahasiswaLayout>
 		<section class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8">
@@ -350,10 +350,10 @@ const handleCardClick = (roadmap) => {
 				<!-- Header Title & Subtitle (Matches User Mockup) -->
 				<div class="space-y-1.5">
 					<h1 class="text-[34px] font-extrabold leading-[1.05] tracking-tight text-[#17334F] sm:text-[42px] lg:text-[46px]">
-						List Roadmap
+						Roadmap
 					</h1>
 					<p class="font-inter text-[14px] font-normal leading-normal text-[#4d6786] sm:text-[15px]">
-						Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!
+						Yuk Pelajari Roadmap Yang Kamu Ikuti!
 					</p>
 				</div>
 

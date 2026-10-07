@@ -25,7 +25,13 @@ const menuItems = [
 		icon: 'aktivitas',
 		hasChildren: true,
 		children: [
-			{ label: 'List Aktivitas', href: '/mahasiswa/aktivitas/list', pattern: 'mahasiswa.aktivitas.list*', icon: 'circle' },
+			{ 
+				label: 'List Aktivitas', 
+				href: '/mahasiswa/aktivitas/list', 
+				patterns: ['mahasiswa.aktivitas.list*', 'mahasiswa.aktivitas.pendaftaran*'], 
+				activeHrefs: ['/mahasiswa/aktivitas/list', '/mahasiswa/aktivitas/pendaftaran'],
+				icon: 'circle' 
+			},
 			{ label: 'Pengajuan', href: '/mahasiswa/aktivitas/pengajuan', pattern: 'mahasiswa.aktivitas.pengajuan*', icon: 'circle' },
 		],
 	},
@@ -34,8 +40,20 @@ const menuItems = [
 
 const isActive = (item) => {
 	try {
-		return route().current(item.pattern) || window.location.pathname.startsWith(item.href);
+		if (item.patterns && item.patterns.some((p) => route().current(p))) {
+			return true;
+		}
+		if (item.pattern && route().current(item.pattern)) {
+			return true;
+		}
+		if (item.activeHrefs && item.activeHrefs.some((h) => window.location.pathname.startsWith(h))) {
+			return true;
+		}
+		return window.location.pathname.startsWith(item.href);
 	} catch {
+		if (item.activeHrefs && item.activeHrefs.some((h) => window.location.pathname.startsWith(h))) {
+			return true;
+		}
 		return window.location.pathname.startsWith(item.href);
 	}
 };

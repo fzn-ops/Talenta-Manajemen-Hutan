@@ -124,72 +124,76 @@ onBeforeUnmount(() => document.removeEventListener('click', closeDropup));
 </script>
 
 <template>
-	<div class="flex flex-col gap-4 py-2 font-inter text-[13px] text-[#4d6786] sm:flex-row sm:items-center sm:justify-between">
+	<div class="flex flex-col gap-3.5 py-2 font-inter text-[12.5px] sm:text-[13px] text-[#4d6786] sm:flex-row sm:items-center sm:justify-between">
 		<!-- Left: Page [input] of N | Rows per page [dropup] -->
-		<div class="flex items-center gap-2">
-			<span>Page</span>
-			<input
-				type="number"
-				min="1"
-				:max="computedTotalPages"
-				:disabled="disabled"
-				v-model.number="pageInput"
-				@keydown.enter="handlePageInput"
-				@blur="handlePageInput"
-				class="h-8 w-11 rounded-[6px] border border-[#d6e0ee] bg-white p-0 text-center font-inter text-[13px] font-medium text-[#173a63] focus:border-[#183669] focus:outline-none focus:ring-1 focus:ring-[#183669] disabled:cursor-not-allowed disabled:bg-[#f0f4f9] disabled:border-[#d6e0ee] disabled:opacity-60"
-			/>
-			<span>of {{ computedTotalPages }}</span>
-
-			<span class="mx-1.5 text-[#cbd6e2]">|</span>
-
-			<span>{{ itemLabel }} per page</span>
-
-			<!-- Rows Per Page Dropup -->
-			<div class="relative" @click.stop>
-				<button
-					type="button"
+		<div class="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 flex-wrap">
+			<div class="flex items-center gap-1.5 sm:gap-2">
+				<span>Page</span>
+				<input
+					type="number"
+					min="1"
+					:max="computedTotalPages"
 					:disabled="disabled"
-					@click="!disabled && (isRowsDropdownOpen = !isRowsDropdownOpen)"
-					class="flex h-8 min-w-[56px] items-center justify-between gap-2 rounded-[6px] border border-[#d6e0ee] bg-white px-2.5 font-inter text-[13px] font-medium text-[#173a63] transition hover:border-[#183669] focus:border-[#183669] focus:outline-none disabled:cursor-not-allowed disabled:bg-[#f0f4f9] disabled:border-[#d6e0ee] disabled:opacity-60 disabled:hover:border-[#d6e0ee]"
-					:class="{ 'border-[#183669] ring-1 ring-[#183669]/20': isRowsDropdownOpen }"
-				>
-					<span>{{ rowsPerPage }}</span>
-					<svg
-						:class="['h-3.5 w-3.5 text-[#8ca1b9] transition-transform duration-200', isRowsDropdownOpen ? 'rotate-180 text-[#183669]' : '']"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						viewBox="0 0 24 24"
-					>
-						<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-					</svg>
-				</button>
+					v-model.number="pageInput"
+					@keydown.enter="handlePageInput"
+					@blur="handlePageInput"
+					class="h-8 w-11 rounded-[6px] border border-[#d6e0ee] bg-white p-0 text-center font-inter text-[13px] font-medium text-[#173a63] focus:border-[#183669] focus:outline-none focus:ring-1 focus:ring-[#183669] disabled:cursor-not-allowed disabled:bg-[#f0f4f9] disabled:border-[#d6e0ee] disabled:opacity-60"
+				/>
+				<span>of {{ computedTotalPages }}</span>
+			</div>
 
-				<!-- Dropup Popover -->
-				<div
-					v-if="isRowsDropdownOpen && !disabled"
-					class="absolute bottom-full left-0 z-30 mb-1.5 w-20 rounded-[8px] border border-[#d6e0ee] bg-white p-1 shadow-xl font-inter space-y-0.5"
-				>
+			<span class="mx-1 text-[#cbd6e2] hidden sm:inline">|</span>
+
+			<div class="flex items-center gap-2">
+				<span class="whitespace-nowrap">{{ itemLabel }} per page</span>
+
+				<!-- Rows Per Page Dropup -->
+				<div class="relative" @click.stop>
 					<button
-						v-for="r in rowsOptions"
-						:key="r"
 						type="button"
-						@click="setRowsPerPage(r)"
-						:class="[
-							'w-full rounded-[4px] px-2 py-1 text-center text-xs transition-colors',
-							rowsPerPage === r
-								? 'bg-[#183669] font-bold text-white'
-								: 'text-[#435b76] hover:bg-slate-100'
-						]"
+						:disabled="disabled"
+						@click="!disabled && (isRowsDropdownOpen = !isRowsDropdownOpen)"
+						class="flex h-8 min-w-[56px] items-center justify-between gap-2 rounded-[6px] border border-[#d6e0ee] bg-white px-2.5 font-inter text-[13px] font-medium text-[#173a63] transition hover:border-[#183669] focus:border-[#183669] focus:outline-none disabled:cursor-not-allowed disabled:bg-[#f0f4f9] disabled:border-[#d6e0ee] disabled:opacity-60 disabled:hover:border-[#d6e0ee]"
+						:class="{ 'border-[#183669] ring-1 ring-[#183669]/20': isRowsDropdownOpen }"
 					>
-						{{ r }}
+						<span>{{ rowsPerPage }}</span>
+						<svg
+							:class="['h-3.5 w-3.5 text-[#8ca1b9] transition-transform duration-200', isRowsDropdownOpen ? 'rotate-180 text-[#183669]' : '']"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							viewBox="0 0 24 24"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+						</svg>
 					</button>
+
+					<!-- Dropup Popover -->
+					<div
+						v-if="isRowsDropdownOpen && !disabled"
+						class="absolute bottom-full right-0 sm:left-0 z-30 mb-1.5 w-20 rounded-[8px] border border-[#d6e0ee] bg-white p-1 shadow-xl font-inter space-y-0.5"
+					>
+						<button
+							v-for="r in rowsOptions"
+							:key="r"
+							type="button"
+							@click="setRowsPerPage(r)"
+							:class="[
+								'w-full rounded-[4px] px-2 py-1 text-center text-xs transition-colors',
+								rowsPerPage === r
+									? 'bg-[#183669] font-bold text-white'
+									: 'text-[#435b76] hover:bg-slate-100'
+							]"
+						>
+							{{ r }}
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Right: << < [page buttons] > >> -->
-		<div class="flex items-center gap-1">
+		<div class="flex items-center justify-center sm:justify-end gap-1 w-full sm:w-auto">
 			<!-- First Page (<<) -->
 			<button
 				type="button"
