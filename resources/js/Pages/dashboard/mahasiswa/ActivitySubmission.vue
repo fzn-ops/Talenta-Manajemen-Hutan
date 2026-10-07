@@ -255,7 +255,7 @@ const handleModalSubmit = (formData) => {
   <Head title="Pengajuan Aktivitas" />
 
   <MahasiswaLayout>
-    <section class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8">
+    <section class="mx-auto w-full max-w-[1520px] px-4 pt-6 pb-24 font-poppins sm:px-6 sm:py-8 lg:px-8">
       <div class="space-y-6">
         
         <!-- TOAST NOTIFICATION -->

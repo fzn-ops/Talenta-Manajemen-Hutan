@@ -68,7 +68,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<div class="fixed inset-0 flex h-full w-full overflow-hidden bg-white font-poppins text-gray-800">
+	<div class="fixed inset-0 flex h-full h-[100dvh] w-full overflow-hidden bg-white font-poppins text-gray-800">
 		<!-- Mobile Backdrop Overlay (Covers Topbar & Content, click to close) -->
 		<Transition
 			enter-active-class="ease-out duration-300"
@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
 			<!-- Main Page Content (Putih Bersih) -->
 			<main
 				ref="mainContentRef"
-				class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white"
+				class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain bg-white"
 			>
 				<slot />
 			</main>

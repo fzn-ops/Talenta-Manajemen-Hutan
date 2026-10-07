@@ -442,10 +442,10 @@ const getPdfUrl = (content) => {
 			</nav>
 
 			<!-- Page Header Section with Progress Bar & Download Certificate -->
-			<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+			<div class="space-y-4 sm:space-y-5">
 				<!-- Title & Subtitle -->
-				<div class="space-y-1">
-					<h1 class="text-[28px] sm:text-[34px] lg:text-[38px] font-extrabold leading-tight text-[#17334F] tracking-tight">
+				<div class="space-y-1 sm:space-y-1.5">
+					<h1 class="text-[26px] sm:text-[32px] lg:text-[36px] font-extrabold leading-tight text-[#17334F] tracking-tight">
 						{{ currentRoadmap.title }}
 					</h1>
 					<p class="font-inter text-[13px] sm:text-[14px] font-medium text-[#64748b]">
@@ -453,15 +453,15 @@ const getPdfUrl = (content) => {
 					</p>
 				</div>
 
-				<!-- Progress & Download Certificate Widget (Clean & Integrated) -->
-				<div class="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-2.5 shrink-0">
-					<!-- Progress Bar -->
-					<div class="w-full sm:w-60 lg:w-64 space-y-1.5">
-						<div class="flex items-center justify-between text-xs font-semibold text-[#475569]">
+				<!-- Progress & Download Certificate Row (Dibawah Subtitle, Membentang ke Padding Kanan) -->
+				<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-6 lg:gap-8 w-full pt-0.5">
+					<!-- Progress Bar (Mentok sampai Tombol Unduh Sertifikat di Desktop) -->
+					<div class="w-full sm:flex-1 sm:min-w-0 space-y-1.5 sm:space-y-2">
+						<div class="flex items-center justify-between text-xs sm:text-[13px] font-semibold text-[#475569]">
 							<span>{{ completedTasks }}/{{ totalTasks }} Task</span>
 							<span class="text-[#183669] font-bold">{{ progressPercentage }}%</span>
 						</div>
-						<div class="h-2 w-full rounded-full bg-[#e2e8f0] overflow-hidden">
+						<div class="h-2 sm:h-2.5 lg:h-3 w-full rounded-full bg-[#e2e8f0] overflow-hidden">
 							<div
 								class="h-full rounded-full bg-[#416f65] transition-all duration-300"
 								:style="{ width: `${progressPercentage}%` }"
@@ -469,17 +469,19 @@ const getPdfUrl = (content) => {
 						</div>
 					</div>
 
-					<!-- Download Certificate Button -->
-					<button
-						type="button"
-						@click="handleDownloadCertificate"
-						class="flex items-center justify-center gap-2 rounded-[10px] bg-[#183669] px-5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#122b54] active:scale-95 cursor-pointer shadow-xs"
-					>
-						<span>Unduh Sertifikat</span>
-						<svg class="h-3.5 w-3.5 shrink-0 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-						</svg>
-					</button>
+					<!-- Download Certificate Button (Kanan / Sampai Padding Kanan) -->
+					<div class="flex justify-end shrink-0">
+						<button
+							type="button"
+							@click="handleDownloadCertificate"
+							class="flex items-center justify-center gap-2 rounded-[10px] bg-[#183669] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#122b54] active:scale-95 cursor-pointer shadow-xs"
+						>
+							<span>Unduh Sertifikat</span>
+							<svg class="h-3.5 w-3.5 shrink-0 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+							</svg>
+						</button>
+					</div>
 				</div>
 			</div>
 

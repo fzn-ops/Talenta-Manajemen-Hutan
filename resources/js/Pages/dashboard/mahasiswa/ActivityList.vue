@@ -278,7 +278,7 @@ const goToDetail = (id) => {
   <Head title="List Aktivitas" />
 
   <MahasiswaLayout>
-    <section class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8">
+    <section class="mx-auto w-full max-w-[1520px] px-4 pt-6 pb-24 font-poppins sm:px-6 sm:py-8 lg:px-8">
       <div class="space-y-6">
         
         <!-- TOAST NOTIFICATION -->
@@ -691,7 +691,7 @@ const goToDetail = (id) => {
               <!-- KONTEN TEKS KARTU -->
               <!-- ========================================== -->
               <div class="relative z-10 p-4 sm:p-5 flex flex-col justify-end">
-                <div class="mb-1 flex items-center gap-1.5 text-[10.5px] sm:text-[11px] font-semibold text-emerald-300">
+                <div class="mb-1 flex items-center gap-1.5 text-[10.5px] sm:text-[11px] font-semibold text-white">
                   <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                   </svg>
@@ -730,7 +730,7 @@ const goToDetail = (id) => {
           </div>
 
           <!-- Pagination -->
-          <div class="mt-8 border-t border-[#d6e0ee] pt-4">
+          <div class="mt-8 border-t border-[#d6e0ee] pt-4 pb-6 sm:pb-2">
             <TablePagination 
               v-model:currentPage="currentPage" 
               v-model:rowsPerPage="rowsPerPage"
