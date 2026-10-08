@@ -5,10 +5,14 @@ const props = defineProps({
   show: {
     type: Boolean,
     default: false
+  },
+  selectedData: {
+    type: Object,
+    default: null
   }
 });
 
-const emit = defineEmits(['close', 'submit']);
+const emit = defineEmits(['close', 'submit', 'update:show']);
 
 // Dummy Data
 const roadmaps = ref([
