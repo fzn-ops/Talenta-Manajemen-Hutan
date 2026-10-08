@@ -1,10 +1,9 @@
 <script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
-import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
@@ -253,12 +252,9 @@ const getCardGradient = (category) => {
 };
 
 // Loading State
-const isLoading = ref(true);
+const isLoading = ref(false);
 onMounted(() => {
 	initRoadmapsData();
-	setTimeout(() => {
-		isLoading.value = false;
-	}, 200);
 	document.addEventListener('click', closeFilterDropdown);
 	window.addEventListener('resize', handleWindowChange, { passive: true });
 	window.addEventListener('scroll', handleWindowChange, { passive: true });
@@ -335,10 +331,6 @@ const openEditModal = (roadmap) => {
 	editingId.value = roadmap.id;
 	selectedRoadmap.value = { ...roadmap };
 	isFormModalOpen.value = true;
-};
-
-const handlePreview = (roadmap) => {
-	router.visit(`/admin/roadmap/${roadmap.id || 1}`);
 };
 
 const handleFormSubmit = (formData) => {
@@ -547,7 +539,6 @@ const confirmDeleteRoadmap = () => {
 								<div class="flex gap-1.5">
 									<div class="h-8 w-8 rounded-lg bg-slate-200"></div>
 									<div class="h-8 w-8 rounded-lg bg-slate-200"></div>
-									<div class="h-8 w-8 rounded-lg bg-slate-200"></div>
 								</div>
 							</div>
 						</div>
@@ -555,10 +546,12 @@ const confirmDeleteRoadmap = () => {
 
 					<!-- Real Cards Grid -->
 					<div v-else-if="paginatedRoadmaps.length > 0" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
-						<div
+						<Link
 							v-for="item in paginatedRoadmaps"
 							:key="`roadmap-${item.id}`"
-							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-colors duration-150 hover:bg-[#fafcff] hover:border-[#a6b7cb]"
+							:href="`/admin/roadmap/${item.id || 1}`"
+							prefetch
+							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-colors duration-150 hover:bg-[#fafcff] hover:border-[#a6b7cb] cursor-pointer"
 						>
 							<div>
 								<!-- Top Cover Banner (Rounded [10px] as in Figma) -->
@@ -651,13 +644,12 @@ const confirmDeleteRoadmap = () => {
 								<span class="font-inter text-[11px] font-normal text-[#94a3b8]">
 									Diperbarui : {{ item.updated_at }}
 								</span>
-								<div class="flex items-center gap-1.5">
-									<PreviewButtonTable :label="`Lihat detail ${item.title}`" @click="handlePreview(item)" />
+								<div class="flex items-center gap-1.5" @click.stop.prevent>
 									<EditButtonTable :label="`Edit ${item.title}`" @click="openEditModal(item)" />
 									<DeleteButtonTable :label="`Hapus ${item.title}`" @click="openDeleteModal(item)" />
 								</div>
 							</div>
-						</div>
+						</Link>
 					</div>
 
 					<!-- Empty State -->
