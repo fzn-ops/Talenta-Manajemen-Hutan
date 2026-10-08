@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
+import AddActivityModal from '@/Components/dashboard/mahasiswa/AddActivityModal.vue';
 
 const props = defineProps({
 	roadmaps: {
@@ -339,11 +340,40 @@ watch([searchQuery, selectedCategories, rowsPerPage], () => {
 const handleCardClick = (roadmap) => {
 	router.visit(`/mahasiswa/roadmap/${roadmap.id || 1}`);
 };
+
+const isModalOpen = ref(false);
+const selectedData = ref(null);
+
+const openTambah = () => {
+    selectedData.value = null;
+    isModalOpen.value = true; 
+};
+
+
+const handleModalSubmit = (selectedIds) => {
+/* 	console.log('Selected Roadmap IDs:', selectedIds);
+	isModalOpen.value = false;
+	console.log('Data yang mau ditambah:', dataDariModal); */
+
+    // 2. TUTUP MODALNYA
+    isModalOpen.value = false;
+    
+	toast.value = {
+        show: true,
+        type: 'success',
+        title: 'Roadmap berhasil ditambahkan',
+        message: 'Roadmap berhasil ditambahkan ke daftar Anda.',
+    };
+
+	setTimeout(() => {
+        toast.value.show = false;
+    }, 3000);
+};
+
 </script>
 
 <template>
 	<Head title="Roadmap - Mahasiswa" />
-
 	<MahasiswaLayout>
 		<section class="mx-auto w-full max-w-[1520px] px-4 py-6 font-poppins sm:px-6 sm:py-8 lg:px-8">
 			<div class="space-y-6">
@@ -366,7 +396,7 @@ const handleCardClick = (roadmap) => {
 					/>
 
 					<!-- Filter Button with Unified Dropdown -->
-					<div class="flex items-center justify-end w-full sm:w-auto shrink-0">
+					<div class="flex items-center justify-end w-full sm:w-auto shrink-0 gap-2">
 						<div ref="filterContainerRef" class="relative" @click.stop @keydown.escape="isFilterOpen = false">
 							<button
 								type="button"
@@ -444,7 +474,17 @@ const handleCardClick = (roadmap) => {
 								</div>
 							</Transition>
 						</div>
+						<button
+              				type="button"
+              				@click="openTambah"
+              				class="flex h-[46px] w-[46px] sm:w-auto shrink-0 items-center justify-center gap-2 rounded-[10px] bg-[#183669] px-0 sm:px-7 font-poppins text-[15px] font-semibold text-white shadow-sm transition hover:bg-[#122b54] active:scale-95 focus:outline-none select-none cursor-pointer">
+              				<span class="hidden sm:inline">Tambah</span>
+              				<svg class="h-5 w-5 sm:hidden shrink-0 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              				  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              				</svg>
+            			</button>
 					</div>
+
 				</div>
 
 				<!-- Cards Grid Section -->
@@ -610,6 +650,14 @@ const handleCardClick = (roadmap) => {
 			:title="toast.title"
 			:message="toast.message"
 			@close="closeToast"
+		/>
+
+		<!-- Add Activity Modal -->
+		<AddActivityModal
+			v-model:show="isModalOpen"
+			:selected-data="selectedData"
+			@close="isModalOpen = false"
+			@submit="handleModalSubmit"
 		/>
 	</MahasiswaLayout>
 </template>
