@@ -19,36 +19,32 @@ const props = defineProps({
 		default: () => [
 			{
 				id: 1,
-				title: 'Lorem Ipsum Dolor Lorem Ipsum DolorLorem Ipsum DolorLorem....',
+				title: 'Persiapan Karir Software Engineer & Fullstack Developer',
 				category: 'Profesional',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
 				task_count: 40,
 				completed_tasks: 10,
 				thumbnail: '',
 			},
 			{
 				id: 2,
-				title: 'Lorem Ipsum Dolor Lorem Ipsum DolorLorem Ipsum DolorLorem....',
+				title: 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
 				category: 'Bisnis',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
 				task_count: 40,
 				completed_tasks: 10,
 				thumbnail: '',
 			},
 			{
 				id: 3,
-				title: 'Lorem Ipsum Dolor Lorem Ipsum DolorLorem Ipsum DolorLorem....',
-				category: 'Birokrasi',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
+				title: 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
+				category: 'Birokrat',
 				task_count: 40,
 				completed_tasks: 10,
 				thumbnail: '',
 			},
 			{
 				id: 4,
-				title: 'Lorem Ipsum Dolor Lorem Ipsum DolorLorem Ipsum DolorLorem....',
+				title: 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
 				category: 'Akademisi',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
 				task_count: 40,
 				completed_tasks: 10,
 				thumbnail: '',
@@ -60,47 +56,42 @@ const props = defineProps({
 		default: () => [
 			{
 				id: 1,
-				judul: 'Lomba Agustus...',
-				deskripsi: 'Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit....',
+				judul: 'Lomba Desain Inovasi Hasil Hutan Non-Kayu 2026',
+				deskripsi: 'Kompetisi karya inovasi hilirisasi produk hasil hutan untuk meningkatkan nilai tambah komoditas lokal.',
 				deadline: '21 Agustus 2026',
 				peserta: 67,
 				gambar: '123.jpg',
+				jenis: 'Lomba',
 				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
 			},
 			{
 				id: 2,
-				judul: 'First Meet MNH...',
-				deskripsi: 'Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit....',
+				judul: 'First Meet MNH 2026: Sinergi dan Orientasi Mahasiswa',
+				deskripsi: 'Pertemuan perdana mahasiswa Manajemen Hutan untuk membahas roadmap dan pengembangan karir.',
 				deadline: '21 Agustus 2026',
-				peserta: 67,
+				peserta: 45,
 				gambar: '1234.jpg',
+				jenis: 'Umum',
 				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
 			},
 			{
 				id: 3,
-				judul: 'First Meet MNH...',
-				deskripsi: 'Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit....',
-				deadline: '21 Agustus 2026',
-				peserta: 67,
+				judul: 'Workshop GIS & Pemetaan Satelit Hutan Tropis',
+				deskripsi: 'Pelatihan teknis pemetaan spasial dan pemantauan tutupan lahan hutan menggunakan citra satelit.',
+				deadline: '28 Agustus 2026',
+				peserta: 82,
 				gambar: '1235.jpg',
+				jenis: 'Umum',
 				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
 			},
 			{
 				id: 4,
-				judul: 'First Meet MNH...',
-				deskripsi: 'Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit....',
-				deadline: '21 Agustus 2026',
-				peserta: 67,
+				judul: 'Hackathon Konservasi & Smart Forestry 2026',
+				deskripsi: 'Tantangan pembuatan prototype teknologi AI & IoT untuk monitoring keanekaragaman hayati.',
+				deadline: '05 September 2026',
+				peserta: 58,
 				gambar: '123.jpg',
-				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
-			},
-			{
-				id: 5,
-				judul: 'First Meet MNH...',
-				deskripsi: 'Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit....',
-				deadline: '21 Agustus 2026',
-				peserta: 67,
-				gambar: '1234.jpg',
+				jenis: 'Lomba',
 				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
 			},
 		],
@@ -158,6 +149,38 @@ const getCardGradient = (category) => {
 		default:
 			return 'from-[#143365] via-[#1a4484] to-[#2560ab]';
 	}
+};
+
+// Category Badge Helpers for Roadmap (Matches Roadmap.vue)
+const getCategoryBadges = (item) => {
+	if (!item) return [];
+	if (Array.isArray(item.kategori)) return item.kategori;
+	if (Array.isArray(item.categories)) return item.categories;
+	if (Array.isArray(item.category)) return item.category;
+	const val = item.category || item.kategori || '';
+	if (typeof val === 'string' && val.trim()) {
+		if (val.includes('|')) return val.split('|').map((s) => s.trim()).filter(Boolean);
+		if (val.includes(',')) return val.split(',').map((s) => s.trim()).filter(Boolean);
+		return [val.trim()];
+	}
+	return ['Profesional'];
+};
+
+const getCategoryBadgeClass = (category) => {
+	const cat = (category || '').trim();
+	if (cat === 'Profesional' || cat === 'Professional') {
+		return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+	}
+	if (cat === 'Bisnis') {
+		return 'bg-amber-50 text-amber-700 border-amber-200';
+	}
+	if (cat === 'Birokrat' || cat === 'Birokrasi') {
+		return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+	}
+	if (cat === 'Akademisi') {
+		return 'bg-purple-50 text-purple-700 border-purple-200';
+	}
+	return 'bg-slate-100 text-slate-700 border-slate-200';
 };
 
 // Activity Chip Colors
@@ -228,25 +251,25 @@ const handleActivityClick = () => {
 					</p>
 				</div>
 
-				<!-- Stats Row (5 Cards) -->
-				<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 lg:gap-5">
+				<!-- Stats Row (5 Cards) - Mobile: Horizontal swipe carousel / Desktop: 5-column grid (Non-clickable, static display) -->
+				<div class="flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5 overflow-x-auto py-1 pb-1.5 sm:py-0 sm:pb-0 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory">
 					<div
 						v-for="stat in statCards"
 						:key="stat.label"
-						class="flex items-center justify-between gap-3 rounded-[14px] border border-[#d6e0ee] bg-white px-4 py-4 sm:px-5 sm:py-5 shadow-xs transition-colors duration-150 hover:border-[#8ea9cb]"
+						class="relative flex h-[82px] sm:h-[90px] w-[155px] sm:w-auto shrink-0 snap-start items-center justify-between overflow-hidden rounded-[14px] border border-[#d6e0ee] bg-white px-3 sm:px-4 shadow-xs select-none cursor-default"
 					>
-						<!-- Left Icon -->
-						<div class="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center">
+						<!-- Left Icon (Flushed / Glued directly to bottom border) -->
+						<div class="absolute bottom-0 left-2 sm:left-2.5 flex items-end pointer-events-none select-none">
 							<img
 								:src="stat.icon"
 								:alt="stat.label"
-								class="max-h-full max-w-full object-contain pointer-events-none"
+								class="h-[48px] sm:h-[54px] w-auto max-w-[52px] sm:max-w-[60px] object-bottom object-contain block -mb-[1px]"
 							/>
 						</div>
 
-						<!-- Right Content (Stacked & Centered) -->
-						<div class="flex flex-col items-center justify-center text-center">
-							<span class="font-poppins text-[13.5px] sm:text-[14.5px] lg:text-[15px] font-bold text-[#17334F]">
+						<!-- Right Content (Stacked & Aligned) -->
+						<div class="ml-auto flex flex-col items-end sm:items-center justify-center text-right sm:text-center pl-12 sm:pl-14">
+							<span class="font-poppins text-[12.5px] sm:text-[14px] lg:text-[14.5px] font-bold text-[#17334F] leading-tight">
 								{{ stat.label }}
 							</span>
 							<span class="mt-0.5 font-inter text-[13px] sm:text-[14px] font-semibold text-[#475569]">
@@ -259,30 +282,30 @@ const handleActivityClick = () => {
 				<!-- Section: Roadmap yang Sedang Kamu Ikuti -->
 				<div class="space-y-3.5 sm:space-y-4">
 					<!-- Title & Link Header -->
-					<div class="flex items-center justify-between">
-						<h2 class="font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F]">
+					<div class="flex items-center justify-between gap-2">
+						<h2 class="font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F] leading-tight">
 							Yuk Lihat Roadmap yang Sedang Kamu Ikuti!
 						</h2>
 						<Link
 							href="/mahasiswa/roadmap"
-							class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#183669] hover:underline cursor-pointer"
+							class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#183669] hover:underline cursor-pointer shrink-0"
 						>
 							Lihat Semua
 						</Link>
 					</div>
 
-					<!-- Roadmap Cards Grid (4 Columns) -->
+					<!-- Roadmap Cards Grid (4 Columns Desktop, 2 Columns Tablet, 1 Column Mobile) -->
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
 						<div
 							v-for="item in roadmaps.slice(0, 4)"
 							:key="`roadmap-${item.id}`"
 							@click="handleRoadmapClick(item)"
-							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-colors duration-150 hover:bg-[#fafcff] hover:border-[#a6b7cb] cursor-pointer"
+							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-all duration-200 sm:hover:bg-[#fafcff] sm:hover:border-[#a6b7cb] sm:hover:shadow-sm cursor-pointer"
 							:title="`Buka detail ${item.title}`"
 						>
 							<div>
 								<!-- Cover Banner -->
-								<div class="relative flex h-[165px] sm:h-[175px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
+								<div class="relative flex h-[160px] sm:h-[175px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
 									<img
 										v-if="item.thumbnail"
 										:src="item.thumbnail"
@@ -324,7 +347,7 @@ const handleActivityClick = () => {
 								</div>
 
 								<!-- Progress Bar Row -->
-								<div class="mt-4 flex items-center justify-between gap-3">
+								<div class="mt-3.5 sm:mt-4 flex items-center justify-between gap-3">
 									<span class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#475569] shrink-0">
 										{{ item.completed_tasks ?? 0 }}/{{ item.task_count || 40 }} Task
 									</span>
@@ -340,16 +363,25 @@ const handleActivityClick = () => {
 
 								<!-- Title -->
 								<h3
-									class="mt-2.5 line-clamp-2 text-[15px] sm:text-[16px] font-bold leading-snug text-[#17334F] transition group-hover:text-[#183669]"
+									class="mt-2.5 line-clamp-2 text-[15px] sm:text-[16px] font-bold leading-snug text-[#17334F] transition sm:group-hover:text-[#183669]"
 									:title="item.title"
 								>
 									{{ item.title }}
 								</h3>
 
-								<!-- Categories Label -->
-								<p class="mt-2.5 font-inter text-[11.5px] sm:text-[12px] font-medium text-[#64748b]">
-									{{ item.categories_label || 'Profesional | Bisnis | Birokrat | Akademisi' }}
-								</p>
+								<!-- Category Badges (Matches Roadmap.vue) -->
+								<div class="mt-2.5 flex flex-wrap items-center gap-1.5">
+									<span
+										v-for="(cat, catIdx) in getCategoryBadges(item)"
+										:key="catIdx"
+										:class="[
+											'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+											getCategoryBadgeClass(cat)
+										]"
+									>
+										{{ cat }}
+									</span>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -358,25 +390,25 @@ const handleActivityClick = () => {
 				<!-- Section: Aktivitas Terbaru Yang Bisa Kamu Ikuti Nih! -->
 				<div class="space-y-3.5 sm:space-y-4">
 					<!-- Title & Link Header -->
-					<div class="flex items-center justify-between">
-						<h2 class="font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F]">
+					<div class="flex items-center justify-between gap-2">
+						<h2 class="font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F] leading-tight">
 							Aktivitas Terbaru Yang Bisa Kamu Ikuti Nih!
 						</h2>
 						<Link
 							href="/mahasiswa/aktivitas/list"
-							class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#183669] hover:underline cursor-pointer"
+							class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#183669] hover:underline cursor-pointer shrink-0"
 						>
 							Lihat Semua
 						</Link>
 					</div>
 
-					<!-- Activity Cards Grid (5 Columns on Desktop) -->
-					<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+					<!-- Activity Cards Grid (4 Columns on Desktop, 2 Columns on Tablet, 1 Column on Mobile) -->
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
 						<div
-							v-for="item in activities.slice(0, 5)"
+							v-for="item in activities.slice(0, 4)"
 							:key="`activity-${item.id}`"
 							@click="handleActivityClick"
-							class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] hover:-translate-y-1.5 hover:shadow-lg cursor-pointer select-none"
+							class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none"
 							:title="item.judul"
 						>
 							<!-- Background Image & Gradient -->
@@ -387,41 +419,53 @@ const handleActivityClick = () => {
 							/>
 							<div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95"></div>
 
+							<!-- Badge Umum / Lomba (Top Left) -->
+							<div class="absolute left-3.5 top-3.5 z-20">
+								<span :class="[
+									'rounded-full px-3 py-1 text-[10px] font-extrabold text-white shadow-sm uppercase tracking-wider',
+									(item.jenis || 'Lomba') === 'Lomba' ? 'bg-[#f59e0b]' : 'bg-[#2563eb]'
+								]">
+									{{ item.jenis || 'Lomba' }}
+								</span>
+							</div>
+
 							<!-- Participant Badge (Top Right) -->
-							<div class="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#183669] shadow-sm backdrop-blur-sm">
-								<svg class="h-3.5 w-3.5 text-[#183669]" fill="currentColor" viewBox="0 0 20 20">
-									<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-								</svg>
-								<span>{{ item.peserta || 67 }}</span>
+							<div class="absolute right-3.5 top-3.5 flex items-center gap-1.5 z-20">
+								<div class="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-[#183669] shadow-sm backdrop-blur-sm">
+									<svg class="h-3.5 w-3.5 text-[#183669]" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+									</svg>
+									<span>{{ item.peserta || 67 }}</span>
+								</div>
 							</div>
 
 							<!-- Content Container -->
-							<div class="relative z-10 p-3.5 sm:p-4 flex flex-col justify-end">
+							<div class="relative z-10 p-4 sm:p-5 flex flex-col justify-end">
 								<!-- Deadline Row (White Text) -->
 								<div class="mb-1 flex items-center gap-1.5 text-[10.5px] sm:text-[11px] font-semibold text-white">
 									<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 									</svg>
-									<span>Deadline : {{ formatDeadline(item.deadline) }}</span>
+									<span>Deadline: {{ formatDeadline(item.deadline) }}</span>
 								</div>
 
 								<!-- Title -->
-								<h3 class="mb-1 font-poppins text-[14px] sm:text-[15px] font-bold leading-snug text-white line-clamp-1">
+								<h3 class="mb-1 font-poppins text-[15px] sm:text-[16px] font-bold leading-snug text-white line-clamp-2">
 									{{ item.judul }}
 								</h3>
 
 								<!-- Description -->
-								<p class="mb-2.5 font-inter text-[10.5px] sm:text-[11px] leading-relaxed line-clamp-2 text-slate-200/90">
+								<p class="mb-2.5 font-inter text-[11px] sm:text-[12px] leading-relaxed line-clamp-2 text-slate-200/90">
 									{{ item.deskripsi }}
 								</p>
 
 								<!-- Category Tags (Pill Badges) -->
-								<div class="flex flex-wrap gap-1 sm:gap-1.5">
+								<div class="flex flex-wrap gap-1.5">
 									<span
 										v-for="tag in getActivityTags(item)"
 										:key="tag"
 										:class="[
-											'inline-flex items-center justify-center rounded-full px-2 py-0.5 font-inter text-[10px] font-semibold border shadow-xs',
+											'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[10.5px] font-semibold border shadow-xs',
 											getCategoryChipClass(tag)
 										]"
 									>
