@@ -324,18 +324,27 @@ const savePersonalData = () => {
 	}, 400);
 };
 
+const validateEmail = (email) => {
+	const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	return re.test(String(email).toLowerCase());
+};
+
 const saveAccountData = () => {
 	if (!isAccountChanged.value || isSavingAccount.value) return;
 	accountErrors.value = {};
-	if (!formAccount.value.email.trim()) {
+	const emailVal = (formAccount.value.email || '').trim();
+	if (!emailVal) {
 		accountErrors.value.email = 'Email wajib diisi.';
-		showToast('error', 'Validasi Gagal', 'Email tidak boleh kosong.');
+		return;
+	}
+	if (!validateEmail(emailVal)) {
+		accountErrors.value.email = 'Format email tidak valid (contoh: nama@email.com).';
 		return;
 	}
 
 	isSavingAccount.value = true;
 	setTimeout(() => {
-		savedAccountData.value.email = formAccount.value.email.trim();
+		savedAccountData.value.email = emailVal;
 		savedAccountData.value.phone = formAccount.value.phone.trim();
 		isEditingEmail.value = false;
 		isEditingPhone.value = false;
@@ -350,27 +359,22 @@ const savePassword = () => {
 
 	if (!formPassword.value.currentPassword) {
 		passwordErrors.value.currentPassword = 'Password saat ini wajib diisi.';
-		showToast('error', 'Validasi Gagal', 'Password saat ini wajib diisi.');
 		return;
 	}
 	if (!formPassword.value.newPassword) {
 		passwordErrors.value.newPassword = 'Password baru wajib diisi.';
-		showToast('error', 'Validasi Gagal', 'Password baru wajib diisi.');
 		return;
 	}
 	if (formPassword.value.newPassword.length < 8) {
 		passwordErrors.value.newPassword = 'Password baru minimal 8 karakter.';
-		showToast('error', 'Validasi Gagal', 'Password baru minimal 8 karakter.');
 		return;
 	}
 	if (formPassword.value.newPassword !== formPassword.value.confirmPassword) {
 		passwordErrors.value.confirmPassword = 'Konfirmasi password baru tidak cocok.';
-		showToast('error', 'Validasi Gagal', 'Konfirmasi password baru tidak cocok.');
 		return;
 	}
 	if (formPassword.value.newPassword === formPersonal.value.nim) {
 		passwordErrors.value.newPassword = 'Password baru tidak boleh sama dengan NIM.';
-		showToast('error', 'Validasi Gagal', 'Password baru tidak boleh sama dengan password default (NIM).');
 		return;
 	}
 
@@ -436,7 +440,7 @@ const savePassword = () => {
 				<div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
 					<!-- LEFT COLUMN: Data Diri (Card 1) -->
 					<div class="rounded-[14px] bg-white p-6 shadow-sm ring-1 ring-[#d6e0ee] lg:col-span-4">
-						<form @submit.prevent="savePersonalData" class="space-y-5">
+						<form novalidate @submit.prevent="savePersonalData" class="space-y-5">
 							<div>
 								<h2 class="font-poppins text-[19px] font-bold text-[#112340]">
 									Data diri
@@ -616,7 +620,7 @@ const savePassword = () => {
 								Data Akun
 							</h2>
 
-							<form @submit.prevent="saveAccountData" class="mt-5 space-y-5">
+							<form novalidate @submit.prevent="saveAccountData" class="mt-5 space-y-5">
 								<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 									<!-- Email Field -->
 									<div class="flex flex-col">
@@ -639,11 +643,12 @@ const savePassword = () => {
 												:class="[
 													'custom-input h-[46px] w-full rounded-[10px] pl-3.5 font-inter text-[14px] text-[#112340] placeholder-[#a8bed4] transition-all duration-150',
 													hasInitialEmail || isEditingEmail ? 'pr-11' : 'pr-3.5',
-													accountErrors.email ? 'border-red-400 bg-red-50/20' : ''
+													accountErrors.email ? 'is-error' : ''
 												]"
 											/>
-											<!-- Edit Pencil Button inside Email Input -->
+											<!-- Edit Pencil Button inside Email Input (Hanya jika email sudah tersimpan) -->
 											<button
+												v-if="hasInitialEmail"
 												type="button"
 												@mousedown.prevent
 												@click="toggleEditEmail"
@@ -673,8 +678,11 @@ const savePassword = () => {
 												</span>
 											</button>
 										</div>
-										<p v-if="accountErrors.email" class="mt-1 font-inter text-[11px] font-medium text-red-500">
-											{{ accountErrors.email }}
+										<p v-if="accountErrors.email" class="mt-1.5 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ accountErrors.email }}</span>
 										</p>
 									</div>
 
@@ -695,8 +703,8 @@ const savePassword = () => {
 												placeholder="XXX-XXXX-XXXX"
 												:has-error="!!accountErrors.phone"
 											>
-												<!-- Edit Pencil Button inside Phone Input -->
-												<template #append>
+												<!-- Edit Pencil Button inside Phone Input (Hanya jika nomor hp sudah tersimpan) -->
+												<template #append v-if="hasInitialPhone">
 													<button
 														type="button"
 														@mousedown.prevent
@@ -729,8 +737,11 @@ const savePassword = () => {
 												</template>
 											</PhoneInput>
 										</div>
-										<p v-if="accountErrors.phone" class="mt-1 font-inter text-[11px] font-medium text-red-500">
-											{{ accountErrors.phone }}
+										<p v-if="accountErrors.phone" class="mt-1.5 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ accountErrors.phone }}</span>
 										</p>
 									</div>
 								</div>
@@ -773,7 +784,7 @@ const savePassword = () => {
 								Ganti Password
 							</h2>
 
-							<form @submit.prevent="savePassword" class="mt-5 space-y-5">
+							<form novalidate @submit.prevent="savePassword" class="mt-5 space-y-5">
 								<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 									<!-- Kolom Kiri: Password Saat Ini -->
 									<div class="flex flex-col">
@@ -790,7 +801,7 @@ const savePassword = () => {
 												placeholder="Masukkan password saat ini"
 												:class="[
 													'custom-input h-[46px] w-full rounded-[10px] pl-3.5 pr-10 font-inter text-[14px] text-[#112340] placeholder-[#a8bed4] transition-all duration-150',
-													passwordErrors.currentPassword || passwordErrors.current_password ? 'border-red-400 bg-red-50/20' : ''
+													passwordErrors.currentPassword || passwordErrors.current_password ? 'is-error' : ''
 												]"
 											/>
 											<button
@@ -813,8 +824,11 @@ const savePassword = () => {
 												/>
 											</button>
 										</div>
-										<p v-if="passwordErrors.current_password || passwordErrors.currentPassword" class="mt-1 font-inter text-[11px] font-medium text-red-500">
-											{{ passwordErrors.current_password || passwordErrors.currentPassword }}
+										<p v-if="passwordErrors.current_password || passwordErrors.currentPassword" class="mt-1.5 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ passwordErrors.current_password || passwordErrors.currentPassword }}</span>
 										</p>
 									</div>
 
@@ -833,7 +847,7 @@ const savePassword = () => {
 												placeholder="Minimal 8 karakter"
 												:class="[
 													'custom-input h-[46px] w-full rounded-[10px] pl-3.5 pr-10 font-inter text-[14px] text-[#112340] placeholder-[#a8bed4] transition-all duration-150',
-													passwordErrors.new_password || passwordErrors.newPassword ? 'border-red-400 bg-red-50/20' : ''
+													passwordErrors.new_password || passwordErrors.newPassword ? 'is-error' : ''
 												]"
 											/>
 											<button
@@ -856,8 +870,11 @@ const savePassword = () => {
 												/>
 											</button>
 										</div>
-										<p v-if="passwordErrors.new_password || passwordErrors.newPassword" class="mt-1 font-inter text-[11px] font-medium text-red-500">
-											{{ passwordErrors.new_password || passwordErrors.newPassword }}
+										<p v-if="passwordErrors.new_password || passwordErrors.newPassword" class="mt-1.5 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ passwordErrors.new_password || passwordErrors.newPassword }}</span>
 										</p>
 									</div>
 
@@ -876,7 +893,7 @@ const savePassword = () => {
 												placeholder="Ulangi password baru"
 												:class="[
 													'custom-input h-[46px] w-full rounded-[10px] pl-3.5 pr-10 font-inter text-[14px] text-[#112340] placeholder-[#a8bed4] transition-all duration-150',
-													passwordErrors.confirmPassword || passwordErrors.new_password_confirmation ? 'border-red-400 bg-red-50/20' : ''
+													passwordErrors.confirmPassword || passwordErrors.new_password_confirmation ? 'is-error' : ''
 												]"
 											/>
 											<button
@@ -899,8 +916,11 @@ const savePassword = () => {
 												/>
 											</button>
 										</div>
-										<p v-if="passwordErrors.confirmPassword || passwordErrors.new_password_confirmation" class="mt-1 font-inter text-[11px] font-medium text-red-500">
-											{{ passwordErrors.confirmPassword || passwordErrors.new_password_confirmation }}
+										<p v-if="passwordErrors.confirmPassword || passwordErrors.new_password_confirmation" class="mt-1.5 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ passwordErrors.confirmPassword || passwordErrors.new_password_confirmation }}</span>
 										</p>
 									</div>
 								</div>
@@ -1004,7 +1024,7 @@ const savePassword = () => {
 <style scoped>
 /* Reset total dari plugin @tailwindcss/forms dan default browser outline */
 .custom-input {
-	border: 1px solid #d6e0ee !important;
+	border: 1px solid #d6e0ee;
 	outline: none !important;
 	box-shadow: none !important;
 	--tw-ring-shadow: none !important;
@@ -1014,27 +1034,44 @@ const savePassword = () => {
 	background-color: #ffffff;
 }
 
-/* Hanya aktif hover ketika field TIDAK sedang fokus/aktif */
-.custom-input:not(:focus):not(:focus-within):not([readonly]):not(:disabled):hover {
+/* Hanya aktif hover ketika field TIDAK sedang fokus/aktif dan TIDAK error */
+.custom-input:not(:focus):not(:focus-within):not([readonly]):not(:disabled):not(.is-error):hover {
 	border-color: #a6b7cb !important;
 	background-color: #fafcff !important;
 }
 
-/* Ketika fokus / aktif, border tetap #183669 dan background tetap putih bersih, tidak ada efek hover */
-.custom-input:focus,
-.custom-input:focus-visible,
-.custom-input:focus-within,
-.custom-input:active,
-.custom-input:focus:hover,
-.custom-input:focus-within:hover {
+/* Ketika fokus / aktif dan TIDAK error */
+.custom-input:not(.is-error):focus,
+.custom-input:not(.is-error):focus-visible,
+.custom-input:not(.is-error):focus-within,
+.custom-input:not(.is-error):active {
 	border-color: #183669 !important;
 	outline: none !important;
 	box-shadow: none !important;
 	--tw-ring-shadow: none !important;
-	--tw-ring-offset-shadow: none !important;
-	--tw-ring-color: transparent !important;
-	--tw-ring-offset-color: transparent !important;
 	background-color: #ffffff !important;
+}
+
+/* State Error: Border merah & background merah lembut seperti modal */
+.custom-input.is-error {
+	border-color: #f87171 !important; /* border-red-400 */
+	background-color: rgba(254, 242, 242, 0.45) !important; /* bg-red-50/45 */
+}
+
+.custom-input.is-error:hover {
+	border-color: #ef4444 !important;
+	background-color: rgba(254, 242, 242, 0.6) !important;
+}
+
+.custom-input.is-error:focus,
+.custom-input.is-error:focus-visible,
+.custom-input.is-error:focus-within,
+.custom-input.is-error:active {
+	border-color: #ef4444 !important; /* focus:border-red-500 */
+	background-color: rgba(254, 242, 242, 0.6) !important;
+	outline: none !important;
+	box-shadow: none !important;
+	--tw-ring-shadow: none !important;
 }
 
 .custom-input[readonly],

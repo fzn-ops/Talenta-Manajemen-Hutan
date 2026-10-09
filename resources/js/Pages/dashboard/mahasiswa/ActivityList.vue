@@ -611,7 +611,7 @@ const goToDetail = (id) => {
               v-for="item in paginatedList" 
               :key="item.id"
               @click="goToDetail(item.id)"
-              class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] hover:-translate-y-1.5 hover:shadow-lg cursor-pointer select-none"
+              class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none"
             >
               <!-- BACKGROUND GAMBAR & GRADIENT -->
               <img 

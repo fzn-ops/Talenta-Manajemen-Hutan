@@ -328,7 +328,7 @@ defineExpose({
 			'phone-container relative flex w-full items-center rounded-[10px] transition-colors duration-150',
 			heightClass,
 			hasError
-				? 'border border-red-400 bg-red-50/20'
+				? 'border border-red-400 bg-red-50/20 hover:border-red-400 focus-within:!border-red-500'
 				: readonly || disabled
 				? 'border border-[#d6e0ee] bg-[#f0f4f9] cursor-not-allowed select-none'
 				: 'border border-[#d6e0ee] bg-white hover:border-[#a6b7cb] hover:bg-[#fafcff] focus-within:!border-[#183669] focus-within:!bg-white'

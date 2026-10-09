@@ -387,16 +387,17 @@ const handleModalSubmit = (selectedIds) => {
 					</p>
 				</div>
 
-				<!-- Action Bar (Search & Filter) -->
-				<div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+				<!-- Action Bar (Search, Filter, & Tambah) in a single responsive row -->
+				<div class="flex flex-row items-center gap-2.5 sm:gap-3 w-full">
 					<!-- Search Input Component -->
 					<SearchBarTable
+						class="w-full flex-1 min-w-0"
 						v-model="searchQuery"
 						placeholder="Cari roadmap disini"
 					/>
 
-					<!-- Filter Button with Unified Dropdown -->
-					<div class="flex items-center justify-end w-full sm:w-auto shrink-0 gap-2">
+					<!-- Filter Button & Tambah Container -->
+					<div class="flex items-center justify-end shrink-0 gap-2 sm:gap-3">
 						<div ref="filterContainerRef" class="relative" @click.stop @keydown.escape="isFilterOpen = false">
 							<button
 								type="button"
@@ -520,7 +521,7 @@ const handleModalSubmit = (selectedIds) => {
 							v-for="item in paginatedRoadmaps"
 							:key="`roadmap-${item.id}`"
 							@click="handleCardClick(item)"
-							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-colors duration-150 hover:bg-[#fafcff] hover:border-[#a6b7cb] cursor-pointer"
+							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-colors duration-150 sm:hover:bg-[#fafcff] sm:hover:border-[#a6b7cb] cursor-pointer"
 							:title="`Buka detail ${item.title}`"
 						>
 							<div>
@@ -585,7 +586,7 @@ const handleModalSubmit = (selectedIds) => {
 
 								<!-- Roadmap Title -->
 								<h3
-									class="mt-2.5 line-clamp-2 text-[16px] sm:text-[17px] font-bold leading-snug text-[#17334F] transition group-hover:text-[#183669]"
+									class="mt-2.5 line-clamp-2 text-[16px] sm:text-[17px] font-bold leading-snug text-[#17334F] transition sm:group-hover:text-[#183669]"
 									:title="item.title"
 								>
 									{{ item.title }}
