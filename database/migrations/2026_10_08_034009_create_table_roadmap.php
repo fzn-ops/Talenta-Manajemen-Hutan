@@ -11,13 +11,38 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('table_roadmap', function (Blueprint $table) {
+        Schema::create('roadmap', function (Blueprint $table) {
             $table->id();
             $table->string('nama_roadmap');
             $table->string('deskripsi');
             $table->string('foto')->nullable();
             $table->enum('kategori',['profesional','bisnis','birokrasi','akademisi']);
             $table->integer('partisipan');
+            $table->timestamps();
+        });
+
+        Schema::create('pendaftaran_roadmap', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_user')->constrained('users')->onDelete('cascade'); 
+            $table->foreignId('id_roadmap')->constrained('roadmap')->onDelete('cascade'); 
+            $table->timestamps();
+        });
+
+        Schema::create('bulan_roadmap', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_roadmap')->constrained('roadmap')->onDelete('cascade');
+            $table->integer('bulan_ke');
+        });
+
+        Schema::create('materi_roadmap', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_roadmap')->constrained('roadmap')->onDelete('cascade'); 
+            $table->string('judul');
+            $table->boolean('tipe');
+            $table->string('topik');
+            $table->text('deskripsi');
+            $table->json('kartu_konten')->nullable();
+            $table->integer('maksimal_tugas')->nullable();;
             $table->timestamps();
         });
     }
@@ -27,7 +52,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('table_roadmap');
-
+        Schema::dropIfExists('roadmap');
+        Schema::dropIfExists('pendaftaran_roadmap');
+        Schema::dropIfExists('materi_roadmap');
+        Schema::dropIfExists('bulan_roadmap');
     }
 };

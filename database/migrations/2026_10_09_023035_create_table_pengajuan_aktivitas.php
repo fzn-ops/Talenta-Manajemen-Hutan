@@ -11,24 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('aktivitas', function (Blueprint $table) {
+        Schema::create('pengajuan_aktivitas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('id_user')->constrained('users')->cascadeOnDelete();
             $table->string('judul');
             $table->text('deskripsi');
             $table->string('kategori');
-            $table->integer('partisipan');
-            $table->enum('jenis', [
-                'umum',
-                'lomba',
-            ]);
-            $table->boolean('status');
-            $table->dateTime('deadline');
+            $table->integer('partisipan')->default(0);
+            $table->enum('status', ['menunggu', 'disetujui', 'ditolak'])
+                  ->default('menunggu');
+            $table->dateTime('deadline')->nullable();
             $table->timestamps();
         });
 
-        Schema::create('gambar_aktivitas', function (Blueprint $table) {
+        Schema::create('gambar_pengajuan_aktivitas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_aktivitas')->constrained('aktivitas')->cascadeOnDelete();
+            $table->foreignId('id_pengajuan_aktivitas')->constrained('pengajuan_aktivitas')->cascadeOnDelete();
             $table->string('gambar');
             $table->boolean('utama')->default(false);
             $table->timestamps();
@@ -40,7 +38,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('aktivitas');
-        Schema::dropIfExists('gambar_aktivitas');
+        Schema::dropIfExists('pengajuan_aktivitas');
+        Schema::dropIfExists('gambar_pengajuan_aktivitas');
     }
 };

@@ -29,4 +29,26 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function pendaftaranAktivitas()
+    {
+        return $this->hasMany(PendaftaranAktivitas::class, 'id_user', 'id');
+    }
+
+    public function pengajuanAktivitas()
+    {
+        return $this->hasMany(PengajuanAktivitas::class, 'id_user', 'id');
+    }
+
+    public function pendaftaranRoadmap()
+    {
+        return $this->hasMany(PendaftaranRoadmap::class, 'id_user', 'id');
+    }
+
+    public function pencapaian()
+    {
+        return $this->hasMany(Pencapaian::class, 'id_user', 'id');
+    }
+
+    
 }
