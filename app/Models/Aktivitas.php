@@ -23,6 +23,11 @@ class Aktivitas extends Model
         'updated_at',
     ];
 
+    protected $casts = [
+        'kategori' => 'array',
+        'deadline' => 'date:Y-m-d',
+    ];
+
     public function gambarAktivitas()
     {
         return $this->hasMany(GambarAktivitas::class, 'id_aktivitas', 'id');

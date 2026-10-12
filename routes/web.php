@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Dashboard\Admin\AktivitasController;
 
 /* Route Landing dan Website Public*/
 
@@ -84,9 +85,7 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
             return Inertia::render('dashboard/admin/ActivityResult');
         })->name('hasil');
 
-        Route::get('/list', function () {
-            return Inertia::render('dashboard/admin/ActivityList');
-        })->name('list');
+        Route::get('/list', [AktivitasController::class, 'index'])->name('listAktivitasAdmin');
     });
 
     Route::get('/karir', function () {
