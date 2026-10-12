@@ -99,13 +99,13 @@ const submit = () => {
                 v-if="showPassword" 
                 src="/assets/icons/shown.svg" 
                 alt="Lihat password" 
-                class="h-3.5 w-auto object-contain opacity-75 transition hover:opacity-100"
+                class="h-[18px] w-[18px] object-contain opacity-75 transition hover:opacity-100"
               />
               <img 
                 v-else 
                 src="/assets/icons/hidden.svg" 
                 alt="Sembunyikan password" 
-                class="h-3.5 w-auto object-contain opacity-75 transition hover:opacity-100"
+                class="h-[18px] w-[18px] object-contain opacity-75 transition hover:opacity-100"
               />
             </button>
           </div>
@@ -120,7 +120,7 @@ const submit = () => {
             <input 
               type="checkbox" 
               v-model="form.remember" 
-              class="h-4 w-4 rounded border-gray-400 text-[#4a7c73] transition-colors focus:ring-[#4a7c73] group-hover:border-[#4a7c73] cursor-pointer" 
+              class="h-4 w-4 rounded border-gray-400 text-[#4a7c73] transition-colors focus:ring-0 focus:ring-offset-0 focus:outline-none group-hover:border-[#4a7c73] cursor-pointer" 
             />
             <span class="group-hover:text-[#4a7c73] transition-colors">Remember me</span>
           </label>
@@ -142,8 +142,18 @@ const submit = () => {
           </button>
 
           <div class="text-center">
-            <Link href="/" class="text-[13px] font-semibold text-[#112340] transition-colors hover:text-[#4a7c73]">
-              &larr; Kembali ke Beranda
+            <Link 
+              href="/" 
+              class="group inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#112340] transition-colors hover:text-[#4a7c73]"
+            >
+              <svg 
+                class="h-3.5 w-3.5 rotate-90 shrink-0 text-current transition-transform duration-200 group-hover:-translate-x-0.5" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+              </svg>
+              <span>Kembali ke Beranda</span>
             </Link>
           </div>
         </div>
@@ -161,5 +171,16 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active{
     -webkit-box-shadow: 0 0 0 30px #fcfcfb inset !important;
     -webkit-text-fill-color: #112340 !important;
+}
+
+input[type="checkbox"]:focus,
+input[type="checkbox"]:focus-visible,
+input[type="checkbox"]:active {
+    outline: none !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: none !important;
+    --tw-ring-offset-shadow: none !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-offset-color: transparent !important;
 }
 </style>
