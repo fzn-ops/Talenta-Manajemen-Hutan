@@ -25,13 +25,19 @@ return Application::configure(basePath: dirname(__DIR__))
                 return '/admin/dashboard';
             }
             if($user && $user->role == 'mahasiswa'){
+                $isDefault = !empty($user->nim) && \Illuminate\Support\Facades\Hash::check($user->nim, $user->password);
+                $isEmailEmpty = empty($user->email) || $user->email === '-';
+                if ($isDefault || $isEmailEmpty) {
+                    return '/mahasiswa/profile';
+                }
                 return '/mahasiswa/dashboard';
             }
             return '/';
         });
 
         $middleware->alias([
-            'role' => CheckRole::class
+            'role' => CheckRole::class,
+            'mahasiswa.password' => \App\Http\Middleware\EnsureMahasiswaPasswordChanged::class,
         ]);
 
         //

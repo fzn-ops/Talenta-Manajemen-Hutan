@@ -343,14 +343,23 @@ const saveAccountData = () => {
 	}
 
 	isSavingAccount.value = true;
-	setTimeout(() => {
-		savedAccountData.value.email = emailVal;
-		savedAccountData.value.phone = formAccount.value.phone.trim();
-		isEditingEmail.value = false;
-		isEditingPhone.value = false;
-		showToast('success', 'Berhasil Disimpan', 'Data akun berhasil diperbarui.');
-		isSavingAccount.value = false;
-	}, 400);
+	router.post('/mahasiswa/profile/account', {
+		email: emailVal,
+		no_handphone: formAccount.value.phone?.trim() || '',
+	}, {
+		preserveScroll: true,
+		onSuccess: () => {
+			savedAccountData.value.email = emailVal;
+			savedAccountData.value.phone = (formAccount.value.phone || '').trim();
+			isEditingEmail.value = false;
+			isEditingPhone.value = false;
+			isSavingAccount.value = false;
+		},
+		onError: (errors) => {
+			accountErrors.value = errors || {};
+			isSavingAccount.value = false;
+		},
+	});
 };
 
 const savePassword = () => {
@@ -379,15 +388,29 @@ const savePassword = () => {
 	}
 
 	isSavingPassword.value = true;
-	setTimeout(() => {
-		formPassword.value = {
-			currentPassword: '',
-			newPassword: '',
-			confirmPassword: '',
-		};
-		showToast('success', 'Password Diperbarui', 'Password berhasil diubah!');
-		isSavingPassword.value = false;
-	}, 400);
+	router.post('/mahasiswa/profile/password', {
+		current_password: formPassword.value.currentPassword,
+		new_password: formPassword.value.newPassword,
+		new_password_confirmation: formPassword.value.confirmPassword,
+	}, {
+		preserveScroll: true,
+		onSuccess: () => {
+			formPassword.value = {
+				currentPassword: '',
+				newPassword: '',
+				confirmPassword: '',
+			};
+			isSavingPassword.value = false;
+		},
+		onError: (errors) => {
+			passwordErrors.value = {
+				currentPassword: errors.current_password,
+				newPassword: errors.new_password,
+				confirmPassword: errors.new_password_confirmation,
+			};
+			isSavingPassword.value = false;
+		},
+	});
 };
 </script>
 

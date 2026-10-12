@@ -29,7 +29,7 @@ class UserDummy extends Seeder
             'nama' => 'Farhan Hakim',
             'nim' => 'J0403231075',
             'email' => '',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('J0403231075'),
             'role' => 'mahasiswa',
             'angkatan' => 60,
             'talent_mapping' => 'Profesional',

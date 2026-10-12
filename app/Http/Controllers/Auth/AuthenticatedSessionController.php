@@ -38,6 +38,21 @@ class AuthenticatedSessionController extends Controller
         if ($user->role === 'admin') {
             return redirect('/admin/dashboard');
         } elseif ($user->role === 'mahasiswa') {
+            $sessionKey = 'auth_is_default_password_' . $user->id;
+            if ($request->session()->has($sessionKey)) {
+                $isDefaultPassword = (bool) $request->session()->get($sessionKey);
+            } else {
+                $isDefaultPassword = !empty($user->nim) && \Illuminate\Support\Facades\Hash::check($user->nim, $user->password);
+                $request->session()->put($sessionKey, $isDefaultPassword);
+            }
+
+            $isEmailEmpty = empty($user->email) || $user->email === '-';
+            $isLocked = $isDefaultPassword || $isEmailEmpty;
+
+            if ($isLocked) {
+                return redirect()->route('mahasiswa.profile');
+            }
+
             return redirect('/mahasiswa/dashboard');
         }
         return redirect('/login');

@@ -41,9 +41,7 @@ const submit = () => {
       <img src="/assets/images/icon_daun_login_kanan.svg" alt="" class="w-32 opacity-90 transition-all duration-300 sm:w-48 md:w-56 lg:w-56">
     </div>
 
-    <!-- ========================================== -->
-    <!-- KARTU LOGIN (z-10 agar di atas ornamen)    -->
-    <!-- ========================================== -->
+    <!-- KARTU LOGIN -->
     <div class="relative z-10 w-full max-w-[500px] rounded-[24px] sm:rounded-[28px] bg-[#fcfcfb] p-7 sm:p-11 shadow-2xl transition-all">
       
       <h1 class="mb-8 sm:mb-9 text-center text-2xl sm:text-[32px] font-extrabold text-[#112340] tracking-tight">

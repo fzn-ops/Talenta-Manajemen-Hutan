@@ -1,6 +1,6 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
 	collapsed: {
@@ -14,6 +14,17 @@ const props = defineProps({
 });
 
 defineEmits(['navigate', 'logout']);
+
+const page = usePage();
+const isLockedAccount = computed(() => {
+	const user = page.props.auth?.user;
+	if (!user) return false;
+	return !!(user.is_locked ?? (user.is_default_password || user.is_email_empty));
+});
+
+const isLocked = (item) => {
+	return isLockedAccount.value && item.label !== 'Profile';
+};
 
 const menuItems = [
 	{ label: 'Dashboard', href: '/mahasiswa/dashboard', pattern: 'mahasiswa.dashboard*', icon: 'dashboard' },
@@ -128,7 +139,7 @@ const isParentActive = (item) => {
 			:class="(!mobile && collapsed) ? 'px-0' : 'px-4'"
 		>
 			<Link
-				href="/mahasiswa/dashboard"
+				:href="isLockedAccount ? '/mahasiswa/profile' : '/mahasiswa/dashboard'"
 				class="flex items-center justify-center focus:outline-none overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
 				:class="(!mobile && collapsed) ? 'gap-0' : 'gap-3.5'"
 			>
@@ -150,18 +161,23 @@ const isParentActive = (item) => {
 		]">
 			<template v-for="item in menuItems" :key="item.label">
 				<!-- Menu Non-Dropdown -->
-				<Link
+				<component
+					:is="isLocked(item) ? 'div' : Link"
 					v-if="!item.hasChildren"
-					:href="item.href"
+					:href="isLocked(item) ? undefined : item.href"
 					:class="[
-						'flex h-11 items-center text-[15px] font-semibold transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 active:outline-none active:ring-0 select-none whitespace-nowrap overflow-hidden',
-						(!mobile && collapsed) ? 'w-full justify-center rounded-full px-0 gap-0' : 'ml-6 w-[calc(100%-24px)] gap-5 rounded-l-full pl-7 pr-4',
-						isActive(item)
-							? 'bg-[#345c53] text-white shadow-sm'
-							: ['text-white/80', !mobile ? 'hover:bg-[#528277] hover:text-white' : ''],
+						'flex h-11 items-center text-[15px] font-semibold transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] outline-none focus:outline-none whitespace-nowrap select-none overflow-hidden',
+						(!mobile && collapsed) ? 'w-full justify-center rounded-full px-0' : 'gap-5 pl-7 pr-4',
+						isLocked(item)
+							? (!mobile && collapsed)
+								? 'opacity-35 cursor-not-allowed justify-center'
+								: 'ml-6 w-[calc(100%-24px)] rounded-l-full opacity-35 cursor-not-allowed text-white/60'
+							: isActive(item)
+								? (!mobile && collapsed) ? 'bg-[#345c53] text-white shadow-sm' : 'ml-6 w-[calc(100%-24px)] rounded-l-full bg-[#345c53] text-white shadow-sm'
+								: (!mobile && collapsed) ? 'text-white/80 hover:bg-[#528277] hover:text-white' : 'ml-6 w-[calc(100%-24px)] rounded-l-full text-white/80 hover:bg-[#528277] hover:text-white',
 					]"
-					:title="(!mobile && collapsed) ? item.label : undefined"
-					@click="$emit('navigate')"
+					:title="isLocked(item) ? `${item.label} (Terkunci - Ubah password default Anda terlebih dahulu)` : ((!mobile && collapsed) ? item.label : undefined)"
+					@click="!isLocked(item) && $emit('navigate')"
 				>
 					<img :src="`/assets/icons/${item.icon}.svg`" :alt="`${item.label} icon`" class="h-5 w-5 shrink-0 object-contain" />
 					<span
@@ -170,21 +186,35 @@ const isParentActive = (item) => {
 					>
 						{{ item.label }}
 					</span>
-				</Link>
+					<!-- Lock icon when item is locked -->
+					<svg
+						v-if="(!collapsed || mobile) && isLocked(item)"
+						class="h-4 w-4 shrink-0 text-white/60 ml-auto"
+						fill="currentColor"
+						viewBox="0 0 20 20"
+					>
+						<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+					</svg>
+				</component>
 
 				<!-- Menu Dropdown (Aktivitas) -->
 				<div v-else class="flex flex-col">
-					<button
-						type="button"
+					<component
+						:is="isLocked(item) ? 'div' : 'button'"
+						:type="isLocked(item) ? undefined : 'button'"
 						:class="[
-							'flex h-11 items-center text-[15px] font-semibold transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 active:outline-none active:ring-0 select-none whitespace-nowrap cursor-pointer overflow-hidden',
+							'flex h-11 items-center text-[15px] font-semibold transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] outline-none focus:outline-none whitespace-nowrap select-none overflow-hidden',
 							(!mobile && collapsed) ? 'w-full justify-center rounded-full px-0' : 'ml-6 w-[calc(100%-24px)] justify-between rounded-l-full pl-7 pr-5',
-							isParentActive(item)
-								? 'bg-[#345c53] text-white shadow-sm'
-								: ['text-white/80', !mobile ? 'hover:bg-[#528277] hover:text-white' : ''],
+							isLocked(item)
+								? (!mobile && collapsed)
+									? 'opacity-35 cursor-not-allowed justify-center'
+									: 'opacity-35 cursor-not-allowed text-white/60'
+								: isParentActive(item)
+									? 'bg-[#345c53] text-white shadow-sm cursor-pointer'
+									: ['text-white/80 cursor-pointer', !mobile ? 'hover:bg-[#528277] hover:text-white' : ''],
 						]"
-						:title="(!mobile && collapsed) ? item.label : undefined"
-						@click="toggleDropdown(item.label)"
+						:title="isLocked(item) ? `${item.label} (Terkunci - Ubah password default Anda terlebih dahulu)` : ((!mobile && collapsed) ? item.label : undefined)"
+						@click="!isLocked(item) && toggleDropdown(item.label)"
 					>
 						<div
 							class="flex items-center transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
@@ -198,7 +228,17 @@ const isParentActive = (item) => {
 								{{ item.label }}
 							</span>
 						</div>
+						<!-- Lock icon if locked, otherwise arrow dropdown -->
 						<svg
+							v-if="(!collapsed || mobile) && isLocked(item)"
+							class="h-4 w-4 shrink-0 text-white/60 ml-auto"
+							fill="currentColor"
+							viewBox="0 0 20 20"
+						>
+							<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+						</svg>
+						<svg
+							v-else-if="!isLocked(item)"
 							:class="[
 								'h-4 shrink-0 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] text-white/80',
 								openDropdowns.includes(item.label) ? 'rotate-180' : '',
@@ -211,10 +251,11 @@ const isParentActive = (item) => {
 						>
 							<path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
 						</svg>
-					</button>
+					</component>
 
 					<!-- Submenu Items (Smooth Grid Accordion Animation) -->
 					<div
+						v-if="!isLocked(item)"
 						class="submenu-collapse"
 						:class="{ 'is-open': openDropdowns.includes(item.label) }"
 					>

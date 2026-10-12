@@ -5,6 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Dashboard\Admin\AktivitasController;
+use App\Http\Controllers\Dashboard\Mahasiswa\ProfileController as MahasiswaProfileController;
 
 /* Route Landing dan Website Public*/
 
@@ -49,6 +50,13 @@ Route::get('/FAQ', function () {
 /*----------------------------------------------------------------------*/
 
 Route::get('/dashboard', function () {
+    $user = \Illuminate\Support\Facades\Auth::user();
+    if ($user && $user->role === 'mahasiswa') {
+        return redirect()->route('mahasiswa.dashboard');
+    }
+    if ($user && $user->role === 'admin') {
+        return redirect()->route('dashboard');
+    }
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -98,7 +106,7 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
 });
 
 /* Mahasiswa Dashboard Routes */
-Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
+Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('dashboard/mahasiswa/Dashboard');
     })->name('dashboard');
@@ -127,9 +135,9 @@ Route::middleware(['auth','role:mahasiswa'])->prefix('mahasiswa')->name('mahasis
         })->name('pengajuan');
     });
 
-    Route::get('/profile', function () {
-        return Inertia::render('dashboard/mahasiswa/Profile');
-    })->name('profile');
+    Route::get('/profile', [MahasiswaProfileController::class, 'index'])->name('profile');
+    Route::post('/profile/account', [MahasiswaProfileController::class, 'updateAccount'])->name('profile.account');
+    Route::post('/profile/password', [MahasiswaProfileController::class, 'updatePassword'])->name('profile.password');
 });
 
 Route::middleware('auth')->group(function () {

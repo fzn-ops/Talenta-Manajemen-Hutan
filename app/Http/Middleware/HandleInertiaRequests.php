@@ -29,10 +29,37 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $isDefaultPassword = false;
+        $isEmailEmpty = false;
+        $isLocked = false;
+
+        if ($user && $user->role === 'mahasiswa') {
+            $sessionKey = 'auth_is_default_password_' . $user->id;
+            if ($request->session()->has($sessionKey)) {
+                $isDefaultPassword = (bool) $request->session()->get($sessionKey);
+            } else {
+                $isDefaultPassword = !empty($user->nim) && \Illuminate\Support\Facades\Hash::check($user->nim, $user->password);
+                $request->session()->put($sessionKey, $isDefaultPassword);
+            }
+
+            $isEmailEmpty = empty($user->email) || $user->email === '-';
+            $isLocked = $isDefaultPassword || $isEmailEmpty;
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? array_merge($user->toArray(), [
+                    'is_default_password' => $isDefaultPassword,
+                    'is_email_empty' => $isEmailEmpty,
+                    'is_locked' => $isLocked,
+                ]) : null,
+            ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
             ],
         ];
     }
