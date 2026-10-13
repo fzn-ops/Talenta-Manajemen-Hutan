@@ -160,29 +160,42 @@ const handleFileUpload = (event) => {
 };
 
 const handleReplaceImage = (event) => {
-	const file = event.target.files?.[0];
-	if (!file) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-	if (file.size > 10 * 1024 * 1024) {
-		event.target.value = '';
-		return;
-	}
+    if (file.size > 10 * 1024 * 1024) {
+        event.target.value = '';
+        alert("Ukuran gambar maksimal 10MB ya wok!"); // Opsional, biar user tau
+        return;
+    }
 
-	if (imageIndexToReplace.value !== null && imageIndexToReplace.value >= 0) {
-		const old = form.value.gambar[imageIndexToReplace.value];
-		if (old && typeof old === 'object' && old.isNew && old.url) {
-			URL.revokeObjectURL(old.url);
-		}
-		const previewUrl = URL.createObjectURL(file);
-		form.value.gambar[imageIndexToReplace.value] = {
-			file: file,
-			url: previewUrl,
-			isNew: true,
-		};
-		errors.value.gambar = '';
-	}
-	event.target.value = '';
-	imageIndexToReplace.value = null;
+    if (imageIndexToReplace.value !== null && imageIndexToReplace.value >= 0) {
+        const old = form.value.gambar[imageIndexToReplace.value];
+        
+        // CEK GAMBAR LAMA SEBELUM DITIMPA
+        if (old && typeof old === 'object') {
+            if (old.isNew && old.url) {
+                // Kalau gambar baru, cukup bersihin cache memory
+                URL.revokeObjectURL(old.url);
+            } else if (!old.isNew && old.id) {
+                // NAH INI DIA! Kalau yang di-replace gambar dari DB, catat ID-nya ke keranjang hapus!
+                deletedImageIds.value.push(old.id);
+            }
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        
+        // Baru deh lu timpa posisinya sama gambar baru
+        form.value.gambar[imageIndexToReplace.value] = {
+            file: file,
+            url: previewUrl,
+            isNew: true,
+        };
+        errors.value.gambar = '';
+    }
+    
+    event.target.value = '';
+    imageIndexToReplace.value = null;
 };
 
 const handleImageDrop = (event) => {
@@ -196,15 +209,33 @@ const openDeleteImageModal = (index) => {
 	showDeleteImageModal.value = true;
 };
 
+// Pastikan variabel ini udah lu deklarasiin di bagian atas (bareng ref yang lain)
+const deletedImageIds = ref([]); 
+
 const executeRemoveImage = () => {
-	if (imageIndexToDelete.value !== null) {
-		const removed = form.value.gambar.splice(imageIndexToDelete.value, 1)[0];
-		if (removed && removed.isNew && removed.url) {
-			URL.revokeObjectURL(removed.url);
-		}
-	}
-	showDeleteImageModal.value = false;
-	imageIndexToDelete.value = null;
+    if (imageIndexToDelete.value !== null) {
+        // Ambil gambar yang mau dihapus dari array
+        const removed = form.value.gambar.splice(imageIndexToDelete.value, 1)[0];
+        
+        // CCTV 1: LIHAT APA ISI GAMBAR YANG DIHAPUS
+        console.log("CCTV 1 - GAMBAR YANG DIHAPUS:", removed);
+
+        if (removed) {
+            if (removed.isNew) {
+                // Bersihkan memory kalau gambar baru
+                URL.revokeObjectURL(removed.url);
+                console.log("Ini gambar baru, cache dibersihkan.");
+            } else if (removed.id) {
+                // NAH! Kalau ada ID-nya, masukin keranjang!
+                deletedImageIds.value.push(removed.id);
+                console.log("CCTV 2 - ID BERHASIL MASUK KERANJANG! Isi sekarang:", deletedImageIds.value);
+            } else {
+                console.warn("BAHAYA! Gambar lama tapi gak punya ID! Cek fungsi Edit lu.");
+            }
+        }
+    }
+    showDeleteImageModal.value = false;
+    imageIndexToDelete.value = null;
 };
 
 const getImageSrc = (gbr) => {
@@ -272,6 +303,7 @@ const handleSubmit = () => {
 		deadline: inputDeadline,
 		kategori: [...form.value.kategori],
 		gambar: [...form.value.gambar],
+		deleted_images: deletedImageIds.value,
 	});
 };
 </script>

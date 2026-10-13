@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
@@ -11,26 +11,82 @@ import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue'; 
 import ModalFormListAktivitas from '@/Components/dashboard/admin/ModalFormListAktivitas.vue';
 
-// Data Dummy (Deadline diubah ke YYYY-MM-DD agar mudah difilter dengan kalender)
-const aktivitasData = ref([
-  { id: 1, judul: 'Pelatihan Kepemimpinan Dasar', kategori: ['Profesional', 'Bisnis', 'Akademisi', 'Birokrat'], deadline: '2029-07-10', gambar: ['123.jpg', '234.jpg', '456.jpg'], deskripsi: 'Deskripsi kegiatan...' },
-  { id: 2, judul: 'Seminar Nasional Akademisi', kategori: ['Akademisi', 'Birokrat'], deadline: '2029-08-15', gambar: ['123.jpg', '234.jpg'], deskripsi: 'Deskripsi kegiatan...' },
-  { id: 3, judul: 'Workshop Bisnis Digital', kategori: ['Bisnis'], deadline: '2029-07-10', gambar: ['123.jpg'], deskripsi: 'Deskripsi kegiatan...' },
-]);
-
-const searchQuery = ref('');
-const showFilter = ref(false);
-
-const sortColumn = ref('id');
-const sortDirection = ref('asc');
-
-// State untuk Filter Kategori & Waktu
-const filters = ref({
-  kategori: [],
-  waktu: ''
+const props = defineProps({
+  aktivitasData: Object, 
+  filters: Object,     
 });
 
-// State untuk Modals
+const deletedImageIds = ref([]);
+
+// ==============================
+// 1. STATE FILTER & PENCARIAN
+// ==============================
+// Nilai default diambil dari props (URL) jika ada
+const searchQuery = ref(props.filters?.search || '');
+const showFilter = ref(false);
+
+const sortColumn = ref(props.filters?.sort || 'created_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
+
+const filterState = ref({
+  // Jika dari backend dikirim string dipisah koma, kita jadikan array lagi
+  kategori: props.filters?.kategori ? props.filters.kategori.split(',') : [],
+  waktu: props.filters?.waktu || '' // Ini bisa deadline spesifik atau format YYYY-MM
+});
+
+const listKategori = ['Profesional', 'Bisnis', 'Akademisi', 'Birokrat'];
+
+// ==============================
+// 2. LOGIKA FETCH KE BACKEND (PENTING)
+// ==============================
+const fetchAktivitas = () => {
+  router.get(window.location.pathname, {
+    search: searchQuery.value,
+    kategori: filterState.value.kategori.join(','), // Kirim array jadi string: 'Bisnis,Birokrat'
+    waktu: filterState.value.waktu,
+    sort: sortColumn.value,
+    direction: sortDirection.value
+  }, {
+    preserveState: true,  // Pertahankan state (form ga kerest)
+    preserveScroll: true, // Layar ga loncat ke atas
+    replace: true         // URL terganti tanpa numpuk history browser
+  });
+};
+
+// Pantau perubahan: Kalau user ngetik atau milih dropdown, langsung tembak ke backend
+// Pakai debounce (setTimeout) biar nggak spam request tiap 1 huruf diketik
+let timeout = null;
+watch([searchQuery, filterState, sortColumn, sortDirection], () => {
+  clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    fetchAktivitas();
+  }, 300);
+}, { deep: true });
+
+// Reset Filter
+const resetFilters = () => {
+  filterState.value = { kategori: [], waktu: '' };
+  searchQuery.value = '';
+  showFilter.value = false;
+  // Watcher akan otomatis mendeteksi perubahan ini dan memanggil fetchAktivitas()
+};
+
+// ==============================
+// 3. FUNGSI SORTING
+// ==============================
+const handleSort = (column) => {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
+  }
+  // Watcher akan mendeteksi perubahan state sort ini dan request ke backend
+};
+
+// ==============================
+// 4. UI STATE & TOAST
+// ==============================
 const showFormModal = ref(false);
 const showImageModal = ref(false);
 const showDeleteModal = ref(false);
@@ -39,8 +95,6 @@ const selectedItem = ref(null);
 const selectedActivityData = ref(null);
 const selectedImage = ref('');
 const isEditing = ref(false);
-
-const listKategori = ['Profesional', 'Bisnis', 'Akademisi', 'Birokrat'];
 
 const toast = ref({ show: false, message: '', type: 'success', isError: false });
 
@@ -52,196 +106,46 @@ const showToast = (message, type = 'success') => {
   }, 50);
 };
 
-// Format Tanggal untuk tampilan di tabel
 const formatDate = (dateStr) => {
   if (!dateStr) return '-';
   const options = { day: 'numeric', month: 'long', year: 'numeric' };
   return new Date(dateStr).toLocaleDateString('id-ID', options);
 };
 
-// Mapping bulan Indonesia untuk parsing tanggal
-const monthMapIndo = {
-  januari: 0, jan: 0,
-  februari: 1, feb: 1,
-  maret: 2, mar: 2,
-  april: 3, apr: 3,
-  mei: 4, may: 4,
-  juni: 5, jun: 5,
-  juli: 6, jul: 6,
-  agustus: 7, agu: 7, ags: 7, aug: 7,
-  september: 8, sep: 8, sept: 8,
-  oktober: 9, okt: 9, oct: 9,
-  november: 10, nov: 10,
-  desember: 11, des: 11, dec: 11,
-};
-
-const parseDateValue = (val) => {
-  if (!val) return 0;
-  if (val instanceof Date) return val.getTime();
-  if (typeof val === 'number') return val;
-  
-  if (typeof val === 'string') {
-    const trimmed = val.trim();
-    // Coba format tanggal bahasa Indonesia: "10 Juli 2029", "01 November 2029"
-    const parts = trimmed.split(/[\s,/-]+/);
-    if (parts.length >= 3) {
-      const day = parseInt(parts[0], 10);
-      const monthStr = parts[1].toLowerCase();
-      const year = parseInt(parts[2], 10);
-      
-      if (!isNaN(day) && monthMapIndo[monthStr] !== undefined && !isNaN(year)) {
-        return new Date(year, monthMapIndo[monthStr], day).getTime();
-      }
-    }
-
-    // Coba format standar ISO (YYYY-MM-DD)
-    const parsedTime = Date.parse(trimmed);
-    if (!isNaN(parsedTime)) {
-      return parsedTime;
-    }
-  }
-  return 0;
-};
-
 // ==============================
-// FUNGSI SORTING & FILTERING
+// 5. AKSI MODALS & CRUD (Konek ke Laravel)
 // ==============================
-const handleSort = (column) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'asc';
-  }
-};
-
-// Filter Data (Pencarian, Kategori, dan Waktu)
-const processedData = computed(() => {
-  let data = [...aktivitasData.value];
-  
-  // 1. Filter Search (Judul)
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    data = data.filter(item => item.judul.toLowerCase().includes(query));
-  }
-
-  // 2. Filter Kategori
-  if (filters.value.kategori.length > 0) {
-    data = data.filter(item => 
-      item.kategori.some(kat => filters.value.kategori.includes(kat))
-    );
-  }
-
-  // 3. Filter Waktu / Deadline
-  if (filters.value.waktu) {
-    data = data.filter(item => item.deadline === filters.value.waktu);
-  }
-
-  // 4. Sorting
-  if (sortColumn.value) {
-    data.sort((a, b) => {
-      let valA = a[sortColumn.value];
-      let valB = b[sortColumn.value];
-
-      if (sortColumn.value === 'deadline' || sortColumn.value === 'tanggal' || sortColumn.value === 'waktu' || sortColumn.value === 'created_at') {
-        const timeA = parseDateValue(valA);
-        const timeB = parseDateValue(valB);
-        return sortDirection.value === 'asc' ? timeA - timeB : timeB - timeA;
-      }
-
-      if (Array.isArray(valA)) valA = valA.join(', ');
-      if (Array.isArray(valB)) valB = valB.join(', ');
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  return data;
-});
-
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-
-onMounted(() => {
-  if (window.innerWidth < 768) {
-    rowsPerPage.value = 5;
-  }
-});
-
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  return processedData.value.slice(start, start + rowsPerPage.value);
-});
-
-const totalPages = computed(() => Math.ceil(processedData.value.length / rowsPerPage.value) || 1);
-
-watch([searchQuery, filters, rowsPerPage], () => {
-  currentPage.value = 1;
-}, { deep: true });
-
-// Reset Filter
-const resetFilters = () => {
-  filters.value = { kategori: [], waktu: '' };
-  showFilter.value = false;
-};
-
-// Aksi Modals
 const openTambah = () => {
   isEditing.value = false;
-  selectedActivityData.value = {
-    id: null,
-    judul: '',
-    deskripsi: '',
-    deadline: '',
-    kategori: [],
-    gambar: [],
-  };
+  selectedActivityData.value = { id: null, judul: '', deskripsi: '', deadline: '', kategori: [], gambar: [] };
   showFormModal.value = true;
 };
+
 
 const openEdit = (item) => {
   isEditing.value = true;
-  selectedActivityData.value = {
-    ...item,
-    kategori: Array.isArray(item.kategori) ? [...item.kategori] : item.kategori.split(',').map(s => s.trim()),
-    gambar: Array.isArray(item.gambar) ? [...item.gambar] : [item.gambar],
-  };
-  showFormModal.value = true;
-};
-
-const handleFormSubmit = (formData) => {
-  if (isEditing.value) {
-    const idx = aktivitasData.value.findIndex(a => a.id === formData.id);
-    if (idx !== -1) {
-      aktivitasData.value[idx] = { ...formData };
-    }
-  } else {
-    aktivitasData.value.unshift({
-      ...formData,
-      id: Date.now(),
+  let existingImages = [];
+  
+  if (item.gambar_aktivitas && item.gambar_aktivitas.length > 0) {
+    existingImages = item.gambar_aktivitas.map(g => {
+      return {
+        id: g.id, 
+        // Bikin URL lengkap biar preview-nya bisa nampilin gambar
+        url: `/${g.gambar}`, 
+        isNew: false // Ini penting biar pas dikirim nggak dianggap upload file baru
+      };
     });
   }
 
-  showFormModal.value = false;
-  showToast(isEditing.value ? 'Aktivitas berhasil diperbarui!' : 'Aktivitas berhasil ditambahkan!', 'success');
-};
-
-const confirmDelete = (item) => {
-  selectedItem.value = item;
-  showDeleteModal.value = true;
-};
-
-const handleDelete = () => {
-  if (selectedItem.value) {
-    aktivitasData.value = aktivitasData.value.filter(item => item.id !== selectedItem.value.id);
-  }
-  showDeleteModal.value = false;
-  showToast('Aktivitas berhasil dihapus!', 'success');
+  // 2. MASUKKAN DATA KE FORM
+  // Sesuaikan 'selectedActivityData.value' dengan nama variabel form lu (bisa jadi form.value atau yang lain)
+  selectedActivityData.value = {
+    ...item,
+    // TIMPA properti gambar dengan array existingImages yang udah kita format
+    gambar: existingImages 
+  };
+  
+  showFormModal.value = true;
 };
 
 const openImage = (gambar) => {
@@ -253,6 +157,84 @@ const openImage = (gambar) => {
     selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
   }
   showImageModal.value = true;
+};
+
+const confirmDelete = (item) => {
+  selectedItem.value = item;
+  showDeleteModal.value = true;
+};
+
+const executeDelete = () => {
+    if (!selectedItem.value) return;
+
+    router.delete(`/admin/aktivitas/${selectedItem.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showDeleteModal.value = false;
+            selectedItem.value = null;
+            showToast('Aktivitas berhasil dihapus!', 'success');
+        },
+        onError: (errors) => {
+            console.error("Gagal menghapus:", errors);
+            alert("Gagal menghapus aktivitas. Cek console.");
+        }
+    });
+};
+
+// Tambahin parameter formData di dalam kurungnya
+const handleFormSubmit = (formData) => { 
+  // 1. CLONE data form yang dikirim dari modal
+  const payload = { ...formData }; 
+
+  // 2. EKSTRAK HANYA FILE FISIKNYA AJA DARI ARRAY GAMBAR
+  let newImages = [];
+  if (payload.gambar && Array.isArray(payload.gambar)) {
+      newImages = payload.gambar
+          .filter(item => item.isNew) // Cuma ambil gambar baru
+          .map(item => item.file);    // Ambil fisik file-nya
+  }
+      
+  // 3. Timpa array gambar dengan file fisik baru
+  payload.gambar = newImages;
+
+  // 4. AMBIL deleted_images DARI FORM DATA KIRIMAN MODAL (BAGIAN INI YANG WAJIB ADA!)
+  if (isEditing.value) {
+      payload.deleted_images = formData.deleted_images || []; 
+  }
+
+  // 5. KIRIM DATA KE LARAVEL
+  if (isEditing.value) {
+    // UPDATE DATA
+    router.post(`/admin/aktivitas/${payload.id}`, {
+      _method: 'put', 
+      ...payload
+    }, {
+      forceFormData: true, 
+      preserveScroll: true,
+      onSuccess: () => {
+        showFormModal.value = false;
+        showToast('Aktivitas berhasil diperbarui!', 'success');
+      },
+      onError: (errors) => {
+        console.error("Daftar Error Validasi dari Laravel:", errors);
+        alert("Gagal simpan! Cek console.");
+      }
+    });
+  } else {
+    // CREATE DATA (Mode tambah tidak butuh deleted_images)
+    router.post('/admin/aktivitas/store', payload, {
+      forceFormData: true, 
+      preserveScroll: true,
+      onSuccess: () => {
+        showFormModal.value = false;
+        showToast('Aktivitas berhasil ditambahkan!', 'success');
+      },
+      onError: (errors) => {
+        console.error("Daftar Error Validasi dari Laravel:", errors);
+        alert("Gagal simpan! Cek console.");
+      }
+    });
+  }
 };
 </script>
 
@@ -292,7 +274,7 @@ const openImage = (gambar) => {
                 type="button"
                 @click="showFilter = !showFilter"
                 class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors focus:outline-none select-none cursor-pointer"
-                :class="showFilter || filters.kategori.length > 0 || filters.waktu
+                :class="showFilter || filterState.kategori?.length > 0 || filterState.waktu
                   ? 'border-[#183669]'
                   : 'border-[#d6e0ee] hover:border-[#8ea9cb]'"
                 title="Filter Aktivitas"
@@ -304,7 +286,7 @@ const openImage = (gambar) => {
                 />
                 <!-- Red active indicator dot -->
                 <span
-                  v-if="filters.kategori.length > 0 || filters.waktu"
+                  v-if="filterState.kategori?.length > 0 || filterState.waktu"
                   class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"
                 ></span>
               </button>
@@ -326,8 +308,9 @@ const openImage = (gambar) => {
                     <p class="font-poppins text-xs font-bold text-[#183669]">
                       Filter Aktivitas
                     </p>
+                    <!-- UBAH DISINI: filters jadi filterState -->
                     <button
-                      v-if="filters.kategori.length > 0 || filters.waktu"
+                      v-if="filterState.kategori?.length > 0 || filterState.waktu"
                       type="button"
                       @click="resetFilters"
                       class="font-inter text-[11px] font-semibold text-[#dc2626] hover:underline cursor-pointer"
@@ -342,7 +325,8 @@ const openImage = (gambar) => {
                     </p>
                     <div class="grid grid-cols-2 gap-2">
                       <label v-for="kat in listKategori" :key="kat" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none">
-                        <input type="checkbox" :value="kat" v-model="filters.kategori" class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-0 cursor-pointer">
+                        <!-- UBAH DISINI: v-model="filters" jadi v-model="filterState" -->
+                        <input type="checkbox" :value="kat" v-model="filterState.kategori" class="h-4 w-4 rounded border-[#cbd5e1] text-[#183669] focus:ring-0 cursor-pointer">
                         <span class="text-xs font-medium text-[#334155]">{{ kat }}</span>
                       </label>
                     </div>
@@ -352,7 +336,8 @@ const openImage = (gambar) => {
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[#7188a3] mb-2">
                       Waktu (Deadline)
                     </p>
-                    <input type="date" v-model="filters.waktu" class="w-full rounded-lg border border-[#cbd5e1] px-3 py-2 text-xs outline-none focus:border-[#183669] text-gray-700 font-inter" />
+                    <!-- UBAH DISINI: v-model="filters" jadi v-model="filterState" -->
+                    <input type="date" v-model="filterState.waktu" class="w-full rounded-lg border border-[#cbd5e1] px-3 py-2 text-xs outline-none focus:border-[#183669] text-gray-700 font-inter" />
                   </div>
 
                   <div class="flex items-center justify-end border-t border-[#f0f4f9] pt-3">
@@ -387,10 +372,10 @@ const openImage = (gambar) => {
               <thead class="bg-[#416f65]">
                 <tr class="h-[48px]">
                   <th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
-                    <button type="button" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" @click="handleSort('created_at')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
                       <span>No</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'id'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-if="sortColumn === 'created_at'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
                         <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
                       </span>
                     </button>
@@ -420,8 +405,8 @@ const openImage = (gambar) => {
               </thead>
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
-                <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                <tr v-for="(item,index) in aktivitasData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
+                  <td class="px-3 py-2.5 text-center font-medium">{{ (aktivitasData?.from || 1) + index }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left align-middle relative">
                     <div class="flex items-center gap-1.5 flex-nowrap w-full" v-if="item.kategori">
@@ -461,17 +446,24 @@ const openImage = (gambar) => {
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center font-medium">{{ formatDate(item.deadline) }}</td>
-                  <td class="px-3 py-2.5 text-center">
-                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                      <span v-for="(gbr, i) in item.gambar" :key="i" class="inline-flex items-center">
-                        <button @click="openImage(gbr)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer">
-                          {{ typeof gbr === 'object' && gbr.file ? gbr.file.name : (typeof gbr === 'string' ? gbr : 'gambar') }}
-                        </button>
-                        <span v-if="i < item.gambar.length - 1" class="text-gray-400 ml-1">,</span>
-                      </span>
-                      <span v-if="!item.gambar || item.gambar.length === 0" class="font-inter text-[14px] text-gray-400">-</span>
-                    </div>
-                  </td>
+<td class="px-3 py-2.5 text-center">
+  <div class="flex items-center justify-center gap-1.5 flex-wrap">
+    <!-- 1. Ubah item.gambar menjadi item.gambar_aktivitas -->
+    <span v-for="(gbr, i) in item.gambar_aktivitas" :key="i" class="inline-flex items-center">
+      
+      <!-- 2. Lempar path gambar lengkap (pakai awalan '/') ke openImage -->
+      <button @click="openImage('/' + gbr.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer">
+        <!-- 3. Ambil nama file-nya aja pakai split('/').pop() biar teksnya gak kepanjangan -->
+        {{ gbr.gambar.split('/').pop() }}
+      </button>
+      
+      <span v-if="i < item.gambar_aktivitas.length - 1" class="text-gray-400 ml-1">,</span>
+    </span>
+    
+    <!-- Cek null / array kosong di relasi gambar_aktivitas -->
+    <span v-if="!item.gambar_aktivitas || item.gambar_aktivitas.length === 0" class="font-inter text-[14px] text-gray-400">-</span>
+  </div>
+</td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <EditButtonTable @click="openEdit(item)" />
@@ -479,7 +471,7 @@ const openImage = (gambar) => {
                     </div>
                   </td>
                 </tr>
-                <tr v-if="paginatedData.length === 0">
+                <tr v-if="!aktivitasData?.data || aktivitasData?.data?.length === 0">
                   <td colspan="6" class="px-4 py-12 text-center text-gray-500 font-medium">Data tidak ditemukan sesuai filter/pencarian Anda.</td>
                 </tr>
               </tbody>
@@ -510,7 +502,7 @@ const openImage = (gambar) => {
     <DeleteModal 
       :show="showDeleteModal" 
       @close="showDeleteModal = false" 
-      @confirm="handleDelete" 
+      @confirm="executeDelete" 
     />
 
     <!-- MODAL GAMBAR (LIGHTBOX) -->

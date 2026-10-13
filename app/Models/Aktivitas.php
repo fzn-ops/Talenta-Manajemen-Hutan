@@ -17,7 +17,7 @@ class Aktivitas extends Model
         'kategori',
         'partisipan',
         'jenis',
-        'status_aktivitas',
+        'status',
         'deadline',
         'created_at',
         'updated_at',

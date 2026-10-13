@@ -94,6 +94,9 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
         })->name('hasil');
 
         Route::get('/list', [AktivitasController::class, 'index'])->name('listAktivitasAdmin');
+        Route::post('/store', [AktivitasController::class, 'store'])->name('storeAktivitasAdmin');
+        Route::put('/{id}', [AktivitasController::class, 'update'])->name('updateAktivitasAdmin');
+        Route::delete('/{id}', [AktivitasController::class, 'destroy'])->name('destroyAktivitasAdmin');
     });
 
     Route::get('/karir', function () {

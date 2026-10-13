@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('judul');
             $table->text('deskripsi');
-            $table->string('kategori');
+            $table->json('kategori');
             $table->integer('partisipan');
             $table->enum('jenis', [
                 'umum',
