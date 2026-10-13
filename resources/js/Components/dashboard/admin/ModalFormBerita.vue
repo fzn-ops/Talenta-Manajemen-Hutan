@@ -24,17 +24,17 @@ const emit = defineEmits(['close', 'submit']);
 const form = ref({
 	id: null,
 	judul: '',
-	tanggal: '',
-	isi: '',
-	gambar: null,
+	created_at: '',
+	deskripsi: '',
+	foto: null,
 });
 
 // Errors State
 const errors = ref({
 	judul: '',
-	tanggal: '',
-	isi: '',
-	gambar: '',
+	created_at: '',
+	deskripsi: '',
+	foto: '',
 });
 
 // Image Upload State
@@ -45,9 +45,9 @@ const isDragging = ref(false);
 const resetErrors = () => {
 	errors.value = {
 		judul: '',
-		tanggal: '',
-		isi: '',
-		gambar: '',
+		created_at: '',
+		deskripsi: '',
+		foto: '',
 	};
 };
 
@@ -55,9 +55,9 @@ const resetForm = () => {
 	form.value = {
 		id: null,
 		judul: '',
-		tanggal: '',
-		isi: '',
-		gambar: null,
+		created_at: '',
+		deskripsi: '',
+		foto: '',
 	};
 	imagePreview.value = null;
 	if (imageInput.value) {
@@ -66,38 +66,41 @@ const resetForm = () => {
 	resetErrors();
 };
 
-// Sync form with props
 watch(
-	() => props.show,
-	(isOpen) => {
-		if (isOpen) {
-			if (props.initialData) {
-				form.value = {
-					id: props.initialData.id ?? null,
-					judul: props.initialData.judul ?? '',
-					tanggal: props.initialData.tanggal ?? '',
-					isi: props.initialData.isi ?? '',
-					gambar: props.initialData.gambar ?? null,
-				};
-				if (props.initialData.gambar && typeof props.initialData.gambar === 'object') {
-					imagePreview.value = URL.createObjectURL(props.initialData.gambar);
-				} else if (props.initialData.gambar) {
-					const img = props.initialData.gambar;
-					imagePreview.value = (img.startsWith('http') || img.startsWith('/'))
-						? img
-						: `https://picsum.photos/seed/${img}/800/600`;
-				} else {
-					imagePreview.value = null;
-				}
-			} else {
-				resetForm();
-			}
-			resetErrors();
-		} else {
-			resetForm();
-		}
-	},
-	{ immediate: true }
+    () => props.show,
+    (isOpen) => {
+        if (isOpen) {
+            if (props.initialData) {
+                form.value = {
+                    id: props.initialData.id ?? null,
+                    judul: props.initialData.judul ?? '',
+                    created_at: props.initialData.created_at ?? '',
+                    deskripsi: props.initialData.deskripsi ?? '',
+                    foto: props.initialData.foto ?? null,
+                };
+                
+                // --- BAGIAN PREVIEW YANG SUDAH DIPERBAIKI ---
+                if (props.initialData.foto && typeof props.initialData.foto === 'object') {
+                    // Kalau file baru di-upload dari komputer lokal (belum disave)
+                    imagePreview.value = URL.createObjectURL(props.initialData.foto);
+                } else if (props.initialData.foto) {
+                    const img = props.initialData.foto;
+                    // Kalau path dari database belum ada '/' depannya, kita tambahin!
+                    imagePreview.value = (img.startsWith('http') || img.startsWith('/')) 
+                        ? img 
+                        : `/${img}`;
+                } else {
+                    imagePreview.value = null;
+                }     
+            } else {
+                resetForm();
+            }
+            resetErrors();
+        } else {
+            resetForm();
+        }
+    },
+    { immediate: true }
 );
 
 const triggerImageUpload = () => {
@@ -107,12 +110,12 @@ const triggerImageUpload = () => {
 const processImageFile = (file) => {
 	if (file) {
 		if (file.size > 10 * 1024 * 1024) {
-			errors.value.gambar = 'Ukuran gambar maksimal 10MB!';
+			errors.value.foto = 'Ukuran gambar maksimal 10MB!';
 			return;
 		}
-		form.value.gambar = file;
+		form.value.foto = file;
 		imagePreview.value = URL.createObjectURL(file);
-		errors.value.gambar = '';
+		errors.value.foto = '';
 	}
 };
 
@@ -142,16 +145,16 @@ const validateForm = () => {
 		errors.value.judul = 'Judul berita wajib diisi!';
 		isValid = false;
 	}
-	if (!form.value.tanggal) {
-		errors.value.tanggal = 'Tanggal terbit wajib dipilih!';
+	if (!form.value.created_at) {
+		errors.value.created_at = 'Tanggal terbit wajib dipilih!';
 		isValid = false;
 	}
-	if (!form.value.isi || isContentEmpty(form.value.isi)) {
-		errors.value.isi = 'Isi berita tidak boleh kosong!';
+	if (!form.value.deskripsi || isContentEmpty(form.value.deskripsi)) {
+		errors.value.deskripsi = 'Isi berita tidak boleh kosong!';
 		isValid = false;
 	}
-	if (!form.value.gambar) {
-		errors.value.gambar = 'Thumbnail berita wajib diupload!';
+	if (!form.value.foto) {
+		errors.value.foto = 'Thumbnail berita wajib diupload!';
 		isValid = false;
 	}
 
@@ -164,8 +167,23 @@ const handleClose = () => {
 };
 
 const handleSubmit = () => {
-	if (!validateForm()) return;
-	emit('submit', { ...form.value });
+    // 1. Validasi lu tetep jalanin di awal
+    if (!validateForm()) return;
+
+    // 2. Bikin bungkusan data yang HANYA berisi teks saja
+    let payload = {
+        id: form.value.id,
+        judul: form.value.judul,
+        deskripsi: form.value.deskripsi,
+        created_at: form.value.created_at,
+    };
+
+    if (form.value.foto && typeof form.value.foto === 'object') {
+        payload.foto = form.value.foto;
+    }
+
+    // 4. Kirim bungkusan yang udah bersih ini!
+    emit('submit', payload);
 };
 </script>
 
@@ -241,17 +259,17 @@ const handleSubmit = () => {
 										</p>
 										<div class="mt-1 sm:mt-1.5">
 											<DatePicker
-												v-model="form.tanggal"
-												:has-error="!!errors.tanggal"
+												v-model="form.created_at"
+												:has-error="!!errors.created_at"
 												placeholder="Pilih tanggal terbit"
-												@update:modelValue="errors.tanggal = ''"
+												@update:modelValue="errors.created_at = ''"
 											/>
 										</div>
-										<p v-if="errors.tanggal" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<p v-if="errors.created_at" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 											</svg>
-											<span>{{ errors.tanggal }}</span>
+											<span>{{ errors.created_at }}</span>
 										</p>
 									</div>
 
@@ -264,17 +282,17 @@ const handleSubmit = () => {
 											Tuliskan konten berita secara lengkap di sini.
 										</p>
 										<RichTextEditor
-											v-model="form.isi"
+											v-model="form.deskripsi"
 											placeholder="Tulis isi berita..."
 											min-height="140px"
-											:has-error="!!errors.isi"
-											@update:modelValue="errors.isi = ''"
+											:has-error="!!errors.deskripsi"
+											@update:modelValue="errors.deskripsi = ''"
 										/>
-										<p v-if="errors.isi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 											</svg>
-											<span>{{ errors.isi }}</span>
+											<span>{{ errors.deskripsi }}</span>
 										</p>
 									</div>
 								</div>
@@ -305,7 +323,7 @@ const handleSubmit = () => {
 											@drop.prevent="handleImageDrop"
 											:class="[
 												'relative flex flex-1 min-h-[200px] sm:min-h-[240px] w-full flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3.5 text-center transition-colors cursor-pointer group select-none',
-												errors.gambar ? 'border-red-400 bg-red-50/20' : (isDragging ? 'border-[#183669] bg-[#183669]/5' : 'border-[#183669]/30 bg-[#fafcff] hover:border-[#183669]/60')
+												errors.foto ? 'border-red-400 bg-red-50/20' : (isDragging ? 'border-[#183669] bg-[#183669]/5' : 'border-[#183669]/30 bg-[#fafcff] hover:border-[#183669]/60')
 											]"
 										>
 											<template v-if="imagePreview">
@@ -328,11 +346,11 @@ const handleSubmit = () => {
 												</button>
 											</template>
 										</div>
-										<p v-if="errors.gambar" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<p v-if="errors.foto" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 											</svg>
-											<span>{{ errors.gambar }}</span>
+											<span>{{ errors.foto }}</span>
 										</p>
 									</div>
 								</div>

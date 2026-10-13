@@ -33,7 +33,7 @@ const menuItems = [
 		],
 	},
 	{ label: 'Karir', href: '/admin/karir', pattern: 'admin.karir*', icon: 'karir' },
-	{ label: 'Berita', href: '/admin/berita', pattern: 'admin.berita*', icon: 'berita' },
+	{ label: 'Berita', href: '/admin/berita/list', pattern: 'admin.berita*', icon: 'berita' },
 ];
 
 const isActive = (item) => {

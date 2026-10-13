@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
@@ -14,20 +14,22 @@ import ModalFormBerita from '@/Components/dashboard/admin/ModalFormBerita.vue';
 // ==========================================
 // 1. DATA DUMMY
 // ==========================================
-const newsList = ref([
-  { id: 1, tanggal: '2026-08-17', gambar: 'thumbnail.jpg', judul: 'Kemeriahan Agustusan Manhut 2026', isi: 'Lorem Ipsum dolor sit amet, voluptate velit esse cillum dolore eu fugiat nulla pariatur.' },
-  { id: 2, tanggal: '2026-08-17', gambar: 'thumbnail.jpg', judul: 'Penyambutan Mahasiswa Baru', isi: 'Lorem Ipsum dolor sit amet, voluptate velit esse cillum dolore eu fugiat nulla pariatur.' },
-]);
+const props = defineProps({
+  beritaData: Object,
+  filters: Object
+});
+
+const newsList = computed(() => props.beritaData?.data || []);
 
 // ==========================================
 // 2. STATE FILTER, SEARCH & SORTING
 // ==========================================
-const searchQuery = ref('');
-const showFilter = ref(false);
-const filterBulan = ref('');
 
-const sortColumn = ref('id');
-const sortDirection = ref('asc');
+const searchQuery = ref(props.filters?.search || '');
+const filterBulan = ref(props.filters?.bulan || '');
+const sortColumn = ref(props.filters?.sort || 'created_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
+const showFilter = ref(false);
 
 const resetFilters = () => {
   filterBulan.value = '';
@@ -103,46 +105,13 @@ const stripHtml = (html) => {
 // ==========================================
 // 3. LOGIC FILTERING & SORTING
 // ==========================================
-const processedNews = computed(() => {
-  let data = [...newsList.value];
 
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    data = data.filter(item => 
-      item.judul.toLowerCase().includes(query) || 
-      stripHtml(item.isi).toLowerCase().includes(query)
-    );
-  }
+const processedNews = computed(() => newsList.value);
 
-  if (filterBulan.value) {
-    data = data.filter(item => item.tanggal.startsWith(filterBulan.value));
-  }
-
-  if (sortColumn.value) {
-    data.sort((a, b) => {
-      let valA = a[sortColumn.value];
-      let valB = b[sortColumn.value];
-
-      if (sortColumn.value === 'deadline' || sortColumn.value === 'tanggal' || sortColumn.value === 'waktu' || sortColumn.value === 'created_at') {
-        const timeA = parseDateValue(valA);
-        const timeB = parseDateValue(valB);
-        return sortDirection.value === 'asc' ? timeA - timeB : timeB - timeA;
-      }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  return data;
-});
-
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
+// Ganti bagian currentPage dan rowsPerPage lu pakai ini:
+const currentPage = ref(props.beritaData?.current_page || 1);
+const totalPages = computed(() => props.beritaData?.last_page || 1);
+const rowsPerPage = ref(props.beritaData?.per_page || 10);
 
 onMounted(() => {
   if (window.innerWidth < 768) {
@@ -151,15 +120,39 @@ onMounted(() => {
 });
 
 const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  return processedNews.value.slice(start, start + rowsPerPage.value);
+  return processedNews.value; 
 });
 
-const totalPages = computed(() => Math.ceil(processedNews.value.length / rowsPerPage.value) || 1);
+let searchTimeout = null;
 
-watch([searchQuery, filterBulan, rowsPerPage], () => {
-  currentPage.value = 1;
+watch([searchQuery, filterBulan, sortColumn, sortDirection], () => {
+    clearTimeout(searchTimeout);
+    
+    searchTimeout = setTimeout(() => {
+        router.get('/admin/berita/list', {
+            search: searchQuery.value,
+            bulan: filterBulan.value,
+            sort: sortColumn.value,
+            direction: sortDirection.value,
+            page: 1
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true
+        });
+    }, 300);
 }, { deep: true });
+
+watch(currentPage, (newPage, oldPage) => {
+  if (newPage !== oldPage) {
+      router.get('/admin/berita/list', { 
+          page: newPage
+      }, {
+          preserveState: true,  
+          preserveScroll: true  
+      });
+  }
+});
 
 // ==========================================
 // 4. STATE TOAST, DELETE, PREVIEW GAMBAR
@@ -183,10 +176,18 @@ const openDeleteModal = (item) => {
 
 const executeDelete = () => {
   if (!itemToDelete.value) return;
-  newsList.value = newsList.value.filter(k => k.id !== itemToDelete.value.id);
-  showDeleteModal.value = false;
-  itemToDelete.value = null;
-  showToast('Berita berhasil dihapus!', 'success');
+
+  router.delete(`/admin/berita/${itemToDelete.value.id}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showDeleteModal.value = false;
+      itemToDelete.value = null;
+      showToast('Berita berhasil dihapus!', 'success');
+    },
+    onError: () => {
+      alert("Gagal menghapus berita.");
+    }
+  });
 };
 
 const showImageModal = ref(false);
@@ -224,24 +225,33 @@ const handleEdit = (item) => {
 
 const handleModalSubmit = (formData) => {
   if (isEditMode.value) {
-    const index = newsList.value.findIndex(k => k.id === formData.id);
-    if (index !== -1) {
-      newsList.value[index] = { 
-        ...formData, 
-        gambar: typeof formData.gambar === 'object' && formData.gambar?.name ? formData.gambar.name : formData.gambar 
-      };
-    }
-    showToast('Berita berhasil diperbarui!', 'success');
-  } else {
-    const newId = newsList.value.length ? Math.max(...newsList.value.map(k => k.id)) + 1 : 1;
-    newsList.value.unshift({ 
-      ...formData, 
-      id: newId, 
-      gambar: typeof formData.gambar === 'object' && formData.gambar?.name ? formData.gambar.name : (formData.gambar || 'thumbnail.jpg') 
+    router.post(`/admin/berita/${formData.id}`, {
+      _method: 'put', 
+      ...formData
+    }, {
+      forceFormData: true,
+      onSuccess: () => {
+        showFormModal.value = false;
+        showToast('Berita berhasil diperbarui!', 'success');
+      },
+      onError: (errors) => {
+        alert("Gagal Simpan! Cek Console buat lihat mana yang salah.");
+      }
     });
-    showToast('Berita berhasil ditambahkan!', 'success');
+  } else {
+    router.post('/admin/berita/store', formData, {
+      forceFormData: true,
+      onSuccess: () => {
+        showFormModal.value = false;
+        showToast('Berita berhasil ditambahkan!', 'success');
+      },
+      onError: (errors) => {
+        // CCTV 2: Tangkap error validasi dari Laravel
+        console.error("CCTV 2 - DITOLAK LARAVEL! Detail error:", errors);
+        alert("Gagal Simpan! Cek Console buat lihat mana yang salah.");
+      }
+    });
   }
-  showFormModal.value = false;
 };
 </script>
 
@@ -377,10 +387,10 @@ const handleModalSubmit = (formData) => {
                     </button>
                   </th>
                   <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('tanggal')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" @click="handleSort('created_at')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
                       <span>Tanggal</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'tanggal'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-if="sortColumn === 'created_at'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
                         <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
                       </span>
                     </button>
@@ -403,13 +413,19 @@ const handleModalSubmit = (formData) => {
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
                   <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
-                  <td class="px-3 py-2.5 text-center font-medium">{{ formatTanggal(item.tanggal) }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ formatTanggal(item.created_at) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
-                  <td class="px-3 py-2.5 text-left truncate" :title="stripHtml(item.isi)">{{ stripHtml(item.isi) }}</td>
-                  <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.gambar === 'object' ? item.gambar.name : item.gambar">
-                      {{ (item.gambar && typeof item.gambar === 'object' && item.gambar.name) ? item.gambar.name : item.gambar }}
-                    </button>
+                  <td class="px-3 py-2.5 text-left truncate" :title="stripHtml(item.deskripsi)">{{ stripHtml(item.deskripsi) }}</td>
+                  <td class="px-3 py-2.5 text-center">  
+                   <button 
+                     v-if="item.foto"
+                     @click="openImage('/' + item.foto)" 
+                     class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" 
+                     :title="item.foto.split('/').pop()"
+                   >
+                     {{ item.foto.split('/').pop() }}
+                   </button>
+                  <span v-else class="font-inter text-[14px] text-gray-400">-</span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">

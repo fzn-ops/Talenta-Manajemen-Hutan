@@ -28,10 +28,12 @@ class AktivitasController extends Controller
             'sort'      => $request->input('sort'),
             'direction' => $request->input('direction'),
         ];
+        
+        $perPage = $request->input('per_page', 10);
+        
+        $aktivitasList = $this->aktivitasService->getPaginationAktivitas($filters, $perPage);
 
-        $aktivitasList = $this->aktivitasService->getPaginationAktivitas($filters, 10);
-
-        return Inertia::render('dashboard/admin/ActivityList',[
+        return Inertia::render('/dashboard/admin/ActivityList',[
             'aktivitasData' => $aktivitasList, 
             'filters'       => $filters
         ]);

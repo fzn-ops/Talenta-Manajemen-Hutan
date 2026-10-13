@@ -13,8 +13,13 @@ class Berita extends Model
     protected $fillable=[
         'judul',
         'deskripsi',
-        'gambar',
+        'foto',
         'created_at',
         'updated_at',
+    ];
+
+    protected $cast =[
+        'created_at'=>'date:Y-m-d',
+        'updated_at'=>'date:Y-m-d',
     ];
 }

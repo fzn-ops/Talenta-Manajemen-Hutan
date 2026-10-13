@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('deskripsi');
             $table->string('foto')->nullable();
             $table->dateTime('created_at');
-            $table->dateTime('update_at');
+            $table->dateTime('updated_at');
         });
     }
 

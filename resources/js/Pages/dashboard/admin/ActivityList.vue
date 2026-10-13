@@ -236,6 +236,61 @@ const handleFormSubmit = (formData) => {
     });
   }
 };
+
+// ====== Pagination ===========
+const currentPage = ref(props.aktivitasData.current_page);
+const totalPages = ref(props.aktivitasData.last_page);
+const rowsPerPage = ref(props.aktivitasData.per_page);
+
+watch([currentPage, rowsPerPage], ([newPage, newRows], [oldPage, oldRows]) => {
+    
+    // Kalau user ganti jumlah baris (misal dari 10 ke 25), paksa balik ke halaman 1
+    let pageToFetch = newPage;
+    if (newRows !== oldRows) {
+        pageToFetch = 1;
+    }
+
+    // Tembak request ke Laravel lewat Inertia
+    router.get('/admin/aktivitas/list', {
+        ...props.filters,     
+        page: pageToFetch,    
+        per_page: newRows     
+    }, {
+        preserveState: true,  
+        preserveScroll: true, 
+        replace: true         
+    });
+});
+
+// Fungsi buat motong nama file yang kepanjangan
+const formatFilename = (path) => {
+    if (!path) return '';
+    
+    // Ambil nama filenya aja dari path
+    const filename = path.split('/').pop();
+    
+    // Batas maksimal huruf yang mau ditampilin (bisa lu ubah sesuka hati, misal 15)
+    const maxLength = 8;
+    
+    if (filename.length <= maxLength) return filename;
+
+    // Cari letak titik terakhir buat misahin nama dan ekstensi (contoh: .png, .jpeg)
+    const lastDotIndex = filename.lastIndexOf('.');
+    
+    // Kalau kebetulan file gak ada ekstensinya
+    if (lastDotIndex === -1) {
+        return filename.substring(0, maxLength - 3) + '...';
+    }
+
+    const name = filename.substring(0, lastDotIndex);
+    const ext = filename.substring(lastDotIndex); 
+
+    // Hitung sisa ruang buat nama file (Batas Maksimal - panjang ekstensi - 3 titik)
+    const keepLength = maxLength - ext.length - 3;
+    
+    return name.substring(0, keepLength) + '...' + ext;
+};
+
 </script>
 
 <template>
@@ -446,24 +501,18 @@ const handleFormSubmit = (formData) => {
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center font-medium">{{ formatDate(item.deadline) }}</td>
-<td class="px-3 py-2.5 text-center">
-  <div class="flex items-center justify-center gap-1.5 flex-wrap">
-    <!-- 1. Ubah item.gambar menjadi item.gambar_aktivitas -->
-    <span v-for="(gbr, i) in item.gambar_aktivitas" :key="i" class="inline-flex items-center">
-      
-      <!-- 2. Lempar path gambar lengkap (pakai awalan '/') ke openImage -->
-      <button @click="openImage('/' + gbr.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer">
-        <!-- 3. Ambil nama file-nya aja pakai split('/').pop() biar teksnya gak kepanjangan -->
-        {{ gbr.gambar.split('/').pop() }}
-      </button>
-      
-      <span v-if="i < item.gambar_aktivitas.length - 1" class="text-gray-400 ml-1">,</span>
-    </span>
-    
-    <!-- Cek null / array kosong di relasi gambar_aktivitas -->
-    <span v-if="!item.gambar_aktivitas || item.gambar_aktivitas.length === 0" class="font-inter text-[14px] text-gray-400">-</span>
-  </div>
-</td>
+                 <td class="px-3 py-2.5 text-center">
+                     <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                       <span v-for="(gbr, i) in item.gambar_aktivitas" :key="i" class="inline-flex items-center">
+                         <button @click="openImage('/' + gbr.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer" :title="gbr.gambar.split('/').pop()">
+                           <!-- Panggil fungsinya di sini wok! -->
+                           {{ formatFilename(gbr.gambar) }}
+                         </button>
+                         <span v-if="i < item.gambar_aktivitas.length - 1" class="text-gray-400 ml-1">,</span>
+                       </span>
+                       <span v-if="!item.gambar_aktivitas || item.gambar_aktivitas.length === 0" class="font-inter text-[14px] text-gray-400">-</span>
+                     </div>
+                 </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <EditButtonTable @click="openEdit(item)" />

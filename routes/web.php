@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Dashboard\Admin\AktivitasController;
 use App\Http\Controllers\Dashboard\Mahasiswa\ProfileController as MahasiswaProfileController;
+use App\Http\Controllers\Dashboard\Admin\BeritaController;
 
 /* Route Landing dan Website Public*/
 
@@ -103,9 +104,13 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
         return Inertia::render('dashboard/admin/CareerList');
     })->name('karir');
 
-    Route::get('/berita', function () {
-        return Inertia::render('dashboard/admin/NewsList');
-    })->name('berita');
+    Route::prefix('berita')->name('admin.berita.')->group(function(){
+        Route::get('/list', [BeritaController::class, 'index'])->name('index');
+        Route::post('/store', [BeritaController::class, 'store'])->name('store');
+        Route::put('/{id}', [BeritaController::class, 'update'])->name('update'); 
+        Route::delete('/{id}', [BeritaController::class, 'destroy'])->name('destroy');
+    });
+
 });
 
 /* Mahasiswa Dashboard Routes */
