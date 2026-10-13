@@ -1,0 +1,162 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+
+class KarirSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        DB::table('karir')->insert([
+            [
+                'posisi' => 'Frontend Developer Intern',
+                'nama_instansi' => 'PT Teknologi Bangsa Indonesia',
+                'deskripsi' => 'Bertanggung jawab dalam membangun dan mengembangkan antarmuka web interaktif menggunakan Vue.js dan Tailwind CSS, serta berkolaborasi bersama tim UI/UX dan backend developer.',
+                'kualifikasi' => "S1 - Semester 7\nMenguasai Vue.js, Tailwind CSS, dan JavaScript modern. Mampu bekerja sama dalam tim dan memahami Git version control.",
+                'deadline' => Carbon::now()->addDays(14)->setTime(23, 59, 59),
+                'tautan' => 'https://karir.teknologibangsa.co.id/frontend-intern',
+                'foto' => 'https://picsum.photos/seed/company-tech/400/400',
+                'created_at' => Carbon::now()->subDays(2),
+                'updated_at' => Carbon::now()->subDays(2),
+            ],
+            [
+                'posisi' => 'Data Analyst Intern',
+                'nama_instansi' => 'PT Bank Central Asia Tbk',
+                'deskripsi' => 'Menganalisis tren data transaksi nasabah, menyusun dashboard visualisasi metrik bisnis, serta membantu pembersihan data skala besar untuk kebutuhan pelaporan berkala.',
+                'kualifikasi' => "S1 - Semester 5\nMenguasai SQL dasar, Python / R untuk data analysis, serta familiar dengan spreadsheet tingkat lanjut.",
+                'deadline' => Carbon::now()->addDays(20)->setTime(23, 59, 59),
+                'tautan' => 'https://karir.bca.co.id/internship/data-analyst',
+                'foto' => 'https://picsum.photos/seed/company-bca/400/400',
+                'created_at' => Carbon::now()->subDays(3),
+                'updated_at' => Carbon::now()->subDays(3),
+            ],
+            [
+                'posisi' => 'Forestry Conservation Officer',
+                'nama_instansi' => 'WWF Indonesia',
+                'deskripsi' => 'Melakukan pemantauan dan inventarisasi keanekaragaman hayati di kawasan konservasi hutan lindung, serta merancang program pemberdayaan masyarakat sekitar kawasan penyangga.',
+                'kualifikasi' => "S1 - Lulusan\nLulusan Manajemen Hutan, Kehutanan, atau Biologi Lingkungan. Memahami metode inventarisasi hutan dan analisis GIS.",
+                'deadline' => Carbon::now()->addDays(30)->setTime(23, 59, 59),
+                'tautan' => 'https://wwf.id/careers/conservation-officer',
+                'foto' => 'https://picsum.photos/seed/company-wwf/400/400',
+                'created_at' => Carbon::now()->subDays(4),
+                'updated_at' => Carbon::now()->subDays(4),
+            ],
+            [
+                'posisi' => 'GIS & Remote Sensing Specialist',
+                'nama_instansi' => 'Kementerian Lingkungan Hidup dan Kehutanan',
+                'deskripsi' => 'Memetakan tutupan lahan berbasis citra satelit terkini, memantau perubahan tutupan kanopi hutan, serta mengolah data spasial pendukung kebijakan tata ruang kehutanan.',
+                'kualifikasi' => "S1 - Lulusan\nPendidikan S1 Geodesi, Geografi, atau Kehutanan. Mahir menggunakan ArcGIS, QGIS, serta analisis citra satelit Landsat/Sentinel.",
+                'deadline' => Carbon::now()->addDays(25)->setTime(23, 59, 59),
+                'tautan' => 'https://menlhk.go.id/rekrutmen/gis-specialist',
+                'foto' => 'https://picsum.photos/seed/company-klhk/400/400',
+                'created_at' => Carbon::now()->subDays(5),
+                'updated_at' => Carbon::now()->subDays(5),
+            ],
+            [
+                'posisi' => 'Junior Forest Inventory Staff',
+                'nama_instansi' => 'Perum Perhutani',
+                'deskripsi' => 'Melakukan sensus pohon, pendataan diameter setinggi dada (DBH), pengukuran tinggi tegakan, serta menginput data potensi tegakan ke sistem database terpadu.',
+                'kualifikasi' => "D3 / Vokasi\nLulusan D3 Pengelolaan Hutan atau Silvikultur. Fisik prima dan siap bertugas di lapangan.",
+                'deadline' => Carbon::now()->addDays(12)->setTime(23, 59, 59),
+                'tautan' => 'https://perhutani.co.id/karir/forest-inventory',
+                'foto' => 'https://picsum.photos/seed/company-perhutani/400/400',
+                'created_at' => Carbon::now()->subDays(6),
+                'updated_at' => Carbon::now()->subDays(6),
+            ],
+            [
+                'posisi' => 'Environmental Impact Consultant',
+                'nama_instansi' => 'PT Sinarmas Forestry',
+                'deskripsi' => 'Membantu penyusunan dokumen AMDAL dan RKL-RPL, melakukan uji sampel kualitas air dan udara di sekitar konsesi hutan tanaman industri, serta menyusun laporan kepatuhan lingkungan.',
+                'kualifikasi' => "S1 - Semester 7\nMahasiswa tingkat akhir jurusan Ilmu Lingkungan, Teknik Lingkungan, atau Kehutanan dengan IPK minimal 3.25.",
+                'deadline' => Carbon::now()->addDays(18)->setTime(23, 59, 59),
+                'tautan' => 'https://sinarmasforestry.com/career/env-consultant',
+                'foto' => 'https://picsum.photos/seed/company-sinarmas/400/400',
+                'created_at' => Carbon::now()->subDays(7),
+                'updated_at' => Carbon::now()->subDays(7),
+            ],
+            [
+                'posisi' => 'Backend Engineer (PHP/Laravel)',
+                'nama_instansi' => 'PT Agrikultur Digital Nusantara',
+                'deskripsi' => 'Membangun arsitektur RESTful API yang skalabel untuk sistem pemantauan hasil hutan dan logistik hasil tani terintegrasi menggunakan framework Laravel dan PostgreSQL.',
+                'kualifikasi' => "S1 - Semester 7\nMenguasai PHP 8+, framework Laravel, perancangan relasi database MySQL/PostgreSQL, dan arsitektur REST API.",
+                'deadline' => Carbon::now()->addDays(22)->setTime(23, 59, 59),
+                'tautan' => 'https://agridigital.co.id/jobs/backend-dev',
+                'foto' => 'https://picsum.photos/seed/company-agri/400/400',
+                'created_at' => Carbon::now()->subDays(8),
+                'updated_at' => Carbon::now()->subDays(8),
+            ],
+            [
+                'posisi' => 'Agronomy & Soil Surveyor',
+                'nama_instansi' => 'PT Astra Agro Lestari Tbk',
+                'deskripsi' => 'Mengambil dan menganalisis sampel profil tanah di areal perkebunan dan agroforestri, mendata tingkat kesuburan tanah, serta memberikan rekomendasi pemupukan ramah lingkungan.',
+                'kualifikasi' => "D3 / Vokasi\nLulusan D3 Agroteknologi, Budidaya Tanaman, atau Ilmu Tanah. Memiliki ketelitian tinggi dalam pengujian laboratorium dasar.",
+                'deadline' => Carbon::now()->addDays(15)->setTime(23, 59, 59),
+                'tautan' => 'https://astra-agro.co.id/recruitment/soil-surveyor',
+                'foto' => 'https://picsum.photos/seed/company-astra/400/400',
+                'created_at' => Carbon::now()->subDays(9),
+                'updated_at' => Carbon::now()->subDays(9),
+            ],
+            [
+                'posisi' => 'Social Forestry Facilitator',
+                'nama_instansi' => 'Yayasan Konservasi Alam Nusantara (YKAN)',
+                'deskripsi' => 'Mendampingi kelompok tani hutan (KTH) dalam pengembangan skema perhutanan sosial, fasilitasi pelatihan produk bukan kayu (HHBK), dan penguatan kelembagaan desa.',
+                'kualifikasi' => "S1 - Lulusan\nPendidikan S1 Sosiologi Pedesaan, Komunikasi, atau Kehutanan. Komunikatif dan memiliki pengalaman fasilitasi masyarakat desa hutan.",
+                'deadline' => Carbon::now()->addDays(28)->setTime(23, 59, 59),
+                'tautan' => 'https://ykan.or.id/karir/fasilitator-perhutanan-sosial',
+                'foto' => 'https://picsum.photos/seed/company-ykan/400/400',
+                'created_at' => Carbon::now()->subDays(10),
+                'updated_at' => Carbon::now()->subDays(10),
+            ],
+            [
+                'posisi' => 'Sustainability & Carbon Project Intern',
+                'nama_instansi' => 'PT Rimba Makmur Utama',
+                'deskripsi' => 'Membantu perhitungan potensi serapan cadangan karbon (carbon stock) di area restorasi ekosistem gambut serta mempersiapkan audit verifikasi standar karbon sukarela.',
+                'kualifikasi' => "S1 - Semester 5\nMahasiswa aktif S1 jurusan Manajemen Hutan, Biologi, atau Sains Lingkungan yang tertarik pada mekanisme perdagangan karbon dan net-zero emissions.",
+                'deadline' => Carbon::now()->addDays(16)->setTime(23, 59, 59),
+                'tautan' => 'https://katinganmentaya.com/career/carbon-intern',
+                'foto' => 'https://picsum.photos/seed/company-katingan/400/400',
+                'created_at' => Carbon::now()->subDays(11),
+                'updated_at' => Carbon::now()->subDays(11),
+            ],
+            [
+                'posisi' => 'UI/UX Product Designer Intern',
+                'nama_instansi' => 'PT Riau Andalan Pulp and Paper (RAPP)',
+                'deskripsi' => 'Merancang wireframe, user flow, dan prototype interaktif sistem mobile monitoring operasional kehutanan dan patroli kebakaran hutan di lapangan.',
+                'kualifikasi' => "S1 - Semester 5\nMahir menggunakan Figma, memahami prinsip desain human-centered design, dan memiliki portofolio proyek desain UI/UX yang relevan.",
+                'deadline' => Carbon::now()->addDays(19)->setTime(23, 59, 59),
+                'tautan' => 'https://aprilasia.com/careers/uiux-intern',
+                'foto' => 'https://picsum.photos/seed/company-rapp/400/400',
+                'created_at' => Carbon::now()->subDays(12),
+                'updated_at' => Carbon::now()->subDays(12),
+            ],
+            [
+                'posisi' => 'Forest Protection & Fire Safety Ranger',
+                'nama_instansi' => 'Balai Konservasi Sumber Daya Alam (BKSDA)',
+                'deskripsi' => 'Melaksanakan patroli pencegahan kebakaran hutan dan lahan, pemantauan titik api (hotspot), serta penanganan awal konflik satwa liar dan perambahan kawasan.',
+                'kualifikasi' => "D3 / Vokasi\nLulusan D3 Kehutanan, Manajemen Lingkungan, atau setara. Sehat jasmani dan bersedia ditempatkan di posko lapangan konservasi.",
+                'deadline' => Carbon::now()->addDays(11)->setTime(23, 59, 59),
+                'tautan' => 'https://ksdae.menlhk.go.id/karir/fire-safety-ranger',
+                'foto' => 'https://picsum.photos/seed/company-bksda/400/400',
+                'created_at' => Carbon::now()->subDays(13),
+                'updated_at' => Carbon::now()->subDays(13),
+            ],
+            [
+                'posisi' => 'Silviculture Research Assistant',
+                'nama_instansi' => 'Badan Riset dan Inovasi Nasional (BRIN)',
+                'deskripsi' => 'Mendukung penelitian uji keturunan tanaman hutan tropis, kultur jaringan jenis pohon endemik, serta pendataan laju riap volume pohon pada plot ukur permanen (PUP).',
+                'kualifikasi' => "S1 - Semester 7\nMahasiswa tingkat akhir jurusan Silvikultur atau Bioteknologi Hutan. Menguasai teknik pengambilan data laboratorium dan uji statistik dasar.",
+                'deadline' => Carbon::now()->addDays(24)->setTime(23, 59, 59),
+                'tautan' => 'https://brin.go.id/rekrutmen/research-assistant',
+                'foto' => 'https://picsum.photos/seed/company-brin/400/400',
+                'created_at' => Carbon::now()->subDays(14),
+                'updated_at' => Carbon::now()->subDays(14),
+            ],
+        ]);
+    }
+}

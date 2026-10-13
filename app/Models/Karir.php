@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Karir extends Model
 {
-    //
     use HasFactory;
-    protected $table='karir';
-    protected $fillable=[
+
+    protected $table = 'karir';
+
+    protected $fillable = [
         'posisi',
         'nama_instansi',
         'deskripsi',
@@ -18,7 +19,27 @@ class Karir extends Model
         'deadline',
         'tautan',
         'foto',
-        'created_at',
-        'updated_at',
     ];
+
+    protected $appends = ['instansi', 'logo'];
+
+    public function getInstansiAttribute()
+    {
+        return $this->attributes['nama_instansi'] ?? null;
+    }
+
+    public function setInstansiAttribute($value)
+    {
+        $this->attributes['nama_instansi'] = $value;
+    }
+
+    public function getLogoAttribute()
+    {
+        return $this->attributes['foto'] ?? null;
+    }
+
+    public function setLogoAttribute($value)
+    {
+        $this->attributes['foto'] = $value;
+    }
 }

@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\Dashboard\Admin\AktivitasController;
 use App\Http\Controllers\Dashboard\Mahasiswa\ProfileController as MahasiswaProfileController;
 use App\Http\Controllers\Dashboard\Admin\BeritaController;
+use App\Http\Controllers\Dashboard\Admin\KarirController;
 
 /* Route Landing dan Website Public*/
 
@@ -100,9 +101,10 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
         Route::delete('/{id}', [AktivitasController::class, 'destroy'])->name('destroyAktivitasAdmin');
     });
 
-    Route::get('/karir', function () {
-        return Inertia::render('dashboard/admin/CareerList');
-    })->name('karir');
+    Route::get('/karir', [KarirController::class, 'index'])->name('karir');
+    Route::post('/karir/store', [KarirController::class, 'store'])->name('karir.store');
+    Route::put('/karir/{id}', [KarirController::class, 'update'])->name('karir.update');
+    Route::delete('/karir/{id}', [KarirController::class, 'destroy'])->name('karir.destroy');
 
     Route::prefix('berita')->name('admin.berita.')->group(function(){
         Route::get('/list', [BeritaController::class, 'index'])->name('index');
