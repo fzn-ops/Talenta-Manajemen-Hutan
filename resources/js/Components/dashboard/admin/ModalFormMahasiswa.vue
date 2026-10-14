@@ -86,15 +86,21 @@ watch(
 
 			isTalentDropdownOpen.value = false;
 			const currentNim = props.initialData?.nim !== '-' ? (props.initialData?.nim || '') : '';
+			const rawAngkatan = props.initialData?.angkatan;
+			const angkatanStr = (rawAngkatan !== null && rawAngkatan !== undefined && rawAngkatan !== '-') 
+				? String(rawAngkatan) 
+				: '';
 
 			form.value = {
-				nim: currentNim,
-				name: props.initialData?.name || '',
-				angkatan: props.initialData?.angkatan !== '-' ? (props.initialData?.angkatan || '') : '',
+				nim: currentNim ? String(currentNim) : '',
+				name: props.initialData?.name || props.initialData?.nama || '',
+				angkatan: angkatanStr,
 				talent_mapping: props.initialData?.talent_mapping !== '-' ? (props.initialData?.talent_mapping || '') : '',
-				password: props.isEditing ? '' : (currentNim || ''),
+				password: props.isEditing ? '' : (currentNim ? String(currentNim) : ''),
 				email: props.initialData?.email !== '-' ? (props.initialData?.email || '') : '',
-				phone: props.initialData?.phone !== '-' ? (props.initialData?.phone || '') : '',
+				phone: props.initialData?.phone !== '-' && props.initialData?.phone 
+					? props.initialData.phone 
+					: (props.initialData?.no_handphone !== '-' ? (props.initialData?.no_handphone || '') : ''),
 			};
 		}
 	},
@@ -118,11 +124,13 @@ const handleAngkatanInput = (e) => {
 const handleSubmit = () => {
 	formError.value = '';
 	errors.value = {};
-	const inputNim = form.value.nim.trim();
-	const inputName = form.value.name.trim();
-	const inputAngkatan = form.value.angkatan ? form.value.angkatan.trim() : '';
-	const inputTalentMapping = form.value.talent_mapping ? form.value.talent_mapping.trim() : '';
-	const inputPassword = form.value.password ? form.value.password.trim() : '';
+	const inputNim = String(form.value.nim || '').trim();
+	const inputName = String(form.value.name || '').trim();
+	const inputAngkatan = String(form.value.angkatan || '').trim();
+	const inputTalentMapping = String(form.value.talent_mapping || '').trim();
+	const inputPassword = String(form.value.password || '').trim();
+	const inputEmail = String(form.value.email || '').trim();
+	const inputPhone = String(form.value.phone || '').trim();
 
 	if (!inputNim) {
 		errors.value.nim = 'NIM wajib diisi.';
@@ -160,10 +168,17 @@ const handleSubmit = () => {
 	}
 
 	// Validate duplicate NIM against existingStudents
-	const isNimDuplicate = props.existingStudents.some((s) => {
-		if (props.isEditing && s.id === props.editingId) return false;
-		return (s.nim || '').toLowerCase().trim() === inputNim.toLowerCase().trim();
-	});
+	let isNimDuplicate = false;
+	const originalNim = String(props.initialData?.nim || '').trim().toLowerCase();
+
+	if (props.isEditing && inputNim.toLowerCase() === originalNim) {
+		isNimDuplicate = false;
+	} else {
+		isNimDuplicate = props.existingStudents.some((s) => {
+			if (props.isEditing && (s.id == props.editingId || String(s.id) === String(props.editingId))) return false;
+			return String(s.nim || '').toLowerCase().trim() === inputNim.toLowerCase();
+		});
+	}
 
 	if (isNimDuplicate) {
 		formError.value = `NIM "${inputNim}" sudah terdaftar. NIM tidak boleh duplikat.`;
@@ -176,9 +191,9 @@ const handleSubmit = () => {
 		angkatan: inputAngkatan || null,
 		talent_mapping: inputTalentMapping || null,
 		password: finalPassword,
-		email: form.value.email.trim() ? form.value.email.trim() : null,
-		phone: form.value.phone.trim() ? form.value.phone.trim() : null,
-		no_handphone: form.value.phone.trim() ? form.value.phone.trim() : null,
+		email: inputEmail ? inputEmail : null,
+		phone: inputPhone ? inputPhone : null,
+		no_handphone: inputPhone ? inputPhone : null,
 	});
 
 	handleClose();

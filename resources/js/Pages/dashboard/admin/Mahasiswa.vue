@@ -41,6 +41,10 @@ const props = defineProps({
 		type: Array,
 		default: null,
 	},
+	existingStudents: {
+		type: Array,
+		default: () => [],
+	},
 	existingNims: {
 		type: Array,
 		default: () => [],
@@ -125,6 +129,9 @@ const paginatedStudents = computed(() => {
 });
 
 const allExistingStudents = computed(() => {
+	if (props.existingStudents && props.existingStudents.length > 0) {
+		return props.existingStudents;
+	}
 	if (props.existingNims && props.existingNims.length > 0) {
 		return props.existingNims.map((nim) => ({ nim }));
 	}

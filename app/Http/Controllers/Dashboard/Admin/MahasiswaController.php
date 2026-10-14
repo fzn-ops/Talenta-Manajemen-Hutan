@@ -34,7 +34,7 @@ class MahasiswaController extends Controller
         $mahasiswaList = $this->mahasiswaService->getPaginationMahasiswa($filters, $filters['per_page']);
         $availableAngkatans = $this->mahasiswaService->getAvailableAngkatans();
         $filterCounts = $this->mahasiswaService->getFilterCounts();
-        $existingNims = \App\Models\User::where('role', 'mahasiswa')->pluck('nim')->filter()->values();
+        $existingStudents = \App\Models\User::where('role', 'mahasiswa')->select('id', 'nim')->get();
 
         return Inertia::render('dashboard/admin/Mahasiswa', [
             'mahasiswaData'      => $mahasiswaList,
@@ -42,7 +42,8 @@ class MahasiswaController extends Controller
             'availableAngkatans' => $availableAngkatans,
             'angkatanCounts'     => $filterCounts['angkatan'],
             'talentCounts'       => $filterCounts['talent_mapping'],
-            'existingNims'       => $existingNims,
+            'existingStudents'   => $existingStudents,
+            'existingNims'       => $existingStudents->pluck('nim'),
         ]);
     }
 
