@@ -125,16 +125,16 @@ const paginatedData = computed(() => {
 
 let searchTimeout = null;
 
-watch([searchQuery, filterBulan, sortColumn, sortDirection], () => {
+watch([searchQuery, filterBulan, sortColumn, sortDirection, rowsPerPage], () => {
     clearTimeout(searchTimeout);
-    
     searchTimeout = setTimeout(() => {
         router.get('/admin/berita/list', {
             search: searchQuery.value,
             bulan: filterBulan.value,
             sort: sortColumn.value,
             direction: sortDirection.value,
-            page: 1
+            per_page: rowsPerPage.value, 
+            page: 1 
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -146,7 +146,12 @@ watch([searchQuery, filterBulan, sortColumn, sortDirection], () => {
 watch(currentPage, (newPage, oldPage) => {
   if (newPage !== oldPage) {
       router.get('/admin/berita/list', { 
-          page: newPage
+          search: searchQuery.value,       
+          bulan: filterBulan.value,         
+          sort: sortColumn.value,           
+          direction: sortDirection.value,   
+          per_page: rowsPerPage.value,      
+          page: newPage                    
       }, {
           preserveState: true,  
           preserveScroll: true  
