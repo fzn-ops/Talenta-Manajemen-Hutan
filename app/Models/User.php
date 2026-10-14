@@ -17,6 +17,18 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $appends = ['name', 'phone'];
+
+    public function getNameAttribute()
+    {
+        return $this->attributes['nama'] ?? null;
+    }
+
+    public function getPhoneAttribute()
+    {
+        return $this->attributes['no_handphone'] ?? null;
+    }
+
     /**
      * Get the attributes that should be cast.
      *

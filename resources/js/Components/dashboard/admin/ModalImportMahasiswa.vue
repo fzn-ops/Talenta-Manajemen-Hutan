@@ -17,6 +17,10 @@ const props = defineProps({
 		type: Array,
 		default: () => [],
 	},
+	loading: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const emit = defineEmits(['close', 'import']);
@@ -29,7 +33,7 @@ const fileInputRef = ref(null);
 
 // Inline edit in preview table
 const editingRowIndex = ref(null);
-const editRowForm = ref({ nim: '', name: '', angkatan: '', talent_mapping: '', username: '', password: '', email: '', phone: '' });
+const editRowForm = ref({ nim: '', name: '', angkatan: '', talent_mapping: '', password: '', email: '', phone: '' });
 
 const talentMappingOptions = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
 
@@ -65,85 +69,86 @@ onBeforeUnmount(() => {
 	document.removeEventListener('keydown', handleKeyDown);
 });
 
-// Revalidate all parsed rows for duplicates & completeness (NIM and Username cannot be duplicated)
+// Revalidate all parsed rows for duplicates & completeness (matches ModalFormMahasiswa validation)
 const revalidateParsedData = () => {
 	const nimCounts = {};
-	const usernameCounts = {};
 
 	const studentList = props.existingStudents?.length ? props.existingStudents : props.existingLecturers;
 
 	const existingSystemNims = new Set(
 		studentList
-			.map((s) => (s.nim || s.nip || '').toString().toLowerCase().trim())
+			.map((s) => (typeof s === 'string' ? s : (s.nim || s.nip || '')).toString().toLowerCase().trim())
 			.filter((n) => n && n !== '-')
-	);
-	const existingSystemUsernames = new Set(
-		studentList
-			.map((s) => (s.username || '').toString().toLowerCase().trim())
-			.filter((u) => u && u !== '-')
 	);
 
 	// First pass: count occurrences within the batch
 	parsedData.value.forEach((item) => {
 		const nimClean = (item.nim || '').toString().trim().toLowerCase();
-		const usernameClean = (item.username || '').toString().trim().toLowerCase();
-
 		if (nimClean && nimClean !== '-') {
 			nimCounts[nimClean] = (nimCounts[nimClean] || 0) + 1;
 		}
-		if (usernameClean && usernameClean !== '-') {
-			usernameCounts[usernameClean] = (usernameCounts[usernameClean] || 0) + 1;
-		}
 	});
 
-	// Second pass: mark duplicates and validity
+	// Second pass: mark duplicates and validity according to create form rules
 	parsedData.value.forEach((item) => {
 		const nimClean = (item.nim || '').toString().trim();
 		const nameClean = (item.name || '').toString().trim();
-		const usernameClean = (item.username || '').toString().trim();
+		const angkatanClean = (item.angkatan || '').toString().trim().replace(/\D/g, '');
+		const talentClean = (item.talent_mapping || '').toString().trim();
+		const passwordClean = (item.password || '').toString().trim();
+		const effectivePassword = passwordClean || nimClean;
 		const nimLower = nimClean.toLowerCase();
-		const usernameLower = usernameClean.toLowerCase();
 
 		item.isNimDuplicate = false;
-		item.isUsernameDuplicate = false;
 		item.isDuplicate = false;
 		item.duplicateReason = '';
+		item.isIncomplete = false;
+		item.incompleteReason = '';
 		item.isValid = false;
 
-		if (!nimClean || nimClean === '-' || !nameClean || nameClean === 'Tanpa Nama') {
-			return;
+		// Validation rules matching ModalFormMahasiswa:
+		// 1. NIM (Wajib)
+		// 2. Nama Mahasiswa (Wajib)
+		// 3. Angkatan (Wajib, angka)
+		// 4. Talent Mapping (Wajib, harus salah satu dari opsi)
+		// 5. Password (Default NIM, min 6 karakter)
+		const missingFields = [];
+		if (!nimClean || nimClean === '-') {
+			missingFields.push('NIM');
+		}
+		if (!nameClean || nameClean === '-' || nameClean.toLowerCase() === 'tanpa nama') {
+			missingFields.push('Nama Mahasiswa');
+		}
+		if (!angkatanClean || angkatanClean === '-') {
+			missingFields.push('Angkatan');
+		}
+		if (!talentClean || talentClean === '-' || !talentMappingOptions.includes(talentClean)) {
+			missingFields.push('Talent Mapping');
+		}
+		if (effectivePassword && effectivePassword.length < 6) {
+			missingFields.push('Password min. 6 karakter');
+		}
+
+		if (missingFields.length > 0) {
+			item.isIncomplete = true;
+			item.incompleteReason = `${missingFields.join(', ')} wajib diisi / belum valid`;
 		}
 
 		// Cek NIM duplikat
-		if (existingSystemNims.has(nimLower)) {
-			item.isNimDuplicate = true;
-			item.nimDuplicateReason = 'NIM sudah terdaftar di sistem';
-		} else if (nimCounts[nimLower] > 1) {
-			item.isNimDuplicate = true;
-			item.nimDuplicateReason = 'NIM duplikat dengan baris lain di tabel';
-		}
-
-		// Cek Username duplikat
-		if (usernameClean && usernameClean !== '-') {
-			if (existingSystemUsernames.has(usernameLower)) {
-				item.isUsernameDuplicate = true;
-				item.usernameDuplicateReason = 'Username sudah terdaftar di sistem';
-			} else if (usernameCounts[usernameLower] > 1) {
-				item.isUsernameDuplicate = true;
-				item.usernameDuplicateReason = 'Username duplikat dengan baris lain di tabel';
+		if (nimClean && nimClean !== '-') {
+			if (existingSystemNims.has(nimLower)) {
+				item.isNimDuplicate = true;
+				item.isDuplicate = true;
+				item.duplicateReason = 'NIM sudah terdaftar di sistem';
+			} else if (nimCounts[nimLower] > 1) {
+				item.isNimDuplicate = true;
+				item.isDuplicate = true;
+				item.duplicateReason = 'NIM duplikat dengan baris lain di file';
 			}
 		}
 
-		if (item.isNimDuplicate && item.isUsernameDuplicate) {
-			item.isDuplicate = true;
-			item.duplicateReason = 'NIM & Username duplikat';
-		} else if (item.isNimDuplicate) {
-			item.isDuplicate = true;
-			item.duplicateReason = item.nimDuplicateReason || 'NIM duplikat';
-		} else if (item.isUsernameDuplicate) {
-			item.isDuplicate = true;
-			item.duplicateReason = item.usernameDuplicateReason || 'Username duplikat';
-		} else {
+		// Valid jika tidak duplikat dan lengkap
+		if (!item.isDuplicate && !item.isIncomplete) {
 			item.isValid = true;
 		}
 	});
@@ -154,7 +159,6 @@ const incompleteCount = computed(() => parsedData.value.filter((p) => !p.isValid
 const validCount = computed(() => parsedData.value.filter((p) => p.isValid && !p.isDuplicate).length);
 
 const hasNimDuplicate = computed(() => parsedData.value.some((p) => p.isNimDuplicate));
-const hasUsernameDuplicate = computed(() => parsedData.value.some((p) => p.isUsernameDuplicate));
 
 // Download Real Excel (.xlsx) Template
 const downloadExcelTemplate = () => {
@@ -164,7 +168,6 @@ const downloadExcelTemplate = () => {
 			'Nama Mahasiswa': 'Fauzan Fuadiansyah',
 			'Angkatan': '60',
 			'Talent Mapping': 'Profesional',
-			'Username': 'fauzanfuad',
 			'Password': 'J0403231085',
 			'Email': 'novafauzan@gmail.com',
 			'Nomor Handphone': '+62 812-3456-7890',
@@ -174,7 +177,6 @@ const downloadExcelTemplate = () => {
 			'Nama Mahasiswa': 'Farhan Hakim',
 			'Angkatan': '60',
 			'Talent Mapping': 'Bisnis',
-			'Username': 'farhanhakim',
 			'Password': 'J0403231075',
 			'Email': '01122005farhan@apps.ipb.ac.id',
 			'Nomor Handphone': '+62 812-3456-7891',
@@ -184,7 +186,6 @@ const downloadExcelTemplate = () => {
 			'Nama Mahasiswa': 'Siti Rahmawati',
 			'Angkatan': '60',
 			'Talent Mapping': 'Akademisi',
-			'Username': 'sitirahma',
 			'Password': 'J0403231012',
 			'Email': 'siti.rahma@apps.ipb.ac.id',
 			'Nomor Handphone': '+62 812-3456-7892',
@@ -198,7 +199,6 @@ const downloadExcelTemplate = () => {
 		{ wch: 32 }, // Nama Mahasiswa
 		{ wch: 12 }, // Angkatan
 		{ wch: 18 }, // Talent Mapping
-		{ wch: 20 }, // Username
 		{ wch: 20 }, // Password
 		{ wch: 32 }, // Email
 		{ wch: 22 }, // Nomor Handphone
@@ -252,7 +252,6 @@ const processFile = async (file) => {
 		const nameIdx = headers.findIndex((h) => h.includes('nama') || h.includes('name') || h.includes('mahasiswa'));
 		const angkatanIdx = headers.findIndex((h) => h.includes('angkatan') || h.includes('batch') || h.includes('tahun'));
 		const talentIdx = headers.findIndex((h) => h.includes('talent') || h.includes('mapping') || h.includes('peminatan') || h.includes('kategori'));
-		const usernameIdx = headers.findIndex((h) => h.includes('username') || h.includes('user'));
 		const passwordIdx = headers.findIndex((h) => h.includes('password') || h.includes('sandi') || h.includes('pass'));
 		const emailIdx = headers.findIndex((h) => h.includes('email') || h.includes('surel'));
 		const phoneIdx = headers.findIndex((h) => h.includes('hp') || h.includes('handphone') || h.includes('phone') || h.includes('telp') || h.includes('nomor') || h.includes('wa'));
@@ -264,30 +263,30 @@ const processFile = async (file) => {
 
 			const nim = nimIdx !== -1 ? String(row[nimIdx]).trim() : (row[0] ? String(row[0]).trim() : '');
 			const name = nameIdx !== -1 ? String(row[nameIdx]).trim() : (row[1] ? String(row[1]).trim() : '');
-			const angkatanRaw = angkatanIdx !== -1 ? String(row[angkatanIdx]).trim().replace(/\D/g, '') : '';
+			const angkatanRaw = angkatanIdx !== -1 ? String(row[angkatanIdx]).trim().replace(/\D/g, '') : (row[2] ? String(row[2]).trim().replace(/\D/g, '') : '');
 			
 			// Talent Mapping matching
-			const rawTalent = talentIdx !== -1 ? String(row[talentIdx]).trim() : '';
-			const matchedTalent = talentMappingOptions.find((opt) => opt.toLowerCase() === rawTalent.toLowerCase()) || (rawTalent || '-');
+			const rawTalent = talentIdx !== -1 ? String(row[talentIdx]).trim() : (row[3] ? String(row[3]).trim() : '');
+			const matchedTalent = talentMappingOptions.find((opt) => opt.toLowerCase() === rawTalent.toLowerCase()) || rawTalent;
 
-			const username = usernameIdx !== -1 ? String(row[usernameIdx]).trim() : '';
-			const password = passwordIdx !== -1 ? String(row[passwordIdx]).trim() : '';
-			const email = emailIdx !== -1 ? String(row[emailIdx]).trim() : (row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : ''));
-			const phone = phoneIdx !== -1 ? String(row[phoneIdx]).trim() : (row[6] ? String(row[6]).trim() : (row[5] ? String(row[5]).trim() : ''));
+			const password = passwordIdx !== -1 ? String(row[passwordIdx]).trim() : (row[4] ? String(row[4]).trim() : '');
+			const email = emailIdx !== -1 ? String(row[emailIdx]).trim() : (row[5] ? String(row[5]).trim() : '');
+			const phone = phoneIdx !== -1 ? String(row[phoneIdx]).trim() : (row[6] ? String(row[6]).trim() : '');
 
-			if (nim || name) {
+			if (nim || name || angkatanRaw || rawTalent) {
 				rows.push({
 					nim: nim || '-',
 					name: name || 'Tanpa Nama',
 					angkatan: angkatanRaw || '-',
 					talent_mapping: matchedTalent || '-',
-					username: username || '-',
 					password: password || '',
 					email: email || '-',
 					phone: phone || '-',
 					isDuplicate: false,
 					duplicateReason: '',
 					isValid: false,
+					isIncomplete: false,
+					incompleteReason: '',
 				});
 			}
 		}
@@ -337,7 +336,6 @@ const startEditPreviewRow = (idx) => {
 		name: row.name !== 'Tanpa Nama' ? row.name : '',
 		angkatan: row.angkatan !== '-' ? row.angkatan : '',
 		talent_mapping: row.talent_mapping !== '-' ? row.talent_mapping : '',
-		username: row.username !== '-' ? row.username : '',
 		password: row.password || '',
 		email: row.email !== '-' ? row.email : '',
 		phone: row.phone !== '-' ? row.phone : '',
@@ -351,7 +349,6 @@ const saveEditPreviewRow = (idx) => {
 		name: editRowForm.value.name.trim() || 'Tanpa Nama',
 		angkatan: editRowForm.value.angkatan.replace(/\D/g, '').trim() || '-',
 		talent_mapping: editRowForm.value.talent_mapping.trim() || '-',
-		username: editRowForm.value.username.trim() || '-',
 		password: editRowForm.value.password.trim() || '',
 		email: editRowForm.value.email.trim() || '-',
 		phone: editRowForm.value.phone.trim() || '-',
@@ -389,14 +386,12 @@ const confirmImport = () => {
 		name: item.name,
 		angkatan: item.angkatan && item.angkatan !== '-' ? item.angkatan : null,
 		talent_mapping: item.talent_mapping && item.talent_mapping !== '-' ? item.talent_mapping : null,
-		username: item.username && item.username !== '-' ? item.username : null,
 		password: item.password && item.password !== '-' ? item.password : item.nim,
 		email: item.email && item.email !== '-' ? item.email : null,
 		phone: item.phone && item.phone !== '-' ? item.phone : null,
 	}));
 
 	emit('import', formattedStudents);
-	handleClose();
 };
 
 const isBackdropClick = ref(false);
@@ -465,7 +460,7 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 								<div class="min-w-0">
 									<p class="font-poppins text-[13px] font-semibold text-[#183669] truncate">Template Format Excel</p>
-									<p class="font-inter text-[11px] text-[#7188a3] truncate">Kolom: NIM, Nama Mahasiswa, Angkatan, dll</p>
+									<p class="font-inter text-[11px] text-[#7188a3] truncate">Kolom: NIM, Nama Mahasiswa, Angkatan, Talent Mapping, dll</p>
 								</div>
 							</div>
 							<button
@@ -554,16 +549,12 @@ const handleBackdropMouseUp = (e) => {
 									</svg>
 									<span>
 										<template v-if="duplicateCount > 0">
-											Terdeteksi
-											<strong v-if="hasNimDuplicate && hasUsernameDuplicate"> {{ duplicateCount }} data dengan NIM & Username duplikat</strong>
-											<strong v-else-if="hasNimDuplicate"> {{ duplicateCount }} data dengan NIM duplikat</strong>
-											<strong v-else-if="hasUsernameDuplicate"> {{ duplicateCount }} data dengan Username duplikat</strong>
-											<strong v-else> {{ duplicateCount }} data duplikat</strong><template v-if="incompleteCount > 0"> dan <strong>{{ incompleteCount }} data tidak lengkap</strong></template>.
+											Terdeteksi <strong>{{ duplicateCount }} data dengan NIM duplikat</strong><template v-if="incompleteCount > 0"> dan <strong>{{ incompleteCount }} data tidak lengkap</strong> (wajib: NIM, Nama, Angkatan, Talent Mapping)</template>.
 										</template>
 										<template v-else>
-											Terdeteksi <strong>{{ incompleteCount }} data tidak lengkap</strong> (NIM/Nama kosong).
+											Terdeteksi <strong>{{ incompleteCount }} data tidak lengkap</strong> (wajib: NIM, Nama, Angkatan, Talent Mapping).
 										</template>
-										Anda dapat mengedit atau membersihkan data bermasalah.
+										Anda dapat mengedit baris atau membersihkan data bermasalah.
 									</span>
 								</div>
 								<button
@@ -590,19 +581,18 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 
 								<div class="max-h-[290px] overflow-auto rounded-[10px] border border-[#d6e0ee] shadow-sm">
-									<table class="w-full min-w-[1040px] border-separate border-spacing-0 text-left text-xs">
+									<table class="w-full min-w-[960px] border-separate border-spacing-0 text-left text-xs">
 										<thead class="sticky top-0 z-20 bg-[#183669] font-poppins text-white shadow-sm">
 											<tr>
 												<th class="w-10 px-3 py-2.5 text-center">No</th>
-												<th class="min-w-[150px] px-3.5 py-2.5">Nama Mahasiswa</th>
-												<th class="min-w-[110px] px-3 py-2.5 text-center">NIM</th>
-												<th class="min-w-[80px] px-2.5 py-2.5 text-center">Angkatan</th>
-												<th class="min-w-[125px] px-2.5 py-2.5 text-center">Talent Mapping</th>
-												<th class="min-w-[100px] px-3 py-2.5">Username</th>
+												<th class="min-w-[160px] px-3.5 py-2.5">Nama Mahasiswa</th>
+												<th class="min-w-[120px] px-3 py-2.5 text-center">NIM</th>
+												<th class="min-w-[85px] px-2.5 py-2.5 text-center">Angkatan</th>
+												<th class="min-w-[130px] px-2.5 py-2.5 text-center">Talent Mapping</th>
 												<th class="min-w-[110px] px-3 py-2.5">Password</th>
-												<th class="min-w-[150px] px-3.5 py-2.5">Email</th>
+												<th class="min-w-[160px] px-3.5 py-2.5">Email</th>
 												<th class="min-w-[145px] px-3.5 py-2.5 text-center whitespace-nowrap">No. HP</th>
-												<th class="min-w-[95px] px-2.5 py-2.5 text-center">Status</th>
+												<th class="min-w-[105px] px-2.5 py-2.5 text-center">Status</th>
 												<th class="sticky right-0 z-30 w-28 bg-[#183669] px-3 py-2.5 text-center shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.18)]">Aksi</th>
 											</tr>
 										</thead>
@@ -643,14 +633,11 @@ const handleBackdropMouseUp = (e) => {
 														</span>
 														<span v-else class="text-[#7890a8]">-</span>
 													</td>
-													<td class="px-3 py-2 text-[#5a718d] border-b border-[#d6e0ee]" :title="item.username">
-														<span class="block truncate max-w-[100px]">{{ item.username }}</span>
-													</td>
 													<td class="px-3 py-2 text-[#5a718d] border-b border-[#d6e0ee]" :title="item.password || item.nim">
-														<span class="block truncate max-w-[100px]">{{ item.password || item.nim }}</span>
+														<span class="block truncate max-w-[110px]">{{ item.password || item.nim }}</span>
 													</td>
 													<td class="px-3.5 py-2 text-[#5a718d] border-b border-[#d6e0ee]" :title="item.email">
-														<span class="block truncate max-w-[150px]">{{ item.email }}</span>
+														<span class="block truncate max-w-[160px]">{{ item.email }}</span>
 													</td>
 													<td class="px-3.5 py-2 text-center text-[#5a718d] whitespace-nowrap border-b border-[#d6e0ee]">
 														{{ item.phone }}
@@ -661,7 +648,7 @@ const handleBackdropMouseUp = (e) => {
 															:title="item.duplicateReason"
 															class="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 cursor-help"
 														>
-															{{ item.isNimDuplicate && item.isUsernameDuplicate ? 'NIM & User Duplikat' : item.isNimDuplicate ? 'NIM Duplikat' : item.isUsernameDuplicate ? 'Username Duplikat' : 'Duplikat' }}
+															NIM Duplikat
 														</span>
 														<span
 															v-else-if="item.isValid"
@@ -671,7 +658,8 @@ const handleBackdropMouseUp = (e) => {
 														</span>
 														<span
 															v-else
-															class="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600"
+															:title="item.incompleteReason"
+															class="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 cursor-help"
 														>
 															Tidak Lengkap
 														</span>
@@ -730,7 +718,7 @@ const handleBackdropMouseUp = (e) => {
 															v-model="editRowForm.talent_mapping"
 															class="h-8 w-full min-w-[110px] rounded-[6px] border border-[#d6e0ee] bg-white px-2 text-xs transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0 cursor-pointer"
 														>
-															<option value="">- Belum Ada -</option>
+															<option value="" disabled>Pilih Talent</option>
 															<option v-for="opt in talentMappingOptions" :key="opt" :value="opt">
 																{{ opt }}
 															</option>
@@ -738,17 +726,9 @@ const handleBackdropMouseUp = (e) => {
 													</td>
 													<td class="px-2 py-1.5 border-b border-[#d6e0ee] bg-amber-50/40">
 														<input
-															v-model="editRowForm.username"
-															type="text"
-															placeholder="Username"
-															class="h-8 w-full rounded-[6px] border border-[#d6e0ee] px-2 text-xs transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
-														/>
-													</td>
-													<td class="px-2 py-1.5 border-b border-[#d6e0ee] bg-amber-50/40">
-														<input
 															v-model="editRowForm.password"
 															type="text"
-															placeholder="Password"
+															placeholder="Password (opsional)"
 															class="h-8 w-full min-w-[95px] rounded-[6px] border border-[#d6e0ee] px-2 text-xs transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
 														/>
 													</td>
@@ -756,7 +736,7 @@ const handleBackdropMouseUp = (e) => {
 														<input
 															v-model="editRowForm.email"
 															type="text"
-															placeholder="Email"
+															placeholder="Email (opsional)"
 															class="h-8 w-full rounded-[6px] border border-[#d6e0ee] px-2 text-xs transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
 														/>
 													</td>
@@ -764,7 +744,7 @@ const handleBackdropMouseUp = (e) => {
 														<input
 															v-model="editRowForm.phone"
 															type="text"
-															placeholder="No. HP"
+															placeholder="No. HP (opsional)"
 															class="h-8 w-full min-w-[120px] rounded-[6px] border border-[#d6e0ee] px-2 text-xs whitespace-nowrap transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
 														/>
 													</td>
@@ -810,18 +790,23 @@ const handleBackdropMouseUp = (e) => {
 						<div class="mt-7 flex items-center justify-center gap-3.5 pt-2">
 							<button
 								type="button"
+								:disabled="loading"
 								@click="handleClose"
-								class="h-[44px] min-w-[130px] px-6 rounded-[10px] border border-[#d6e0ee] bg-white font-poppins text-[14px] font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 focus:border-[#183669] focus:outline-none active:scale-98 cursor-pointer select-none"
+								class="h-[44px] min-w-[130px] px-6 rounded-[10px] border border-[#d6e0ee] bg-white font-poppins text-[14px] font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 focus:border-[#183669] focus:outline-none active:scale-98 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								Batal
 							</button>
 							<button
 								type="button"
 								@click="confirmImport"
-								:disabled="validCount === 0"
-								class="h-[44px] min-w-[160px] px-6 rounded-[10px] bg-[#183669] font-poppins text-[14px] font-bold text-white transition hover:bg-[#122b54] disabled:cursor-not-allowed disabled:opacity-50 active:scale-98 cursor-pointer select-none"
+								:disabled="validCount === 0 || loading"
+								class="inline-flex items-center justify-center gap-2 h-[44px] min-w-[160px] px-6 rounded-[10px] bg-[#183669] font-poppins text-[14px] font-bold text-white transition hover:bg-[#122b54] disabled:cursor-not-allowed disabled:opacity-50 active:scale-98 cursor-pointer select-none"
 							>
-								Tambahkan ({{ validCount }})
+								<svg v-if="loading" class="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								<span>{{ loading ? 'Mengimpor...' : `Tambahkan (${validCount})` }}</span>
 							</button>
 						</div>
 					</div>

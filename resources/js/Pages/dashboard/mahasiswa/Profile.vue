@@ -18,6 +18,10 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	isPhoneEmpty: {
+		type: Boolean,
+		default: false,
+	},
 	isLocked: {
 		type: Boolean,
 		default: false,
@@ -67,7 +71,8 @@ watch(
 const currentUser = computed(() => props.userData || page.props.auth?.user || {});
 const isDefaultPass = computed(() => props.isDefaultPassword ?? page.props.auth?.user?.is_default_password ?? false);
 const isEmailEmp = computed(() => props.isEmailEmpty ?? page.props.auth?.user?.is_email_empty ?? false);
-const isLockedAccount = computed(() => props.isLocked ?? page.props.auth?.user?.is_locked ?? (isDefaultPass.value || isEmailEmp.value));
+const isPhoneEmp = computed(() => props.isPhoneEmpty ?? page.props.auth?.user?.is_phone_empty ?? false);
+const isLockedAccount = computed(() => props.isLocked ?? page.props.auth?.user?.is_locked ?? (isDefaultPass.value || isEmailEmp.value || isPhoneEmp.value));
 
 const isLoading = ref(true);
 onMounted(() => {
@@ -333,6 +338,8 @@ const saveAccountData = () => {
 	if (!isAccountChanged.value || isSavingAccount.value) return;
 	accountErrors.value = {};
 	const emailVal = (formAccount.value.email || '').trim();
+	const phoneVal = (formAccount.value.phone || '').trim();
+
 	if (!emailVal) {
 		accountErrors.value.email = 'Email wajib diisi.';
 		return;
@@ -341,11 +348,15 @@ const saveAccountData = () => {
 		accountErrors.value.email = 'Format email tidak valid (contoh: nama@email.com).';
 		return;
 	}
+	if (!phoneVal) {
+		accountErrors.value.phone = 'Nomor handphone wajib diisi.';
+		return;
+	}
 
 	isSavingAccount.value = true;
 	router.post('/mahasiswa/profile/account', {
 		email: emailVal,
-		no_handphone: formAccount.value.phone?.trim() || '',
+		no_handphone: phoneVal,
 	}, {
 		preserveScroll: true,
 		onSuccess: () => {
@@ -442,19 +453,11 @@ const savePassword = () => {
 					</div>
 					<div class="space-y-1">
 						<h3 class="font-poppins text-[15px] font-bold text-amber-900">
-							<template v-if="isDefaultPass && isEmailEmp">
-								Perhatian: Lengkapi Email & Ubah Password Default Anda
-							</template>
-							<template v-else-if="isEmailEmp">
-								Perhatian: Lengkapi Email Aktif Anda
-							</template>
-							<template v-else>
-								Perhatian: Ubah Password Default Anda (NIM)
-							</template>
+							Perhatian: Lengkapi Data Akun & Password Anda
 						</h3>
 						<p class="font-inter text-[13px] leading-relaxed text-amber-800">
 							Demi keamanan akun, akses menu <strong>Dashboard</strong> dan <strong>Aktivitas</strong> masih terkunci.
-							Harap <span v-if="isEmailEmp">masukkan <strong>Email aktif</strong> Anda</span><span v-if="isEmailEmp && isDefaultPass"> serta </span><span v-if="isDefaultPass">perbarui <strong>Password baru</strong></span> pada formulir di bawah ini agar seluruh menu terbuka penuh.
+							Harap lengkapi <span v-if="isEmailEmp"><strong>Email aktif</strong></span><span v-if="isEmailEmp && isPhoneEmp">, </span><span v-if="isPhoneEmp"><strong>Nomor Handphone</strong></span><span v-if="(isEmailEmp || isPhoneEmp) && isDefaultPass"> serta </span><span v-if="isDefaultPass">perbarui <strong>Password baru</strong></span> pada formulir di bawah ini agar seluruh menu terbuka penuh.
 						</p>
 					</div>
 				</div>

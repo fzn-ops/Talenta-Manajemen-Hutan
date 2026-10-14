@@ -19,7 +19,7 @@ const page = usePage();
 const isLockedAccount = computed(() => {
 	const user = page.props.auth?.user;
 	if (!user) return false;
-	return !!(user.is_locked ?? (user.is_default_password || user.is_email_empty));
+	return !!(user.is_locked ?? (user.is_default_password || user.is_email_empty || user.is_phone_empty));
 });
 
 const isLocked = (item) => {

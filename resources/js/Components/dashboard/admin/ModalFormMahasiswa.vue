@@ -23,6 +23,10 @@ const props = defineProps({
 		type: Array,
 		default: () => [],
 	},
+	loading: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const emit = defineEmits(['close', 'submit']);
@@ -50,6 +54,9 @@ const talentDropdownRef = ref(null);
 const selectTalentMapping = (option) => {
 	form.value.talent_mapping = option;
 	isTalentDropdownOpen.value = false;
+	if (errors.value.talent_mapping) {
+		delete errors.value.talent_mapping;
+	}
 };
 
 const handleDocumentClick = (e) => {
@@ -85,7 +92,6 @@ watch(
 				name: props.initialData?.name || '',
 				angkatan: props.initialData?.angkatan !== '-' ? (props.initialData?.angkatan || '') : '',
 				talent_mapping: props.initialData?.talent_mapping !== '-' ? (props.initialData?.talent_mapping || '') : '',
-				username: props.initialData?.username || '',
 				password: props.isEditing ? '' : (currentNim || ''),
 				email: props.initialData?.email !== '-' ? (props.initialData?.email || '') : '',
 				phone: props.initialData?.phone !== '-' ? (props.initialData?.phone || '') : '',
@@ -104,6 +110,9 @@ const handleClose = () => {
 
 const handleAngkatanInput = (e) => {
 	form.value.angkatan = e.target.value.replace(/\D/g, '');
+	if (errors.value.angkatan) {
+		delete errors.value.angkatan;
+	}
 };
 
 const handleSubmit = () => {
@@ -113,7 +122,6 @@ const handleSubmit = () => {
 	const inputName = form.value.name.trim();
 	const inputAngkatan = form.value.angkatan ? form.value.angkatan.trim() : '';
 	const inputTalentMapping = form.value.talent_mapping ? form.value.talent_mapping.trim() : '';
-	const inputUsername = form.value.username ? form.value.username.trim() : '';
 	const inputPassword = form.value.password ? form.value.password.trim() : '';
 
 	if (!inputNim) {
@@ -121,6 +129,12 @@ const handleSubmit = () => {
 	}
 	if (!inputName) {
 		errors.value.name = 'Nama mahasiswa wajib diisi.';
+	}
+	if (!inputAngkatan) {
+		errors.value.angkatan = 'Angkatan wajib diisi.';
+	}
+	if (!inputTalentMapping) {
+		errors.value.talent_mapping = 'Talent mapping wajib dipilih.';
 	}
 
 	let finalPassword = null;
@@ -156,28 +170,15 @@ const handleSubmit = () => {
 		return;
 	}
 
-	// Validate duplicate Username against existingStudents
-	if (inputUsername) {
-		const isUsernameDuplicate = props.existingStudents.some((s) => {
-			if (props.isEditing && s.id === props.editingId) return false;
-			return (s.username || '').toLowerCase().trim() === inputUsername.toLowerCase().trim();
-		});
-
-		if (isUsernameDuplicate) {
-			formError.value = `Username "${inputUsername}" sudah digunakan oleh akun lain.`;
-			return;
-		}
-	}
-
 	emit('submit', {
 		nim: inputNim,
 		name: inputName,
 		angkatan: inputAngkatan || null,
 		talent_mapping: inputTalentMapping || null,
-		username: inputUsername || null,
 		password: finalPassword,
 		email: form.value.email.trim() ? form.value.email.trim() : null,
 		phone: form.value.phone.trim() ? form.value.phone.trim() : null,
+		no_handphone: form.value.phone.trim() ? form.value.phone.trim() : null,
 	});
 
 	handleClose();
@@ -225,7 +226,7 @@ const handleBackdropMouseUp = (e) => {
 		>
 			<div
 				v-if="show"
-				class="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/40 backdrop-blur-xs p-3 sm:p-6 flex justify-center items-start min-h-screen"
+				class="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/40 backdrop-blur-xs p-3 sm:p-6 flex justify-center items-start sm:items-center min-h-screen"
 				@mousedown="handleBackdropMouseDown"
 				@mouseup="handleBackdropMouseUp"
 			>
@@ -239,13 +240,28 @@ const handleBackdropMouseUp = (e) => {
 				>
 					<div
 						v-if="show"
-						class="relative w-full max-w-[560px] my-auto transform rounded-[16px] sm:rounded-[20px] bg-white p-4 sm:p-8 shadow-2xl font-poppins border border-[#e2e8f0] overflow-visible"
+						class="relative w-full max-w-[620px] my-auto transform rounded-[18px] sm:rounded-[22px] bg-white p-5 sm:p-7 shadow-2xl font-poppins border border-[#e2e8f0] overflow-visible"
 					>
+						<!-- Close Button (Top-Right) -->
+						<button
+							type="button"
+							@click="handleClose"
+							class="absolute top-4 right-4 sm:top-5 sm:right-5 p-1.5 rounded-full text-[#7188a3] hover:text-[#183669] hover:bg-slate-100 transition-colors cursor-pointer focus:outline-none"
+							title="Tutup Modal"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+
 						<!-- Modal Header -->
-						<div class="text-center">
-							<h2 class="text-[18px] sm:text-[22px] font-bold text-[#183669] tracking-tight">
+						<div class="text-center px-4 sm:px-6">
+							<h2 class="text-[19px] sm:text-[22px] font-bold text-[#183669] tracking-tight">
 								{{ isEditing ? 'Form Edit Mahasiswa' : 'Form Tambah Mahasiswa' }}
 							</h2>
+							<p class="font-inter text-[12px] sm:text-[13px] text-[#7188a3] mt-1">
+								{{ isEditing ? 'Perbarui informasi data mahasiswa di bawah ini' : 'Lengkapi data mahasiswa baru di bawah ini' }}
+							</p>
 						</div>
 
 						<!-- Error Alert Box -->
@@ -253,21 +269,25 @@ const handleBackdropMouseUp = (e) => {
 							{{ formError }}
 						</div>
 
-						<form @submit.prevent="handleSubmit" novalidate class="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
-							<!-- Row 1: NIM & Nama Mahasiswa (2 Kolom) -->
+						<form @submit.prevent="handleSubmit" novalidate class="mt-4 sm:mt-5 space-y-3.5 sm:space-y-4">
+							<!-- Row 1: NIM & Nama Mahasiswa (2 Kolom di Desktop) -->
 							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
 								<!-- 1. NIM (Wajib) -->
-								<div>
-									<label class="block text-[13px] font-semibold text-[#183669]">
-										NIM<span class="text-red-500">*</span>
-									</label>
-									<p class="font-inter text-[11px] text-[#7188a3] mt-0.5">Masukkan nomor NIM Mahasiswa</p>
+								<div class="flex flex-col">
+									<div class="min-h-[38px] flex flex-col justify-end">
+										<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+											NIM<span class="text-red-500 font-semibold ml-0.5">*</span>
+										</label>
+										<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+											Nomor Induk Mahasiswa
+										</p>
+									</div>
 									<input
 										v-model="form.nim"
 										type="text"
-										placeholder="J0403231075"
+										placeholder="Contoh: J0403231075"
 										@input="errors.nim = ''"
-										class="mt-1.5 h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+										class="mt-1.5 h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13.5px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
 										:class="errors.nim ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
 									/>
 									<p v-if="errors.nim" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
@@ -279,17 +299,21 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 
 								<!-- 2. Nama Mahasiswa (Wajib) -->
-								<div>
-									<label class="block text-[13px] font-semibold text-[#183669]">
-										Nama Mahasiswa<span class="text-red-500">*</span>
-									</label>
-									<p class="font-inter text-[11px] text-[#7188a3] mt-0.5">Masukkan nama lengkap Mahasiswa</p>
+								<div class="flex flex-col">
+									<div class="min-h-[38px] flex flex-col justify-end">
+										<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+											Nama Mahasiswa<span class="text-red-500 font-semibold ml-0.5">*</span>
+										</label>
+										<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+											Nama lengkap mahasiswa
+										</p>
+									</div>
 									<input
 										v-model="form.name"
 										type="text"
-										placeholder="John Doe"
+										placeholder="Contoh: John Doe"
 										@input="errors.name = ''"
-										class="mt-1.5 h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+										class="mt-1.5 h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13.5px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
 										:class="errors.name ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
 									/>
 									<p v-if="errors.name" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
@@ -301,37 +325,58 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 							</div>
 
-							<!-- Row 2: Angkatan & Talent Mapping (2 Kolom) -->
+							<!-- Row 2: Angkatan & Talent Mapping (2 Kolom di Desktop) -->
 							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-								<!-- 3. Angkatan (Hanya Angka) -->
-								<div>
-									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-										Angkatan
-									</label>
-									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Nomor angkatan (hanya angka, contoh: 60)</p>
+								<!-- 3. Angkatan (Wajib, Hanya Angka) -->
+								<div class="flex flex-col">
+									<div class="min-h-[38px] flex flex-col justify-end">
+										<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+											Angkatan<span class="text-red-500 font-semibold ml-0.5">*</span>
+										</label>
+										<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+											Nomor angkatan (contoh: 60)
+										</p>
+									</div>
 									<input
 										v-model="form.angkatan"
 										type="text"
 										inputmode="numeric"
-										placeholder="XX"
+										placeholder="Contoh: 60"
 										maxlength="4"
 										@input="handleAngkatanInput"
-										class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
+										class="mt-1.5 h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13.5px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+										:class="errors.angkatan ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
 									/>
+									<p v-if="errors.angkatan" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+										</svg>
+										<span>{{ errors.angkatan }}</span>
+									</p>
 								</div>
 
 								<!-- 4. Talent Mapping (Custom Dropdown UI) -->
-								<div ref="talentDropdownRef" class="relative">
-									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-										Talent Mapping
-									</label>
-									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Pilih hasil talent mapping (opsional)</p>
-									<div class="relative mt-1 sm:mt-1.5">
+								<div ref="talentDropdownRef" class="relative flex flex-col">
+									<div class="min-h-[38px] flex flex-col justify-end">
+										<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+											Talent Mapping<span class="text-red-500 font-semibold ml-0.5">*</span>
+										</label>
+										<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+											Pilihan talent mapping mahasiswa
+										</p>
+									</div>
+									<div class="relative mt-1.5">
 										<button
 											type="button"
 											@click="isTalentDropdownOpen = !isTalentDropdownOpen"
-											class="h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] transition-colors duration-150 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-0 select-none text-left"
-											:class="isTalentDropdownOpen ? 'border-[#183669] bg-white' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'"
+											class="h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13.5px] sm:text-[14px] transition-colors duration-150 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-0 select-none text-left"
+											:class="[
+												errors.talent_mapping
+													? 'border-red-400 bg-red-50/20 text-[#1e3456]'
+													: isTalentDropdownOpen
+													? 'border-[#183669] bg-white ring-1 ring-[#183669]/10'
+													: 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'
+											]"
 										>
 											<span :class="form.talent_mapping ? 'text-[#1e3456] font-medium' : 'text-[#94a3b8]'">
 												{{ form.talent_mapping || 'Pilih Talent Mapping' }}
@@ -361,14 +406,6 @@ const handleBackdropMouseUp = (e) => {
 												class="absolute left-0 top-full mt-1.5 z-50 w-full rounded-[12px] border border-[#d6e0ee] bg-white p-1.5 shadow-2xl ring-1 ring-black/5"
 											>
 												<button
-													v-if="form.talent_mapping"
-													type="button"
-													@click="selectTalentMapping('')"
-													class="flex w-full items-center justify-between px-3 py-2 rounded-[8px] text-left font-inter text-[13px] text-[#7188a3] hover:bg-[#f1f5f9] transition-colors cursor-pointer mb-0.5"
-												>
-													<span>- Kosongkan / Belum Ada -</span>
-												</button>
-												<button
 													v-for="option in talentMappingOptions"
 													:key="option"
 													type="button"
@@ -395,120 +432,118 @@ const handleBackdropMouseUp = (e) => {
 											</div>
 										</Transition>
 									</div>
+									<p v-if="errors.talent_mapping" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+										</svg>
+										<span>{{ errors.talent_mapping }}</span>
+									</p>
 								</div>
 							</div>
 
-							<!-- Row 3: Username & Password (2 Kolom) -->
+							<!-- Row 3: Email & Nomor Handphone (2 Kolom di Desktop) -->
 							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-								<!-- 5. Username (Opsional) -->
-								<div>
-									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-										Username
-									</label>
-									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 truncate">Masukkan username akun (opsional)</p>
-									<input
-										v-model="form.username"
-										type="text"
-										placeholder="johndoe"
-										@input="errors.username = ''"
-										class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
-										:class="errors.username ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
-									/>
-									<p v-if="errors.username" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-										<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-										</svg>
-										<span>{{ errors.username }}</span>
-									</p>
-								</div>
-
-								<!-- 6. Password (Kredensial Akun) -->
-								<div>
-									<div class="flex items-center justify-between">
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Password<span v-if="!isEditing" class="text-red-500">*</span>
+								<!-- 5. Email (Opsional) -->
+								<div class="flex flex-col">
+									<div class="min-h-[38px] flex flex-col justify-end">
+										<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+											Email
 										</label>
-										<span v-if="isEditing" class="font-inter text-[10px] font-medium text-[#7188a3]">
-											(Opsional)
-										</span>
+										<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+											Alamat email aktif (opsional)
+										</p>
 									</div>
-									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 truncate">
-										{{ isEditing ? 'Password baru jika ingin diubah' : 'Default sesuai nilai NIM' }}
-									</p>
-									<div class="relative mt-1 sm:mt-1.5">
-										<input
-											v-model="form.password"
-											:type="showPassword ? 'text' : 'password'"
-											:placeholder="isEditing ? 'Password baru (opsional)' : 'Default NIM'"
-											@input="isPasswordManuallyEdited = true; errors.password = ''"
-											class="h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white pl-3.5 pr-11 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
-											:class="errors.password ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
-										/>
-										<button
-											type="button"
-											@click="showPassword = !showPassword"
-											class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#183669] hover:opacity-75 focus:outline-none cursor-pointer"
-											:title="showPassword ? 'Sembunyikan Password' : 'Lihat Password'"
-										>
-											<img
-												:src="showPassword ? '/assets/icons/shown.svg' : '/assets/icons/hidden.svg'"
-												:alt="showPassword ? 'Sembunyikan Password' : 'Lihat Password'"
-												class="h-4 w-4 object-contain"
-											/>
-										</button>
+									<input
+										v-model="form.email"
+										type="email"
+										placeholder="example@apps.ipb.ac.id"
+										class="mt-1.5 h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-white px-3.5 font-inter text-[13.5px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
+									/>
+								</div>
+
+								<!-- 6. Nomor Handphone (Opsional) -->
+								<div class="flex flex-col">
+									<div class="min-h-[38px] flex flex-col justify-end">
+										<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+											Nomor Handphone
+										</label>
+										<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+											Nomor WhatsApp/HP (opsional)
+										</p>
 									</div>
-									<p v-if="errors.password" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-										<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-										</svg>
-										<span>{{ errors.password }}</span>
-									</p>
+									<PhoneInput
+										v-model="form.phone"
+										height-class="h-[44px]"
+										placement="top"
+										class="mt-1.5"
+										placeholder="812-3456-7890"
+									/>
 								</div>
 							</div>
 
-							<!-- Row 4: Email (Full Width) -->
-							<div>
-								<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-									Email
-								</label>
-								<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Masukkan email aktif (opsional)</p>
-								<input
-									v-model="form.email"
-									type="email"
-									placeholder="example@apps.ipb.ac.id"
-									class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
-								/>
-							</div>
-
-							<!-- Row 5: Nomor Handphone (Full Width) -->
-							<div>
-								<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-									Nomor Handphone
-								</label>
-								<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Masukkan nomor aktif Mahasiswa (opsional)</p>
-								<PhoneInput
-									v-model="form.phone"
-									height-class="h-[42px] sm:h-[44px]"
-									placement="top"
-									class="mt-1 sm:mt-1.5"
-									placeholder="XXX-XXXX-XXXX"
-								/>
+							<!-- Row 4: Password (Kredensial Akun - Full Width) -->
+							<div class="flex flex-col">
+								<div class="flex items-center justify-between">
+									<label class="block text-[13px] font-semibold text-[#183669] leading-tight">
+										Password<span v-if="!isEditing" class="text-red-500 font-semibold ml-0.5">*</span>
+									</label>
+									<span v-if="isEditing" class="font-inter text-[11px] font-medium text-[#7188a3]">
+										(Opsional)
+									</span>
+								</div>
+								<p class="font-inter text-[11px] text-[#7188a3] mt-0.5 truncate leading-normal">
+									{{ isEditing ? 'Password baru jika ingin diubah (min. 6 karakter)' : 'Default sesuai NIM (dapat diubah sebelum disimpan)' }}
+								</p>
+								<div class="relative mt-1.5">
+									<input
+										v-model="form.password"
+										:type="showPassword ? 'text' : 'password'"
+										:placeholder="isEditing ? 'Masukkan password baru (opsional)' : 'Default sesuai NIM'"
+										@input="isPasswordManuallyEdited = true; errors.password = ''"
+										class="h-[44px] w-full rounded-[10px] border bg-white pl-3.5 pr-11 font-inter text-[13.5px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+										:class="errors.password ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
+									/>
+									<button
+										type="button"
+										@click="showPassword = !showPassword"
+										class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[#183669] hover:opacity-75 focus:outline-none cursor-pointer"
+										:title="showPassword ? 'Sembunyikan Password' : 'Lihat Password'"
+									>
+										<img
+											:src="showPassword ? '/assets/icons/shown.svg' : '/assets/icons/hidden.svg'"
+											:alt="showPassword ? 'Sembunyikan Password' : 'Lihat Password'"
+											class="h-4 w-4 object-contain"
+										/>
+									</button>
+								</div>
+								<p v-if="errors.password" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+									<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+									</svg>
+									<span>{{ errors.password }}</span>
+								</p>
 							</div>
 
 							<!-- Action Buttons -->
-							<div class="mt-6 sm:mt-8 flex flex-col-reverse sm:flex-row items-center justify-center gap-2.5 sm:gap-4 pt-1 sm:pt-3">
+							<div class="mt-6 sm:mt-7 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-100">
 								<button
 									type="button"
+									:disabled="loading"
 									@click="handleClose"
-									class="h-[42px] sm:h-[44px] w-full sm:w-auto sm:min-w-[130px] px-5 sm:px-6 rounded-[10px] border border-[#d6e0ee] bg-white font-poppins text-[13px] sm:text-[14px] font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 focus:border-[#183669] focus:outline-none active:scale-98 cursor-pointer select-none"
+									class="h-[42px] sm:h-[44px] w-full sm:w-auto sm:min-w-[120px] px-5 rounded-[10px] border border-[#d6e0ee] bg-white font-poppins text-[13px] sm:text-[14px] font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 focus:border-[#183669] focus:outline-none active:scale-98 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
 								>
 									Batal
 								</button>
 								<button
 									type="submit"
-									class="h-[42px] sm:h-[44px] w-full sm:w-auto sm:min-w-[170px] px-5 sm:px-6 rounded-[10px] bg-[#183669] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-[#122b54] active:scale-98 focus:outline-none cursor-pointer select-none whitespace-nowrap"
+									:disabled="loading"
+									class="inline-flex items-center justify-center gap-2 h-[42px] sm:h-[44px] w-full sm:w-auto sm:min-w-[170px] px-6 rounded-[10px] bg-[#183669] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-[#122b54] active:scale-98 focus:outline-none cursor-pointer select-none whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
 								>
-									{{ isEditing ? 'Simpan Perubahan' : 'Tambah Mahasiswa' }}
+									<svg v-if="loading" class="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+									<span>{{ isEditing ? 'Simpan Perubahan' : 'Tambah Mahasiswa' }}</span>
 								</button>
 							</div>
 						</form>
