@@ -44,7 +44,8 @@ class HandleInertiaRequests extends Middleware
             }
 
             $isEmailEmpty = empty($user->email) || $user->email === '-';
-            $isLocked = $isDefaultPassword || $isEmailEmpty;
+            $isPhoneEmpty = empty($user->no_handphone) || $user->no_handphone === '-';
+            $isLocked = $isDefaultPassword || $isEmailEmpty || $isPhoneEmpty;
         }
 
         return [
@@ -53,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user ? array_merge($user->toArray(), [
                     'is_default_password' => $isDefaultPassword,
                     'is_email_empty' => $isEmailEmpty,
+                    'is_phone_empty' => $isPhoneEmpty ?? false,
                     'is_locked' => $isLocked,
                 ]) : null,
             ],

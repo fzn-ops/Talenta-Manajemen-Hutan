@@ -13,24 +13,41 @@ import ModalBulkDeleteMahasiswa from '@/Components/dashboard/admin/ModalBulkDele
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
+	mahasiswaData: {
+		type: Object,
+		default: null,
+	},
+	filters: {
+		type: Object,
+		default: () => ({}),
+	},
+	availableAngkatans: {
+		type: Array,
+		default: () => [],
+	},
+	angkatanCounts: {
+		type: Object,
+		default: () => ({}),
+	},
+	talentCounts: {
+		type: Object,
+		default: () => ({}),
+	},
 	students: {
 		type: Array,
-		default: () => [
-			{ id: 1, nim: 'J0403231085', name: 'Fauzan Fuadiansyah', angkatan: '60', talent_mapping: 'Profesional', email: 'novafauzan@gmail.com', phone: '+62 812-3456-7890' },
-			{ id: 2, nim: 'J0403231075', name: 'Farhan Hakim', angkatan: '60', talent_mapping: 'Bisnis', email: '01122005farhan@apps.ipb.ac.id', phone: '+62 895-6228-15861' },
-			{ id: 3, nim: 'E1401201012', name: 'Eko Prasetyo', angkatan: '62', talent_mapping: 'Akademisi', email: 'eko.prasetyo@apps.ipb.ac.id', phone: '+62 857-5678-9012' },
-			{ id: 4, nim: 'E1401211025', name: 'Sri Wahyuni', angkatan: '61', talent_mapping: 'Birokrat', email: 'sri.wahyuni@apps.ipb.ac.id', phone: '+62 822-4567-8901' },
-			{ id: 5, nim: 'E1401221044', name: 'Bambang Triyono', angkatan: '62', talent_mapping: 'Profesional', email: 'bambang.t@apps.ipb.ac.id', phone: '+62 819-3456-7890' },
-			{ id: 6, nim: 'E1401221089', name: 'Nurul Hidayah', angkatan: '62', talent_mapping: 'Bisnis', email: 'nurul.h@apps.ipb.ac.id', phone: '+62 812-2345-6789' },
-			{ id: 7, nim: 'E1401201067', name: 'Dedi Kusnadi', angkatan: '60', talent_mapping: 'Birokrat', email: 'dedi.kusnadi@apps.ipb.ac.id', phone: '+62 878-9012-3456' },
-			{ id: 8, nim: 'E1401211053', name: 'Rina Marlina', angkatan: '61', talent_mapping: 'Akademisi', email: 'rina.marlina@apps.ipb.ac.id', phone: '+62 856-7890-1234' },
-			{ id: 9, nim: 'E1401211098', name: 'Ahmad Fauzi', angkatan: '61', talent_mapping: 'Profesional', email: 'ahmad.fauzi@apps.ipb.ac.id', phone: '+62 821-1234-5678' },
-			{ id: 10, nim: 'E1401201015', name: 'Hendra Setiawan', angkatan: '60', talent_mapping: 'Bisnis', email: 'hendra.s@apps.ipb.ac.id', phone: '+62 815-6789-0123' },
-		],
+		default: () => [],
 	},
 	mahasiswa: {
 		type: Array,
 		default: null,
+	},
+	existingStudents: {
+		type: Array,
+		default: () => [],
+	},
+	existingNims: {
+		type: Array,
+		default: () => [],
 	},
 });
 
@@ -51,6 +68,9 @@ const showToast = (type, title, message) => {
 		title,
 		message,
 	};
+	setTimeout(() => {
+		toast.value.show = false;
+	}, 3500);
 };
 
 const closeToast = () => {
@@ -71,37 +91,21 @@ watch(
 	{ immediate: true, deep: true }
 );
 
-// Reactive Students List
-const students = ref([]);
-
-const initStudentsData = () => {
-	const sourceData = props.mahasiswa || props.students || [];
-	students.value = sourceData.map((item, index) => ({
-		id: item.id || index + 1,
-		nim: item.nim || item.nip || '',
-		name: item.name || item.namaMahasiswa || item.namaDosen || item.nama || '',
-		angkatan: item.angkatan || '',
-		talent_mapping: item.talent_mapping || item.talentMapping || item.talent || item.hasilTalentMapping || '',
-		username: item.username || '',
-		password: item.password || '',
-		email: item.email || '',
-		phone: item.phone || item.noHp || item.nomorHandphone || '',
-	}));
-};
-
-watch(
-	() => [props.students, props.mahasiswa],
-	() => {
-		initStudentsData();
-	},
-	{ immediate: true, deep: true }
+// Search Query & Filters
+const searchQuery = ref(props.filters?.search || '');
+const selectedAngkatan = ref(
+	props.filters?.angkatan
+		? (Array.isArray(props.filters.angkatan) ? props.filters.angkatan : props.filters.angkatan.split(',').map((s) => s.trim()))
+		: []
 );
-
-// Filter State & Logic (Angkatan & Talent Mapping)
-const isFilterOpen = ref(false);
-const selectedAngkatan = ref([]);
-const selectedTalentMapping = ref([]);
+const selectedTalentMapping = ref(
+	props.filters?.talent_mapping
+		? (Array.isArray(props.filters.talent_mapping) ? props.filters.talent_mapping : props.filters.talent_mapping.split(',').map((s) => s.trim()))
+		: []
+);
 const talentMappingFilterOptions = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
+
+const isFilterOpen = ref(false);
 const filterContainerRef = ref(null);
 const filterDropdownStyle = ref({});
 
@@ -109,13 +113,83 @@ const hasActiveFilters = computed(() => {
 	return selectedAngkatan.value.length > 0 || selectedTalentMapping.value.length > 0;
 });
 
+// Sorting & Pagination State
+const sortKey = ref(props.filters?.sort || 'id');
+const sortDirection = ref(props.filters?.direction || 'asc');
+const currentPage = ref(props.mahasiswaData?.current_page || 1);
+const rowsPerPage = ref(Number(props.mahasiswaData?.per_page) || 10);
+
+const totalItems = computed(() => props.mahasiswaData?.total || 0);
+const totalPages = computed(() => props.mahasiswaData?.last_page || 1);
+const paginatedStudents = computed(() => {
+	if (props.mahasiswaData?.data) {
+		return props.mahasiswaData.data;
+	}
+	return [];
+});
+
+const allExistingStudents = computed(() => {
+	if (props.existingStudents && props.existingStudents.length > 0) {
+		return props.existingStudents;
+	}
+	if (props.existingNims && props.existingNims.length > 0) {
+		return props.existingNims.map((nim) => ({ nim }));
+	}
+	return paginatedStudents.value;
+});
+
+// Loading state for fetching/filtering/sorting
+const isLoading = ref(false);
+
+const fetchMahasiswa = (page = null) => {
+	isLoading.value = true;
+	const targetPage = page !== null ? page : currentPage.value;
+	router.get(
+		'/admin/mahasiswa',
+		{
+			search: searchQuery.value || undefined,
+			angkatan: selectedAngkatan.value.length ? selectedAngkatan.value.join(',') : undefined,
+			talent_mapping: selectedTalentMapping.value.length ? selectedTalentMapping.value.join(',') : undefined,
+			sort: sortKey.value || undefined,
+			direction: sortDirection.value || undefined,
+			per_page: rowsPerPage.value || undefined,
+			page: targetPage > 1 ? targetPage : undefined,
+		},
+		{
+			preserveState: true,
+			preserveScroll: true,
+			replace: true,
+			onFinish: () => {
+				isLoading.value = false;
+			},
+		}
+	);
+};
+
+// Debounce Watcher for search and filters
+let filterTimeout = null;
+watch([searchQuery, selectedAngkatan, selectedTalentMapping], () => {
+	currentPage.value = 1;
+	clearTimeout(filterTimeout);
+	filterTimeout = setTimeout(() => {
+		fetchMahasiswa(1);
+	}, 300);
+}, { deep: true });
+
+watch(() => props.mahasiswaData, (newVal) => {
+	if (newVal) {
+		currentPage.value = newVal.current_page || 1;
+		if (newVal.per_page) {
+			rowsPerPage.value = Number(newVal.per_page);
+		}
+	}
+}, { deep: true });
+
 const calculateFilterPlacement = () => {
 	if (!filterContainerRef.value || typeof window === 'undefined') return;
 	const rect = filterContainerRef.value.getBoundingClientRect();
 	const windowWidth = window.innerWidth;
-	const padding = 16; // Margin aman dari tepi layar
-
-	// Lebar dropdown responsif
+	const padding = 16;
 	const desiredWidth = Math.min(276, windowWidth - padding * 2);
 
 	const style = {
@@ -123,25 +197,15 @@ const calculateFilterPlacement = () => {
 		maxWidth: `calc(100vw - ${padding * 2}px)`,
 	};
 
-	// Posisi horizontal: default rata kanan dengan tombol filter
 	let targetScreenLeft = rect.right - desiredWidth;
-
-	// Jika menabrak tepi kiri layar, geser agar tidak terpotong (beri ruang aman)
-	if (targetScreenLeft < padding) {
-		targetScreenLeft = padding;
-	}
-
-	// Jika menabrak tepi kanan layar, kunci di batas kanan
+	if (targetScreenLeft < padding) targetScreenLeft = padding;
 	if (targetScreenLeft + desiredWidth > windowWidth - padding) {
 		targetScreenLeft = windowWidth - padding - desiredWidth;
 	}
 
-	// Konversi koordinat layar ke offset relatif tombol
-	const relativeLeft = targetScreenLeft - rect.left;
-	style.left = `${relativeLeft}px`;
+	style.left = `${targetScreenLeft - rect.left}px`;
 	style.right = 'auto';
 
-	// Cek posisi vertikal (buka ke atas jika sisa ruang di bawah kurang dari 300px dan ruang atas lebih luas)
 	const spaceBelow = window.innerHeight - rect.bottom;
 	const spaceAbove = rect.top;
 	const dropdownHeight = 300;
@@ -159,9 +223,7 @@ const calculateFilterPlacement = () => {
 
 const toggleFilterDropdown = () => {
 	const willOpen = !isFilterOpen.value;
-	if (willOpen) {
-		calculateFilterPlacement();
-	}
+	if (willOpen) calculateFilterPlacement();
 	isFilterOpen.value = willOpen;
 };
 
@@ -170,41 +232,41 @@ const closeFilterDropdown = () => {
 };
 
 const handleWindowChange = () => {
-	if (isFilterOpen.value) {
-		calculateFilterPlacement();
-	}
+	if (isFilterOpen.value) calculateFilterPlacement();
 };
 
 const resetAllFilters = () => {
+	if (isLoading.value) return;
 	selectedAngkatan.value = [];
 	selectedTalentMapping.value = [];
+	searchQuery.value = '';
+	currentPage.value = 1;
+	fetchMahasiswa(1);
 };
 
-const availableAngkatans = computed(() => {
-	const angkatans = new Set();
-	students.value.forEach((s) => {
-		if (s.angkatan) {
-			angkatans.add(s.angkatan.toString());
-		}
-	});
-	return Array.from(angkatans).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+// Angkatans and counts from backend props
+const availableAngkatansList = computed(() => {
+	if (props.availableAngkatans && props.availableAngkatans.length > 0) {
+		return [...props.availableAngkatans].sort((a, b) => a.toString().localeCompare(b.toString(), undefined, { numeric: true }));
+	}
+	return [];
 });
 
-const getStudentCountByAngkatan = (angkatan) => {
-	return students.value.filter((s) => s.angkatan?.toString() === angkatan.toString()).length;
+const getStudentCountByAngkatan = (ang) => {
+	if (props.angkatanCounts && props.angkatanCounts[ang] !== undefined) {
+		return Number(props.angkatanCounts[ang]) || 0;
+	}
+	return 0;
 };
 
 const getStudentCountByTalentMapping = (talent) => {
-	return students.value.filter((s) => (s.talent_mapping || '').toLowerCase() === talent.toLowerCase()).length;
+	if (props.talentCounts && props.talentCounts[talent] !== undefined) {
+		return Number(props.talentCounts[talent]) || 0;
+	}
+	return 0;
 };
 
-// Loading Animation
-const isLoading = ref(true);
 onMounted(() => {
-	initStudentsData();
-	setTimeout(() => {
-		isLoading.value = false;
-	}, 250);
 	document.addEventListener('click', closeFilterDropdown);
 	window.addEventListener('resize', handleWindowChange, { passive: true });
 	window.addEventListener('scroll', handleWindowChange, { passive: true });
@@ -216,10 +278,7 @@ onBeforeUnmount(() => {
 	window.removeEventListener('scroll', handleWindowChange);
 });
 
-// Search Query
-const searchQuery = ref('');
-
-// Sorting
+// Table Columns definition
 const columns = [
 	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[130px]' },
 	{ key: 'name', label: 'Nama Mahasiswa', sortable: true, width: 'w-[190px]' },
@@ -230,95 +289,36 @@ const columns = [
 	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[90px]' },
 ];
 
-const sortKey = ref('id');
-const sortDirection = ref('asc');
-
 const toggleSort = (key) => {
+	if (isLoading.value) return;
 	if (sortKey.value === key) {
 		sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
 	} else {
 		sortKey.value = key;
-		sortDirection.value = key === 'id' ? 'asc' : 'asc';
+		sortDirection.value = 'asc';
 	}
-	currentPage.value = 1;
+	fetchMahasiswa(currentPage.value);
 };
 
-// Filtered and Sorted Students
-const filteredAndSortedStudents = computed(() => {
-	let list = [...students.value];
+const handlePageChange = (newPage) => {
+	if (isLoading.value) return;
+	currentPage.value = newPage;
+	fetchMahasiswa(newPage);
+};
 
-	// Search Query (NIM, Nama Mahasiswa, Angkatan, Talent Mapping, Email, Phone)
-	if (searchQuery.value.trim()) {
-		const q = searchQuery.value.toLowerCase().trim();
-		list = list.filter(
-			(s) =>
-				(s.name && s.name.toLowerCase().includes(q)) ||
-				(s.nim && s.nim.toLowerCase().includes(q)) ||
-				(s.angkatan && s.angkatan.toString().toLowerCase().includes(q)) ||
-				(s.talent_mapping && s.talent_mapping.toLowerCase().includes(q)) ||
-				(s.email && s.email.toLowerCase().includes(q)) ||
-				(s.phone && s.phone.toLowerCase().includes(q))
-		);
-	}
-
-	// Filter by Angkatan
-	if (selectedAngkatan.value.length > 0) {
-		list = list.filter((s) => selectedAngkatan.value.includes(s.angkatan?.toString()));
-	}
-
-	// Filter by Talent Mapping
-	if (selectedTalentMapping.value.length > 0) {
-		list = list.filter((s) => selectedTalentMapping.value.includes(s.talent_mapping));
-	}
-
-	// Sorting
-	if (sortKey.value === 'id') {
-		list.sort((a, b) => {
-			const idA = Number(a.id) || 0;
-			const idB = Number(b.id) || 0;
-			return sortDirection.value === 'asc' ? idA - idB : idB - idA;
-		});
-	} else if (sortKey.value) {
-		list.sort((a, b) => {
-			const valA = (a[sortKey.value] ?? '').toString().toLowerCase();
-			const valB = (b[sortKey.value] ?? '').toString().toLowerCase();
-
-			if (valA === valB) return 0;
-
-			if (sortDirection.value === 'asc') {
-				return valA > valB ? 1 : -1;
-			}
-			return valA < valB ? 1 : -1;
-		});
-	}
-
-	return list;
-});
-
-// Pagination State & Controls
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-
-const totalPages = computed(() => {
-	const count = Math.ceil(filteredAndSortedStudents.value.length / rowsPerPage.value);
-	return count > 0 ? count : 1;
-});
-
-const paginatedStudents = computed(() => {
-	const start = (currentPage.value - 1) * rowsPerPage.value;
-	return filteredAndSortedStudents.value.slice(start, start + rowsPerPage.value);
-});
-
-// Reset to page 1 on search, filter, or rowsPerPage change
-watch([searchQuery, selectedAngkatan, selectedTalentMapping, rowsPerPage], () => {
+const handleRowsPerPageChange = (newRows) => {
+	if (isLoading.value) return;
+	rowsPerPage.value = newRows;
 	currentPage.value = 1;
-});
+	fetchMahasiswa(1);
+};
 
 // MODAL TAMBAH / EDIT MAHASISWA
 const isFormModalOpen = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
 const selectedStudent = ref(null);
+const isSubmittingForm = ref(false);
 
 const openCreateModal = () => {
 	isEditing.value = false;
@@ -335,58 +335,106 @@ const openEditModal = (student) => {
 };
 
 const handleFormSubmit = (formData) => {
+	isSubmittingForm.value = true;
 	if (isEditing.value && editingId.value) {
-		const targetIndex = students.value.findIndex((s) => s.id === editingId.value);
-		if (targetIndex !== -1) {
-			students.value[targetIndex] = {
-				...students.value[targetIndex],
-				...formData,
-			};
-		}
-		isFormModalOpen.value = false;
-		showToast('success', 'Berhasil Diperbarui', `Data mahasiswa "${formData.name}" berhasil diperbarui.`);
-	} else {
-		const newId = students.value.length > 0 ? Math.max(...students.value.map((s) => s.id)) + 1 : 1;
-		students.value.unshift({
-			id: newId,
-			...formData,
+		router.put(`/admin/mahasiswa/${editingId.value}`, formData, {
+			preserveScroll: true,
+			onSuccess: () => {
+				isFormModalOpen.value = false;
+				showToast('success', 'Berhasil Diperbarui', `Data mahasiswa "${formData.name}" berhasil diperbarui.`);
+			},
+			onError: (errs) => {
+				const firstErr = Object.values(errs)[0] || 'Gagal memperbarui data mahasiswa.';
+				showToast('error', 'Gagal', firstErr);
+			},
+			onFinish: () => {
+				isSubmittingForm.value = false;
+			},
 		});
-		isFormModalOpen.value = false;
-		showToast('success', 'Berhasil Ditambahkan', `Akun mahasiswa "${formData.name}" berhasil ditambahkan.`);
+	} else {
+		router.post('/admin/mahasiswa/store', formData, {
+			preserveScroll: true,
+			onSuccess: () => {
+				isFormModalOpen.value = false;
+				showToast('success', 'Berhasil Ditambahkan', `Akun mahasiswa "${formData.name}" berhasil ditambahkan.`);
+			},
+			onError: (errs) => {
+				const firstErr = Object.values(errs)[0] || 'Gagal menambahkan data mahasiswa.';
+				showToast('error', 'Gagal', firstErr);
+			},
+			onFinish: () => {
+				isSubmittingForm.value = false;
+			},
+		});
 	}
 };
 
 // MODAL IMPORT DATA MAHASISWA
 const isImportModalOpen = ref(false);
+const isImporting = ref(false);
 
 const openImportModal = () => {
 	isImportModalOpen.value = true;
 };
 
 const handleImportSubmit = (importedStudents) => {
-	if (Array.isArray(importedStudents) && importedStudents.length > 0) {
-		students.value.unshift(...importedStudents);
-		showToast('success', 'Import Berhasil', `${importedStudents.length} data mahasiswa berhasil diimpor ke sistem.`);
-	}
+	if (!Array.isArray(importedStudents) || importedStudents.length === 0) return;
+	isImporting.value = true;
+	router.post(
+		'/admin/mahasiswa/import',
+		{ students: importedStudents },
+		{
+			preserveScroll: true,
+			onSuccess: () => {
+				isImportModalOpen.value = false;
+				showToast('success', 'Import Berhasil', `${importedStudents.length} data mahasiswa berhasil diimpor ke sistem.`);
+			},
+			onError: (errs) => {
+				const firstErr = Object.values(errs)[0] || 'Gagal mengimpor data mahasiswa.';
+				showToast('error', 'Gagal', firstErr);
+			},
+			onFinish: () => {
+				isImporting.value = false;
+			},
+		}
+	);
 };
 
 // MODAL BULK DELETE MAHASISWA
 const isBulkDeleteModalOpen = ref(false);
+const isBulkDeleting = ref(false);
 
 const openBulkDeleteModal = () => {
 	isBulkDeleteModalOpen.value = true;
 };
 
 const closeBulkDeleteModal = () => {
-	isBulkDeleteModalOpen.value = false;
+	if (!isBulkDeleting.value) {
+		isBulkDeleteModalOpen.value = false;
+	}
 };
 
 const handleBulkDeleteConfirm = ({ angkatans, count }) => {
-	setTimeout(() => {
-		students.value = students.value.filter((s) => !angkatans.includes(s.angkatan?.toString()));
-		isBulkDeleteModalOpen.value = false;
-		showToast('success', 'Berhasil Dihapus', `${count} data mahasiswa angkatan ${angkatans.join(', ')} berhasil dihapus.`);
-	}, 300);
+	if (!angkatans || angkatans.length === 0) return;
+	isBulkDeleting.value = true;
+	router.post(
+		'/admin/mahasiswa/bulk-delete',
+		{ angkatans },
+		{
+			preserveScroll: true,
+			onSuccess: () => {
+				isBulkDeleteModalOpen.value = false;
+				showToast('success', 'Berhasil Dihapus', `${count} data mahasiswa angkatan ${angkatans.join(', ')} berhasil dihapus.`);
+			},
+			onError: (errs) => {
+				const firstErr = Object.values(errs)[0] || 'Gagal menghapus data massal.';
+				showToast('error', 'Gagal', firstErr);
+			},
+			onFinish: () => {
+				isBulkDeleting.value = false;
+			},
+		}
+	);
 };
 
 // MODAL DELETE CONFIRMATION
@@ -410,13 +458,21 @@ const confirmDeleteStudent = () => {
 	const student = deletingStudent.value;
 	isDeleting.value = true;
 
-	setTimeout(() => {
-		students.value = students.value.filter((s) => s.id !== student.id);
-		isDeleting.value = false;
-		isDeleteModalOpen.value = false;
-		deletingStudent.value = null;
-		showToast('success', 'Berhasil Dihapus', `Data mahasiswa "${student.name}" berhasil dihapus.`);
-	}, 200);
+	router.delete(`/admin/mahasiswa/${student.id}`, {
+		preserveScroll: true,
+		onSuccess: () => {
+			isDeleteModalOpen.value = false;
+			deletingStudent.value = null;
+			showToast('success', 'Berhasil Dihapus', `Data mahasiswa "${student.name}" berhasil dihapus.`);
+		},
+		onError: (errs) => {
+			const firstErr = Object.values(errs)[0] || 'Gagal menghapus data mahasiswa.';
+			showToast('error', 'Gagal', firstErr);
+		},
+		onFinish: () => {
+			isDeleting.value = false;
+		},
+	});
 };
 </script>
 
@@ -506,7 +562,7 @@ const confirmDeleteStudent = () => {
 											</p>
 											<div class="mt-1 space-y-0.5">
 												<label
-													v-for="ang in availableAngkatans"
+													v-for="ang in availableAngkatansList"
 													:key="ang"
 													class="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-[#f8fafc] cursor-pointer transition select-none"
 												>
@@ -525,7 +581,7 @@ const confirmDeleteStudent = () => {
 														{{ getStudentCountByAngkatan(ang) }}
 													</span>
 												</label>
-												<div v-if="availableAngkatans.length === 0" class="py-1 px-2 text-xs text-gray-400">
+												<div v-if="availableAngkatansList.length === 0" class="py-1 px-2 text-xs text-gray-400">
 													Tidak ada data angkatan
 												</div>
 											</div>
@@ -606,7 +662,7 @@ const confirmDeleteStudent = () => {
 				</div>
 
 				<!-- Table Section -->
-				<div class="overflow-x-auto rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+				<div :class="['overflow-x-auto rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee] transition-all', isLoading ? 'cursor-wait' : '']">
 					<table class="w-full min-w-[1040px] table-fixed border-collapse text-sm">
 						<!-- Table Header (Matching signature green styling, centered) -->
 						<thead class="bg-[#416f65]">
@@ -615,8 +671,9 @@ const confirmDeleteStudent = () => {
 								<th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button
 										type="button"
+										:disabled="isLoading"
 										@click="toggleSort('id')"
-										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85"
 										title="Urutkan No"
 									>
 										<span>No</span>
@@ -656,8 +713,9 @@ const confirmDeleteStudent = () => {
 									<button
 										v-if="col.sortable"
 										type="button"
+										:disabled="isLoading"
 										@click="toggleSort(col.key)"
-										class="group inline-flex items-center justify-center gap-1 mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer"
+										class="group inline-flex items-center justify-center gap-1 mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85"
 										:title="`Urutkan ${col.label}`"
 									>
 										<span>{{ col.label }}</span>
@@ -689,126 +747,86 @@ const confirmDeleteStudent = () => {
 						</thead>
 
 						<!-- Table Body -->
-						<tbody class="divide-y divide-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
-							<!-- Skeleton Loading Rows -->
-							<template v-if="isLoading">
-								<tr
-									v-for="n in 6"
-									:key="`skeleton-${n}`"
-									class="h-[52px] animate-pulse bg-white"
-								>
-									<td class="px-3 py-2.5 text-center">
-										<div class="mx-auto h-4 w-5 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5">
-										<div class="h-4 w-28 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5">
-										<div class="h-4 w-44 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5 text-center">
-										<div class="mx-auto h-4 w-16 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5 text-center">
-										<div class="mx-auto h-4 w-24 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5">
-										<div class="h-4 w-36 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5 text-center">
-										<div class="mx-auto h-4 w-24 rounded-md bg-slate-200"></div>
-									</td>
-									<td class="px-3 py-2.5 text-center">
-										<div class="flex items-center justify-center gap-2">
-											<div class="h-7 w-7 rounded-lg bg-slate-200"></div>
-											<div class="h-7 w-7 rounded-lg bg-slate-200"></div>
-										</div>
-									</td>
-								</tr>
-							</template>
+						<tbody :class="['divide-y divide-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-opacity duration-200', isLoading ? 'opacity-40 pointer-events-none select-none cursor-wait' : '']">
+							<tr
+								v-for="(student, idx) in paginatedStudents"
+								:key="`student-${student.id}`"
+								class="h-[52px] transition-colors hover:bg-[#f7f9fd]"
+							>
+								<!-- No -->
+								<td class="px-3 py-2.5 text-center font-medium">
+									{{ ((mahasiswaData?.current_page || currentPage) - 1) * (mahasiswaData?.per_page || rowsPerPage) + idx + 1 }}
+								</td>
 
-							<!-- Real Data Rows -->
-							<template v-else>
-								<tr
-									v-for="(student, idx) in paginatedStudents"
-									:key="`student-${student.id}`"
-									class="h-[52px] transition-colors hover:bg-[#f7f9fd]"
-								>
-									<!-- No -->
-									<td class="px-3 py-2.5 text-center font-medium">
-										{{ (currentPage - 1) * rowsPerPage + idx + 1 }}
-									</td>
+								<!-- NIM -->
+								<td class="px-3 py-2.5 text-left font-medium text-[#435b76]" :title="student.nim">
+									<span class="block truncate">{{ student.nim }}</span>
+								</td>
 
-									<!-- NIM -->
-									<td class="px-3 py-2.5 text-left font-medium text-[#435b76]" :title="student.nim">
-										<span class="block truncate">{{ student.nim }}</span>
-									</td>
+								<!-- Nama Mahasiswa -->
+								<td class="px-3 py-2.5 text-left font-medium text-[#2f4b6e]" :title="student.name || student.nama">
+									<span class="block truncate">{{ student.name || student.nama }}</span>
+								</td>
 
-									<!-- Nama Mahasiswa -->
-									<td class="px-3 py-2.5 text-left font-medium text-[#2f4b6e]" :title="student.name">
-										<span class="block truncate">{{ student.name }}</span>
-									</td>
+								<!-- Angkatan -->
+								<td class="px-3 py-2.5 text-center font-medium text-[#435b76]" :title="student.angkatan">
+									<span v-if="student.angkatan" class="block truncate">{{ student.angkatan }}</span>
+									<span v-else class="block truncate text-[#7890a8]">-</span>
+								</td>
 
-									<!-- Angkatan -->
-									<td class="px-3 py-2.5 text-center font-medium text-[#435b76]" :title="student.angkatan">
-										<span v-if="student.angkatan" class="block truncate">{{ student.angkatan }}</span>
-										<span v-else class="block truncate text-[#7890a8]">-</span>
-									</td>
+								<!-- Talent Mapping -->
+								<td class="px-3 py-2.5 text-center" :title="student.talent_mapping">
+									<span
+										v-if="student.talent_mapping && student.talent_mapping !== '-'"
+										:class="[
+											'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+											student.talent_mapping === 'Profesional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+											student.talent_mapping === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+											student.talent_mapping === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+											student.talent_mapping === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+											'bg-slate-100 text-slate-700 border-slate-200'
+										]"
+									>
+										{{ student.talent_mapping }}
+									</span>
+									<span v-else class="block truncate text-[#7890a8]">-</span>
+								</td>
 
-									<!-- Talent Mapping -->
-									<td class="px-3 py-2.5 text-center" :title="student.talent_mapping">
-										<span
-											v-if="student.talent_mapping && student.talent_mapping !== '-'"
-											:class="[
-												'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
-												student.talent_mapping === 'Profesional' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-												student.talent_mapping === 'Bisnis' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-												student.talent_mapping === 'Birokrat' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-												student.talent_mapping === 'Akademisi' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-												'bg-slate-100 text-slate-700 border-slate-200'
-											]"
-										>
-											{{ student.talent_mapping }}
-										</span>
-										<span v-else class="block truncate text-[#7890a8]">-</span>
-									</td>
+								<!-- Email -->
+								<td :class="['px-3 py-2.5', student.email && student.email !== '-' ? 'text-left' : 'text-center']" :title="student.email">
+									<a
+										v-if="student.email && student.email !== '-'"
+										:href="`mailto:${student.email}`"
+										class="block truncate text-[#2a68c4] underline decoration-[#2a68c4] transition hover:text-[#1d4d96]"
+									>
+										{{ student.email }}
+									</a>
+									<span v-else class="block truncate text-[#7890a8]">-</span>
+								</td>
 
-									<!-- Email -->
-									<td :class="['px-3 py-2.5', student.email && student.email !== '-' ? 'text-left' : 'text-center']" :title="student.email">
-										<a
-											v-if="student.email && student.email !== '-'"
-											:href="`mailto:${student.email}`"
-											class="block truncate text-[#2a68c4] underline decoration-[#2a68c4] transition hover:text-[#1d4d96]"
-										>
-											{{ student.email }}
-										</a>
-										<span v-else class="block truncate text-[#7890a8]">-</span>
-									</td>
+								<!-- Nomor Handphone -->
+								<td class="px-3 py-2.5 text-center" :title="student.phone || student.no_handphone">
+									<span v-if="(student.phone || student.no_handphone) && (student.phone || student.no_handphone) !== '-'" class="block truncate">
+										{{ student.phone || student.no_handphone }}
+									</span>
+									<span v-else class="block truncate text-[#7890a8]">-</span>
+								</td>
 
-									<!-- Nomor Handphone -->
-									<td class="px-3 py-2.5 text-center" :title="student.phone">
-										<span v-if="student.phone && student.phone !== '-'" class="block truncate">
-											{{ student.phone }}
-										</span>
-										<span v-else class="block truncate text-[#7890a8]">-</span>
-									</td>
+								<!-- Aksi (Edit & Delete Buttons) -->
+								<td class="px-3 py-2.5 text-center">
+									<div class="flex items-center justify-center gap-2">
+										<EditButtonTable :label="`Edit ${student.name || student.nama}`" @click="openEditModal(student)" />
+										<DeleteButtonTable :label="`Hapus ${student.name || student.nama}`" @click="openDeleteModal(student)" />
+									</div>
+								</td>
+							</tr>
 
-									<!-- Aksi (Edit & Delete Buttons) -->
-									<td class="px-3 py-2.5 text-center">
-										<div class="flex items-center justify-center gap-2">
-											<EditButtonTable :label="`Edit ${student.name}`" @click="openEditModal(student)" />
-											<DeleteButtonTable :label="`Hapus ${student.name}`" @click="openDeleteModal(student)" />
-										</div>
-									</td>
-								</tr>
-
-								<!-- Empty Search Results -->
-								<tr v-if="filteredAndSortedStudents.length === 0">
-									<td colspan="8" class="py-8 text-center text-[#7890a8]">
-										Tidak ada data mahasiswa yang sesuai pencarian.
-									</td>
-								</tr>
-							</template>
+							<!-- Empty Search Results -->
+							<tr v-if="paginatedStudents.length === 0">
+								<td colspan="8" class="py-12 text-center text-[#7890a8] font-medium">
+									Data mahasiswa tidak ditemukan sesuai filter/pencarian Anda.
+								</td>
+							</tr>
 						</tbody>
 					</table>
 				</div>
@@ -817,9 +835,11 @@ const confirmDeleteStudent = () => {
 				<TablePagination
 					:current-page="currentPage"
 					:total-pages="totalPages"
+					:total-items="totalItems"
 					:rows-per-page="rowsPerPage"
-					@update:current-page="currentPage = $event"
-					@update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+					:disabled="isLoading"
+					@update:current-page="handlePageChange"
+					@update:rows-per-page="handleRowsPerPageChange"
 				/>
 			</div>
 		</section>
@@ -830,7 +850,8 @@ const confirmDeleteStudent = () => {
 			:is-editing="isEditing"
 			:initial-data="selectedStudent || {}"
 			:editing-id="editingId"
-			:existing-students="students"
+			:existing-students="allExistingStudents"
+			:loading="isSubmittingForm"
 			@close="isFormModalOpen = false"
 			@submit="handleFormSubmit"
 		/>
@@ -838,7 +859,8 @@ const confirmDeleteStudent = () => {
 		<!-- MODAL IMPORT DATA MAHASISWA -->
 		<ModalImportMahasiswa
 			:show="isImportModalOpen"
-			:existing-students="students"
+			:existing-students="allExistingStudents"
+			:loading="isImporting"
 			@close="isImportModalOpen = false"
 			@import="handleImportSubmit"
 		/>
@@ -847,25 +869,19 @@ const confirmDeleteStudent = () => {
 		<DeleteModal
 			:show="isDeleteModalOpen"
 			:is-loading="isDeleting"
+			title="Hapus Data Mahasiswa?"
+			:message="`Apakah Anda yakin ingin menghapus data mahasiswa ${deletingStudent?.name || deletingStudent?.nama} (NIM: ${deletingStudent?.nim})? Data yang dihapus tidak dapat dikembalikan.`"
 			@close="closeDeleteModal"
 			@confirm="confirmDeleteStudent"
-		>
-			<template #title>
-				Hapus Data Mahasiswa?
-			</template>
-			<template #message>
-				Apakah Anda yakin ingin menghapus data mahasiswa
-				<span class="font-bold text-[#17334F]">"{{ deletingStudent?.name }}"</span> (NIM: {{ deletingStudent?.nim }})? Tindakan ini tidak dapat dibatalkan.
-			</template>
-			<template #confirm-text>
-				{{ isDeleting ? 'Menghapus...' : 'Hapus' }}
-			</template>
-		</DeleteModal>
+		/>
 
 		<!-- MODAL BULK DELETE MAHASISWA -->
 		<ModalBulkDeleteMahasiswa
 			:show="isBulkDeleteModalOpen"
-			:students="students"
+			:students="paginatedStudents"
+			:available-angkatans="availableAngkatansList"
+			:angkatan-counts="angkatanCounts"
+			:loading="isBulkDeleting"
 			@close="closeBulkDeleteModal"
 			@confirm="handleBulkDeleteConfirm"
 		/>

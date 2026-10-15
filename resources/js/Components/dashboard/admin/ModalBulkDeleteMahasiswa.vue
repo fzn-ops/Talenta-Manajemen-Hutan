@@ -10,15 +10,31 @@ const props = defineProps({
 		type: Array,
 		default: () => [],
 	},
+	loading: {
+		type: Boolean,
+		default: false,
+	},
+	availableAngkatans: {
+		type: Array,
+		default: null,
+	},
+	angkatanCounts: {
+		type: Object,
+		default: null,
+	},
 });
 
 const emit = defineEmits(['close', 'confirm']);
 
 const selectedAngkatans = ref([]);
-const isDeleting = ref(false);
+const internalDeleting = ref(false);
+const isDeleting = computed(() => props.loading || internalDeleting.value);
 
-// Extract available angkatans from students
-const availableAngkatans = computed(() => {
+// Extract available angkatans from props or students
+const computedAvailableAngkatans = computed(() => {
+	if (props.availableAngkatans && props.availableAngkatans.length > 0) {
+		return [...props.availableAngkatans].sort((a, b) => a.toString().localeCompare(b.toString(), undefined, { numeric: true }));
+	}
 	const angkatans = new Set();
 	props.students.forEach((s) => {
 		if (s.angkatan) {
@@ -28,21 +44,24 @@ const availableAngkatans = computed(() => {
 	return Array.from(angkatans).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 });
 
-// Count students per angkatan
+// Count students per angkatan (accurate from backend or fallback to students prop)
 const getStudentCountByAngkatan = (angkatan) => {
+	if (props.angkatanCounts && props.angkatanCounts[angkatan] !== undefined) {
+		return Number(props.angkatanCounts[angkatan]) || 0;
+	}
 	return props.students.filter((s) => s.angkatan?.toString() === angkatan.toString()).length;
 };
 
 // Total students that will be deleted based on selection
 const totalSelectedStudentsCount = computed(() => {
-	return props.students.filter((s) => selectedAngkatans.value.includes(s.angkatan?.toString())).length;
+	return selectedAngkatans.value.reduce((total, ang) => total + getStudentCountByAngkatan(ang), 0);
 });
 
 // Select All toggle
 const isAllSelected = computed(() => {
 	return (
-		availableAngkatans.value.length > 0 &&
-		selectedAngkatans.value.length === availableAngkatans.value.length
+		computedAvailableAngkatans.value.length > 0 &&
+		selectedAngkatans.value.length === computedAvailableAngkatans.value.length
 	);
 });
 
@@ -50,7 +69,7 @@ const toggleSelectAll = () => {
 	if (isAllSelected.value) {
 		selectedAngkatans.value = [];
 	} else {
-		selectedAngkatans.value = [...availableAngkatans.value];
+		selectedAngkatans.value = [...computedAvailableAngkatans.value];
 	}
 };
 
@@ -168,7 +187,7 @@ onBeforeUnmount(() => {
 										Pilih Angkatan yang Ingin Dihapus
 									</label>
 									<button
-										v-if="availableAngkatans.length > 0"
+										v-if="computedAvailableAngkatans.length > 0"
 										type="button"
 										@click="toggleSelectAll"
 										class="text-xs font-semibold text-[#183669] hover:underline cursor-pointer"
@@ -180,7 +199,7 @@ onBeforeUnmount(() => {
 								<!-- List of Angkatans with Checkboxes -->
 								<div class="max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-2 space-y-1 divide-y divide-slate-100">
 									<label
-										v-for="ang in availableAngkatans"
+										v-for="ang in computedAvailableAngkatans"
 										:key="ang"
 										class="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-white hover:shadow-xs transition cursor-pointer select-none"
 									>
@@ -200,7 +219,7 @@ onBeforeUnmount(() => {
 										</span>
 									</label>
 
-									<div v-if="availableAngkatans.length === 0" class="py-4 text-center text-xs text-slate-400">
+									<div v-if="computedAvailableAngkatans.length === 0" class="py-4 text-center text-xs text-slate-400">
 										Tidak ada data angkatan tersedia
 									</div>
 								</div>

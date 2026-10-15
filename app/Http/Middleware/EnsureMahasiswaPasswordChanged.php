@@ -27,7 +27,8 @@ class EnsureMahasiswaPasswordChanged
             }
 
             $isEmailEmpty = empty($user->email) || $user->email === '-';
-            $isLocked = $isDefaultPassword || $isEmailEmpty;
+            $isPhoneEmpty = empty($user->no_handphone) || $user->no_handphone === '-';
+            $isLocked = $isDefaultPassword || $isEmailEmpty || $isPhoneEmpty;
 
             if ($isLocked) {
                 // Rute yang tetap boleh diakses saat akun belum lengkap/terkunci
@@ -45,13 +46,12 @@ class EnsureMahasiswaPasswordChanged
                 $currentRouteName = $request->route()?->getName();
 
                 if (!in_array($currentRouteName, $allowedRouteNames)) {
-                    if ($isDefaultPassword && $isEmailEmpty) {
-                        $msg = 'Akun Anda belum lengkap. Silakan lengkapi email aktif dan ganti password default (NIM) Anda untuk membuka akses Dashboard dan Aktivitas.';
-                    } elseif ($isEmailEmpty) {
-                        $msg = 'Email akun Anda masih kosong. Silakan lengkapi email aktif Anda terlebih dahulu untuk membuka akses Dashboard dan Aktivitas.';
-                    } else {
-                        $msg = 'Akun Anda masih menggunakan password default (NIM). Silakan ubah password Anda terlebih dahulu untuk membuka akses Dashboard dan Aktivitas.';
-                    }
+                    $missing = [];
+                    if ($isEmailEmpty) $missing[] = 'email aktif';
+                    if ($isPhoneEmpty) $missing[] = 'nomor handphone';
+                    if ($isDefaultPassword) $missing[] = 'ubah password default (NIM)';
+
+                    $msg = 'Akun Anda belum lengkap. Silakan lengkapi ' . implode(', ', $missing) . ' Anda terlebih dahulu untuk membuka akses Dashboard dan Aktivitas.';
 
                     return redirect()->route('mahasiswa.profile')->with('warning', $msg);
                 }
