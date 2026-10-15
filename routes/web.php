@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\Mahasiswa\ProfileController as MahasiswaProfi
 use App\Http\Controllers\Dashboard\Admin\BeritaController;
 use App\Http\Controllers\Dashboard\Admin\KarirController;
 use App\Http\Controllers\Dashboard\Admin\RoadmapController as AdminRoadmapController;
+use App\Http\Controllers\Dashboard\Admin\RoadmapDetailController;
 use App\Http\Controllers\Dashboard\Admin\MahasiswaController;
 
 
@@ -83,11 +84,14 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
     Route::put('/roadmap/{id}', [AdminRoadmapController::class, 'update'])->name('roadmap.update');
     Route::delete('/roadmap/{id}', [AdminRoadmapController::class, 'destroy'])->name('roadmap.destroy');
 
-    Route::get('/roadmap/{id}', function ($id = 1) {
-        return Inertia::render('dashboard/admin/RoadmapDetail', [
-            'roadmapId' => $id,
-        ]);
-    })->name('roadmap.detail');
+    // Detail Roadmap, Bulan & Materi
+    Route::get('/roadmap/{id}', [RoadmapDetailController::class, 'show'])->name('roadmap.detail');
+    Route::post('/roadmap/{roadmapId}/bulan', [RoadmapDetailController::class, 'storeBulan'])->name('roadmap.bulan.store');
+    Route::delete('/roadmap/{roadmapId}/bulan/{bulanId}', [RoadmapDetailController::class, 'destroyBulan'])->name('roadmap.bulan.destroy');
+    Route::post('/roadmap/{roadmapId}/bulan/{bulanId}/materi', [RoadmapDetailController::class, 'storeMateri'])->name('roadmap.materi.store');
+    Route::patch('/roadmap/materi/{materiId}/title', [RoadmapDetailController::class, 'updateMateriTitle'])->name('roadmap.materi.updateTitle');
+    Route::put('/roadmap/materi/{materiId}', [RoadmapDetailController::class, 'updateMateriContent'])->name('roadmap.materi.updateContent');
+    Route::delete('/roadmap/materi/{materiId}', [RoadmapDetailController::class, 'destroyMateri'])->name('roadmap.materi.destroy');
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
         Route::get('/persetujuan', function () {

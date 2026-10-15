@@ -24,6 +24,6 @@ class BulanRoadmap extends Model
 
     public function materiRoadmap()
     {
-        return $this->hasMany(MateriRoadmap::class, 'id_bulan_roadmap', 'id');
+        return $this->hasMany(MateriRoadmap::class, 'id_bulan_roadmap', 'id')->orderBy('id', 'asc');
     }
 }

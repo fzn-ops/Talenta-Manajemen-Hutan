@@ -191,10 +191,10 @@ const handleSubmit = () => {
 							<div class="flex items-end justify-between">
 								<div>
 									<label class="block text-[13px] font-bold text-[#17334F]">
-										Nama Materi/Task<span class="text-red-500">*</span>
+										Nama Item Materi/Task<span class="text-red-500">*</span>
 									</label>
 									<p class="font-inter text-[11px] text-[#7188a3] mt-0.5">
-										Masukkan Nama Materi atau Tugas
+										Masukkan label navigasi (contoh: Materi 1 atau Tugas 1)
 									</p>
 								</div>
 								<span class="text-[11px] font-semibold text-[#8ca1b9] pb-0.5">
@@ -205,7 +205,7 @@ const handleSubmit = () => {
 								v-model="form.title"
 								type="text"
 								maxlength="50"
-								placeholder="Cara mendapatkan uang saku"
+								placeholder="Contoh: Materi 1 atau Tugas 1"
 								@input="errors.title = ''"
 								class="mt-1.5 h-[46px] w-full rounded-[10px] border bg-white px-4 font-inter text-[13.5px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
 								:class="errors.title ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"

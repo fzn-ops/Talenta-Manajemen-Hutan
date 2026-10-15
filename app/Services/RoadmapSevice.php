@@ -8,30 +8,33 @@ use App\Models\BulanRoadmap;
 use App\Models\MateriRoadmap;
 
 class RoadmapSevice {
-    public function getPaginationRoadmap(array $filters=[], $perPage=10){
-        $query = Roadmap::query();
+    public function getPaginationRoadmap(array $filters = [], $perPage = 10)
+    {
+        $query = Roadmap::with(['bulanRoadmap.materiRoadmap']);
 
         // 1. Fitur Search
         if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('nama_roadmap', 'like', "%{$search}%")
-                  ->orWhere('deskripsi', 'like', "%{$search}%");
-            });
+            $search = trim($filters['search']);
+            $query->where('nama_roadmap', 'like', "%{$search}%");
         }
 
         // 2. Filter Kategori
         if (!empty($filters['kategori'])) {
-            $kategoriArray = explode(',', $filters['kategori']);
-            foreach ($kategoriArray as $kat) {
-                $query->whereJsonContains('kategori', trim($kat));
+            $kategoriArray = array_filter(array_map(function ($kat) {
+                return strtolower(trim($kat));
+            }, explode(',', $filters['kategori'])));
+
+            if (!empty($kategoriArray)) {
+                $query->whereIn('kategori', $kategoriArray);
             }
         }
+
+        $query->orderBy('id', 'desc');
 
         return $query->paginate($perPage)->withQueryString();
     }
 
-public function createRoadmap(array $data)
+    public function createRoadmap(array $data)
     {
         return DB::transaction(function () use ($data) {
             
@@ -42,11 +45,16 @@ public function createRoadmap(array $data)
             }
 
             // B. Buat Roadmap-nya
+            $kategori = strtolower(trim($data['kategori'] ?? 'profesional'));
+            if (!in_array($kategori, ['profesional', 'bisnis', 'birokrasi', 'akademisi'])) {
+                $kategori = 'profesional';
+            }
+
             $roadmap = Roadmap::create([
-                'nama_roadmap'      => $data['nama_roadmap'],
-                'gambar'     => $pathGambar,
-                'kategori'   => $data['kategori'] ?? null, 
-                'partisipan' => $data['partisipan'] ?? 0,
+                'nama_roadmap' => $data['nama_roadmap'],
+                'gambar'       => $pathGambar,
+                'kategori'     => $kategori, 
+                'partisipan'   => $data['partisipan'] ?? 0,
             ]);
 
             // C. OTOMATIS Buat 1 Bulan (Bulan ke-1)
@@ -58,17 +66,23 @@ public function createRoadmap(array $data)
             MateriRoadmap::create([
                 'id_bulan_roadmap' => $bulan->id,
                 'tipe'             => 1,         
-                'topik'            => 'Pengantar',   
-                'judul'            => 'Pendahuluan ' . $roadmap->judul,
-                'kartu_konten'     => null,
+                'topik'            => 'Materi 1',   
+                'judul'            => 'Pengantar Modul',
+                'kartu_konten'     => [
+                    [
+                        'id'       => (string) time(),
+                        'type'     => 'text',
+                        'content'  => '<p>Selamat datang di roadmap <strong>' . htmlspecialchars($roadmap->nama_roadmap) . '</strong>. Silakan pelajari materi dan selesaikan tugas-tugas yang telah disediakan.</p>',
+                        'fileName' => '',
+                    ]
+                ],
                 'maksimal_tugas'   => 0,
-                'deskripsi'        => '<p>Materi awal untuk roadmap ini. Silakan diedit melalui menu Materi.</p>',
+                'deskripsi'        => 'Materi awal untuk roadmap ini. Silakan diedit melalui menu Materi.',
             ]);
 
             return $roadmap;
         });
     }
-
 
     // ==========================================
     // 2. UPDATE ROADMAP
@@ -88,6 +102,10 @@ public function createRoadmap(array $data)
                 $data['gambar'] = $data['gambar']->store('roadmap_images', 'public');
             } else {
                 unset($data['gambar']); 
+            }
+
+            if (!empty($data['kategori'])) {
+                $data['kategori'] = strtolower(trim($data['kategori']));
             }
 
             $roadmap->update($data);

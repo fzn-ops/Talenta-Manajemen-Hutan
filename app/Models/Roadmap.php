@@ -9,22 +9,22 @@ class Roadmap extends Model
 {
     //
     use HasFactory;
-    protected $table = 'Roadmap';
+    protected $table = 'roadmap';
 
     protected $fillable = [
         'nama_roadmap',
         'gambar',
         'kategori',
         'partisipan',
-        'updated_at',
-        'created_at'
     ];
 
-    public function bulanRoadmap(){
-        return $this->hasMany(BulanRoadmap::class, 'id_roadmap', 'id');
+    public function bulanRoadmap()
+    {
+        return $this->hasMany(BulanRoadmap::class, 'id_roadmap', 'id')->orderBy('bulan_ke', 'asc');
     }
     
-    public function pendaftaranRoadmap(){
+    public function pendaftaranRoadmap()
+    {
         return $this->hasMany(PendaftaranRoadmap::class, 'id_roadmap', 'id');
     }
 }
