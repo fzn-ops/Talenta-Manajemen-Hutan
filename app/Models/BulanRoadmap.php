@@ -12,11 +12,18 @@ class BulanRoadmap extends Model
     protected $table='bulan_roadmap';
     protected $fillable=[
         'id_roadmap',
-        'bulan_Ke',
+        'bulan_ke',
     ];
+
+    public $timestamps = false;
 
     public function roadmap()
     {
         return $this->belongsTo(Roadmap::class, 'id_roadmap', 'id');
+    }
+
+    public function materiRoadmap()
+    {
+        return $this->hasMany(MateriRoadmap::class, 'id_bulan_roadmap', 'id');
     }
 }

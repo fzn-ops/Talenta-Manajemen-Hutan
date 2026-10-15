@@ -12,7 +12,7 @@ const props = defineProps({
 	},
 	initialData: {
 		type: Object,
-		default: () => ({ title: '', category: '', thumbnail: '' }),
+		default: () => ({ nama_roadmap: '', kategori: '', gambar: '' }),
 	},
 	editingId: {
 		type: [Number, String, null],
@@ -25,9 +25,9 @@ const emit = defineEmits(['close', 'submit']);
 const categoryOptions = ['Profesional', 'Bisnis', 'Birokrasi', 'Akademisi'];
 
 const form = ref({
-	title: '',
-	category: '',
-	thumbnail: '',
+	nama_roadmap: '',
+	kategori: '',
+	gambar: '',
 });
 
 const formError = ref('');
@@ -47,8 +47,8 @@ const closeImagePreview = () => {
 };
 
 const selectCategory = (cat) => {
-	form.value.category = cat;
-	errors.value.category = '';
+	form.value.kategori = cat;
+	errors.value.kategori = '';
 	isCategoryDropdownOpen.value = false;
 };
 
@@ -78,28 +78,28 @@ const handleDrop = (e) => {
 
 const processFile = (file) => {
 	if (!file.type.match(/^image\/(jpeg|png|jpg)$/i)) {
-		errors.value.thumbnail = 'Harap upload file gambar yang valid (PNG, JPG, JPEG).';
+		errors.value.gambar = 'Harap upload file gambar yang valid (PNG, JPG, JPEG).';
 		return;
 	}
 
 	if (file.size > 5 * 1024 * 1024) {
-		errors.value.thumbnail = 'Ukuran gambar tidak boleh melebihi 5MB.';
+		errors.value.gambar = 'Ukuran gambar tidak boleh melebihi 5MB.';
 		return;
 	}
 
-	errors.value.thumbnail = '';
+	errors.value.gambar = '';
 
 	const reader = new FileReader();
 	reader.onload = (event) => {
 		thumbnailPreview.value = event.target.result;
-		form.value.thumbnail = event.target.result;
+		form.value.gambar = event.target.result;
 	};
 	reader.readAsDataURL(file);
 };
 
 const removeThumbnail = () => {
 	thumbnailPreview.value = '';
-	form.value.thumbnail = '';
+	form.value.gambar = '';
 	if (fileInputRef.value) {
 		fileInputRef.value.value = '';
 	}
@@ -112,11 +112,11 @@ watch(
 			formError.value = '';
 			errors.value = {};
 			isCategoryDropdownOpen.value = false;
-			thumbnailPreview.value = props.initialData?.thumbnail || '';
+			thumbnailPreview.value = props.initialData?.gambar || '';
 			form.value = {
-				title: props.initialData?.title || '',
-				category: props.initialData?.category || '',
-				thumbnail: props.initialData?.thumbnail || '',
+				nama_roadmap: props.initialData?.nama_roadmap || '',
+				kategori: props.initialData?.kategori || '',
+				gambar: props.initialData?.gambar || '',
 			};
 			if (fileInputRef.value) {
 				fileInputRef.value.value = '';
@@ -137,17 +137,17 @@ const handleSubmit = () => {
 	formError.value = '';
 	errors.value = {};
 
-	const inputTitle = form.value.title.trim();
-	const inputCategory = form.value.category.trim();
+	const inputTitle = form.value.nama_roadmap.trim();
+	const inputCategory = form.value.kategori.trim();
 
 	if (!inputTitle) {
-		errors.value.title = 'Nama Roadmap wajib diisi.';
+		errors.value.nama_roadmap = 'Nama Roadmap wajib diisi.';
 	}
 	if (!inputCategory) {
-		errors.value.category = 'Kategori wajib dipilih.';
+		errors.value.kategori = 'Kategori wajib dipilih.';
 	}
-	if (!form.value.thumbnail) {
-		errors.value.thumbnail = 'Thumbnail cover roadmap wajib diunggah.';
+	if (!form.value.gambar) {
+		errors.value.gambar = 'Thumbnail cover roadmap wajib diunggah.';
 	}
 
 	if (Object.keys(errors.value).length > 0) {
@@ -155,9 +155,9 @@ const handleSubmit = () => {
 	}
 
 	emit('submit', {
-		title: inputTitle,
-		category: inputCategory,
-		thumbnail: form.value.thumbnail,
+		nama_roadmap: inputTitle,
+		kategori: inputCategory,
+		gambar: form.value.gambar,
 	});
 
 	handleClose();
@@ -241,18 +241,18 @@ const handleBackdropMouseUp = (e) => {
 								</label>
 								<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Masukkan nama lengkap atau judul roadmap</p>
 								<input
-									v-model="form.title"
+									v-model="form.nama_roadmap"
 									type="text"
 									placeholder="Contoh: Persiapan Karir Software Engineer"
-									@input="errors.title = ''"
+									@input="errors.nama_roadmap = ''"
 									class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
-									:class="errors.title ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
+									:class="errors.nama_roadmap ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
 								/>
-								<p v-if="errors.title" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+								<p v-if="errors.nama_roadmap" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 									<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 									</svg>
-									<span>{{ errors.title }}</span>
+									<span>{{ errors.nama_roadmap }}</span>
 								</p>
 							</div>
 
@@ -268,15 +268,15 @@ const handleBackdropMouseUp = (e) => {
 										@click="isCategoryDropdownOpen = !isCategoryDropdownOpen"
 										class="h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] transition-colors duration-150 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-0 select-none text-left"
 										:class="[
-											errors.category
+											errors.kategori
 												? 'border-red-400 bg-red-50/20'
 												: (isCategoryDropdownOpen
 													? 'border-[#183669] bg-white'
 													: 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]')
 										]"
 									>
-										<span :class="form.category ? 'text-[#1e3456] font-medium' : 'text-[#94a3b8]'">
-											{{ form.category || 'Pilih Kategori' }}
+										<span :class="form.kategori ? 'text-[#1e3456] font-medium' : 'text-[#94a3b8]'">
+											{{ form.kategori || 'Pilih Kategori' }}
 										</span>
 										<svg
 											:class="['h-4 w-4 text-[#183669] transition-transform duration-150 shrink-0', isCategoryDropdownOpen ? 'rotate-180' : '']"
@@ -309,14 +309,14 @@ const handleBackdropMouseUp = (e) => {
 												@click="selectCategory(cat)"
 												:class="[
 													'flex w-full items-center justify-between px-3 py-2 rounded-[8px] text-left font-inter text-[13px] transition-colors cursor-pointer',
-													form.category === cat
+													form.kategori === cat
 														? 'bg-[#183669]/10 font-semibold text-[#183669]'
 														: 'text-[#2c4363] hover:bg-[#f1f5f9]'
 												]"
 											>
 												<span>{{ cat }}</span>
 												<svg
-													v-if="form.category === cat"
+													v-if="form.kategori === cat"
 													class="h-4 w-4 text-[#183669] shrink-0"
 													fill="none"
 													stroke="currentColor"
@@ -329,11 +329,11 @@ const handleBackdropMouseUp = (e) => {
 										</div>
 									</Transition>
 								</div>
-								<p v-if="errors.category" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+								<p v-if="errors.kategori" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 									<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 									</svg>
-									<span>{{ errors.category }}</span>
+									<span>{{ errors.kategori }}</span>
 								</p>
 							</div>
 
@@ -355,7 +355,7 @@ const handleBackdropMouseUp = (e) => {
 									@drop.prevent="handleDrop"
 									:class="[
 										'mt-1 sm:mt-1.5 flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3.5 text-center transition-colors min-h-[145px]',
-										errors.thumbnail
+										errors.gambar
 											? 'border-red-400 bg-red-50/20'
 											: isDragging
 											? 'border-[#183669] bg-[#183669]/5'
@@ -363,7 +363,7 @@ const handleBackdropMouseUp = (e) => {
 									]"
 								>
 									<!-- State 1: No images uploaded yet -->
-									<div v-if="!form.thumbnail" class="flex flex-col items-center justify-center py-2.5">
+									<div v-if="!form.gambar" class="flex flex-col items-center justify-center py-2.5">
 										<svg class="h-9 w-9 text-[#8c9eb5]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
 										</svg>
@@ -385,7 +385,7 @@ const handleBackdropMouseUp = (e) => {
 									<!-- State 2: Image uploaded (Preview rendered INSIDE the box) -->
 									<div v-else class="w-full flex justify-center">
 										<div class="group relative w-full max-w-[280px] sm:max-w-[320px] aspect-video overflow-hidden rounded-[8px] border border-[#d6e0ee] transition-all shadow-xs bg-slate-100">
-											<img :src="thumbnailPreview || form.thumbnail" alt="Preview Thumbnail" class="h-full w-full object-cover" />
+											<img :src="thumbnailPreview || form.gambar" alt="Preview Thumbnail" class="h-full w-full object-cover" />
 
 											<!-- Delete Button -->
 											<button
@@ -402,7 +402,7 @@ const handleBackdropMouseUp = (e) => {
 											<!-- Zoom / Preview Button -->
 											<button
 												type="button"
-												@click.stop="openImagePreview(thumbnailPreview || form.thumbnail)"
+												@click.stop="openImagePreview(thumbnailPreview || form.gambar)"
 												class="absolute right-1.5 bottom-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 hover:bg-black/85 text-white shadow-md backdrop-blur-xs transition hover:scale-110 active:scale-95 focus:outline-none cursor-pointer"
 												title="Lihat Ukuran Penuh"
 											>
@@ -423,11 +423,11 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 
 								<!-- Validation Error Message -->
-								<p v-if="errors.thumbnail" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+								<p v-if="errors.gambar" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 									<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 									</svg>
-									<span>{{ errors.thumbnail }}</span>
+									<span>{{ errors.gambar }}</span>
 								</p>
 							</div>
 

@@ -12,10 +12,12 @@ class Roadmap extends Model
     protected $table = 'Roadmap';
 
     protected $fillable = [
-        'judul',
+        'nama_roadmap',
         'gambar',
         'kategori',
         'partisipan',
+        'updated_at',
+        'created_at'
     ];
 
     public function bulanRoadmap(){

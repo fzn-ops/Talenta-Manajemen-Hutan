@@ -1,7 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Head, Link, usePage, router } from '@inertiajs/vue3';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
@@ -11,385 +11,225 @@ import ModalFormRoadmap from '@/Components/dashboard/admin/ModalFormRoadmap.vue'
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
-	roadmaps: {
-		type: Array,
-		default: () => [
-			{
-				id: 1,
-				title: 'Persiapan Karir Software Engineer & Fullstack Developer',
-				category: 'Profesional',
-				task_count: 10,
-				student_count: 57,
-				updated_at: '19/10/2026',
-			},
-			{
-				id: 2,
-				title: 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
-				category: 'Bisnis',
-				task_count: 8,
-				student_count: 42,
-				updated_at: '18/10/2026',
-			},
-			{
-				id: 3,
-				title: 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
-				category: 'Birokrasi',
-				task_count: 12,
-				student_count: 35,
-				updated_at: '15/10/2026',
-			},
-			{
-				id: 4,
-				title: 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
-				category: 'Akademisi',
-				task_count: 6,
-				student_count: 28,
-				updated_at: '12/10/2026',
-			},
-			{
-				id: 5,
-				title: 'Sertifikasi Konsultan Lingkungan & AMDAL Profesional',
-				category: 'Profesional',
-				task_count: 14,
-				student_count: 63,
-				updated_at: '10/10/2026',
-			},
-			{
-				id: 6,
-				title: 'Pengembangan Usaha Ekowisata & Agroforestry Berkelanjutan',
-				category: 'Bisnis',
-				task_count: 9,
-				student_count: 31,
-				updated_at: '08/10/2026',
-			},
-		],
-	},
+    roadmapData: Object,
+    filters: Object
 });
 
 const page = usePage();
 
-// Toast State
-const toast = ref({
-	show: false,
-	type: 'success',
-	title: '',
-	message: '',
+// ==========================================
+// 1. TOAST SYSTEM (Tetap Dipertahankan)
+// ==========================================
+const toast = ref({ show: false, type: 'success', title: '', message: '' });
+const showToast = (type, title, message) => {
+    toast.value = { show: true, type, title, message };
+};
+const closeToast = () => { toast.value.show = false; };
+
+// Flash Session Watcher dari Laravel
+watch(() => page.props?.flash, (flash) => {
+    if (flash?.success) showToast('success', 'Berhasil', flash.success);
+    if (flash?.error) showToast('error', 'Gagal', flash.error);
+}, { immediate: true, deep: true });
+
+watch(
+    () => page.props?.errors,
+    (errors) => {
+        // Kalau ada error dari Laravel, kita tangkap!
+        if (errors && Object.keys(errors).length > 0) {
+            console.log("Malingnya Ketangkep! Error validasi:", errors);
+            
+            // Ambil pesan error pertama dan tampilin di Toast
+            const firstError = Object.values(errors)[0];
+            showToast('error', 'Validasi Gagal', firstError);
+        }
+    },
+    { immediate: true, deep: true }
+);
+
+// ==========================================
+// 2. STATE FILTER, SEARCH, & PAGINATION
+// ==========================================
+// Ambil state awal dari props filters (biar kalau di-refresh gak hilang)
+const searchQuery = ref(props.filters?.search || '');
+
+// Di Laravel nerimanya string pakai koma, di Vue kita pakai array
+const selectedCategories = ref(props.filters?.kategori ? props.filters.kategori.split(',') : []);
+
+// Ambil state pagination dari Laravel
+const currentPage = ref(props.roadmapData?.current_page || 1);
+const totalPages = computed(() => props.roadmapData?.last_page || 1);
+const rowsPerPage = ref(props.roadmapData?.per_page || 6);
+
+// Datanya LANGSUNG ngambil dari Laravel (nggak usah di-slice manual lagi)
+const paginatedRoadmaps = computed(() => props.roadmapData?.data || []);
+
+// ==========================================
+// 3. WATCHER PENCARIAN & FILTER (Nembak ke Backend)
+// ==========================================
+let searchTimeout = null;
+watch([searchQuery, selectedCategories, rowsPerPage], () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        router.get('/admin/roadmap', { // SESUAIKAN DENGAN URL ROUTE LU
+            search: searchQuery.value,
+            kategori: selectedCategories.value.join(','), // Gabungin array jadi string
+            per_page: rowsPerPage.value,
+            page: 1 // Reset ke halaman 1
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true
+        });
+    }, 300);
+}, { deep: true });
+
+// Watcher untuk ganti halaman (Next/Prev Page)
+watch(currentPage, (newPage, oldPage) => {
+    if (newPage !== oldPage) {
+        router.get('/admin/roadmap', { // SESUAIKAN DENGAN URL ROUTE LU
+            search: searchQuery.value,
+            kategori: selectedCategories.value.join(','),
+            per_page: rowsPerPage.value,
+            page: newPage
+        }, { preserveState: true, preserveScroll: true });
+    }
 });
 
-const showToast = (type, title, message) => {
-	toast.value = {
-		show: true,
-		type,
-		title,
-		message,
-	};
-};
 
-const closeToast = () => {
-	toast.value.show = false;
-};
-
-// Flash Session Watcher
-watch(
-	() => page.props?.flash,
-	(flash) => {
-		if (flash?.success) {
-			showToast('success', 'Berhasil', flash.success);
-		}
-		if (flash?.error) {
-			showToast('error', 'Gagal', flash.error);
-		}
-	},
-	{ immediate: true, deep: true }
-);
-
-// Reactive Roadmaps List
-const roadmapsList = ref([]);
-
-const initRoadmapsData = () => {
-	const sourceData = props.roadmaps || [];
-	roadmapsList.value = sourceData.map((item, index) => ({
-		id: item.id || index + 1,
-		title: item.title || item.namaRoadmap || item.name || '',
-		category: item.category || item.kategori || 'Profesional',
-		task_count: item.task_count || item.taskCount || item.tasks || 10,
-		student_count: item.student_count || item.studentCount || item.students || 0,
-		updated_at: item.updated_at || item.diperbarui || '19/10/2026',
-	}));
-};
-
-watch(
-	() => props.roadmaps,
-	() => {
-		initRoadmapsData();
-	},
-	{ immediate: true, deep: true }
-);
-
-// Filter Category State & Logic
+// ==========================================
+// 4. UI LOGIC (Dropdown & Badges)
+// ==========================================
 const isFilterOpen = ref(false);
-const selectedCategories = ref([]);
 const categoryFilterOptions = ['Profesional', 'Bisnis', 'Birokrasi', 'Akademisi'];
 const filterContainerRef = ref(null);
 const filterDropdownStyle = ref({});
+const hasActiveFilters = computed(() => selectedCategories.value.length > 0);
 
-const hasActiveFilters = computed(() => {
-	return selectedCategories.value.length > 0;
-});
-
-const calculateFilterPlacement = () => {
-	if (!filterContainerRef.value || typeof window === 'undefined') return;
-	const rect = filterContainerRef.value.getBoundingClientRect();
-	const windowWidth = window.innerWidth;
-	const padding = 16; // Safe screen margin
-
-	const desiredWidth = Math.min(260, windowWidth - padding * 2);
-
-	const style = {
-		width: `${desiredWidth}px`,
-		maxWidth: `calc(100vw - ${padding * 2}px)`,
-	};
-
-	let targetScreenLeft = rect.right - desiredWidth;
-
-	if (targetScreenLeft < padding) {
-		targetScreenLeft = padding;
-	}
-	if (targetScreenLeft + desiredWidth > windowWidth - padding) {
-		targetScreenLeft = windowWidth - padding - desiredWidth;
-	}
-
-	const relativeLeft = targetScreenLeft - rect.left;
-	style.left = `${relativeLeft}px`;
-	style.right = 'auto';
-
-	const spaceBelow = window.innerHeight - rect.bottom;
-	const spaceAbove = rect.top;
-	const dropdownHeight = 260;
-
-	if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
-		style.bottom = 'calc(100% + 8px)';
-		style.top = 'auto';
-	} else {
-		style.top = 'calc(100% + 8px)';
-		style.bottom = 'auto';
-	}
-
-	filterDropdownStyle.value = style;
-};
-
-const toggleFilterDropdown = () => {
-	const willOpen = !isFilterOpen.value;
-	if (willOpen) {
-		calculateFilterPlacement();
-	}
-	isFilterOpen.value = willOpen;
-};
-
-const closeFilterDropdown = () => {
-	isFilterOpen.value = false;
-};
-
-const handleWindowChange = () => {
-	if (isFilterOpen.value) {
-		calculateFilterPlacement();
-	}
-};
-
-const resetAllFilters = () => {
-	selectedCategories.value = [];
-};
-
-const getCountByCategory = (category) => {
-	return roadmapsList.value.filter((r) => (r.category || '').toLowerCase() === category.toLowerCase()).length;
-};
+const toggleFilterDropdown = () => { isFilterOpen.value = !isFilterOpen.value; };
+const closeFilterDropdown = () => { isFilterOpen.value = false; };
+const resetAllFilters = () => { selectedCategories.value = []; };
 
 const getCategoryBadges = (item) => {
-	if (!item) return [];
-	if (Array.isArray(item.kategori)) return item.kategori;
-	if (Array.isArray(item.categories)) return item.categories;
-	if (Array.isArray(item.category)) return item.category;
-	const val = item.category || item.kategori || '';
-	if (typeof val === 'string' && val.trim()) {
-		if (val.includes('|')) return val.split('|').map((s) => s.trim()).filter(Boolean);
-		if (val.includes(',')) return val.split(',').map((s) => s.trim()).filter(Boolean);
-		return [val.trim()];
-	}
-	return ['Profesional'];
+    const val = item.kategori || item.category || 'Profesional';
+    if (val.includes(',')) return val.split(',').map((s) => s.trim());
+    return [val.trim()];
 };
 
 const getCategoryBadgeClass = (category) => {
-	const cat = (category || '').trim();
-	if (cat === 'Profesional' || cat === 'Professional') {
-		return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-	}
-	if (cat === 'Bisnis') {
-		return 'bg-amber-50 text-amber-700 border-amber-200';
-	}
-	if (cat === 'Birokrat' || cat === 'Birokrasi') {
-		return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-	}
-	if (cat === 'Akademisi') {
-		return 'bg-purple-50 text-purple-700 border-purple-200';
-	}
-	return 'bg-slate-100 text-slate-700 border-slate-200';
+    const cat = (category || '').trim();
+    if (cat === 'Profesional') return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    if (cat === 'Bisnis') return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (cat === 'Birokrasi') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (cat === 'Akademisi') return 'bg-purple-50 text-purple-700 border-purple-200';
+    return 'bg-slate-100 text-slate-700 border-slate-200';
 };
 
 const getCardGradient = (category) => {
-	switch ((category || '').toLowerCase()) {
-		case 'profesional':
-			return 'from-[#143365] via-[#1a4484] to-[#2560ab]';
-		case 'bisnis':
-			return 'from-[#0f3d4c] via-[#16566c] to-[#1e788e]';
-		case 'birokrasi':
-		case 'birokrat':
-			return 'from-[#22285e] via-[#313b82] to-[#4553a6]';
-		case 'akademisi':
-			return 'from-[#382a57] via-[#4d3a76] to-[#6a4f9d]';
-		default:
-			return 'from-[#143365] via-[#1a4484] to-[#2560ab]';
-	}
+    const cat = (category || '').toLowerCase().trim();
+    if (cat === 'bisnis') return 'from-[#0f3d4c] via-[#16566c] to-[#1e788e]';
+    if (cat === 'birokrasi') return 'from-[#22285e] via-[#313b82] to-[#4553a6]';
+    if (cat === 'akademisi') return 'from-[#382a57] via-[#4d3a76] to-[#6a4f9d]';
+    return 'from-[#143365] via-[#1a4484] to-[#2560ab]';
 };
 
-// Loading State
-const isLoading = ref(false);
-onMounted(() => {
-	initRoadmapsData();
-	document.addEventListener('click', closeFilterDropdown);
-	window.addEventListener('resize', handleWindowChange, { passive: true });
-	window.addEventListener('scroll', handleWindowChange, { passive: true });
-});
+onMounted(() => document.addEventListener('click', closeFilterDropdown));
+onBeforeUnmount(() => document.removeEventListener('click', closeFilterDropdown));
 
-onBeforeUnmount(() => {
-	document.removeEventListener('click', closeFilterDropdown);
-	window.removeEventListener('resize', handleWindowChange);
-	window.removeEventListener('scroll', handleWindowChange);
-});
 
-// Search Query
-const searchQuery = ref('');
-
-// Filtered Roadmaps
-const filteredRoadmaps = computed(() => {
-	let list = [...roadmapsList.value];
-
-	// Search Query
-	if (searchQuery.value.trim()) {
-		const q = searchQuery.value.toLowerCase().trim();
-		list = list.filter(
-			(r) =>
-				(r.title && r.title.toLowerCase().includes(q)) ||
-				(r.category && r.category.toLowerCase().includes(q))
-		);
-	}
-
-	// Category Filter
-	if (selectedCategories.value.length > 0) {
-		list = list.filter((r) =>
-			selectedCategories.value.some((c) => c.toLowerCase() === (r.category || '').toLowerCase())
-		);
-	}
-
-	return list;
-});
-
-// Pagination State & Controls
-const isMobileScreen = () => typeof window !== 'undefined' && window.innerWidth < 640;
-const currentPage = ref(1);
-const rowsPerPage = ref(isMobileScreen() ? 3 : 6);
-const rowsOptions = [3, 6, 9, 12, 18];
-
-const totalPages = computed(() => {
-	const count = Math.ceil(filteredRoadmaps.value.length / rowsPerPage.value);
-	return count > 0 ? count : 1;
-});
-
-const paginatedRoadmaps = computed(() => {
-	const start = (currentPage.value - 1) * rowsPerPage.value;
-	return filteredRoadmaps.value.slice(start, start + rowsPerPage.value);
-});
-
-watch([searchQuery, selectedCategories, rowsPerPage], () => {
-	currentPage.value = 1;
-});
-
-// MODAL TAMBAH / EDIT ROADMAP
+// ==========================================
+// 5. CRUD ACTION (Create, Update, Delete ke Laravel)
+// ==========================================
 const isFormModalOpen = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
 const selectedRoadmap = ref(null);
 
 const openCreateModal = () => {
-	isEditing.value = false;
-	editingId.value = null;
-	selectedRoadmap.value = { title: '', category: '', thumbnail: '' };
-	isFormModalOpen.value = true;
+    isEditing.value = false;
+    editingId.value = null;
+    selectedRoadmap.value = { nama_roadmap: '', kategori: '', gambar: null }; // Pake field DB
+    isFormModalOpen.value = true;
 };
 
 const openEditModal = (roadmap) => {
-	isEditing.value = true;
-	editingId.value = roadmap.id;
-	selectedRoadmap.value = { ...roadmap };
-	isFormModalOpen.value = true;
+    isEditing.value = true;
+    editingId.value = roadmap.id;
+    selectedRoadmap.value = { ...roadmap };
+    isFormModalOpen.value = true;
 };
 
 const handleFormSubmit = (formData) => {
-	const now = new Date();
-	const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    // ==========================================
+    // TAMENG GAMBAR: Cek apakah gambar benar-benar file
+    // ==========================================
+    // Kalau 'gambar' bentuknya cuma teks/string (atau kosong), hapus dari payload
+    // biar Laravel nggak ngevalidasi itu sebagai file upload.
+    if (formData.gambar && !(formData.gambar instanceof File)) {
+        delete formData.gambar;
+    }
+    
+    // Kalau benar-benar kosong/null, hapus juga biar aman
+    if (!formData.gambar) {
+        delete formData.gambar;
+    }
 
-	if (isEditing.value && editingId.value) {
-		const targetIndex = roadmapsList.value.findIndex((r) => r.id === editingId.value);
-		if (targetIndex !== -1) {
-			roadmapsList.value[targetIndex] = {
-				...roadmapsList.value[targetIndex],
-				...formData,
-				updated_at: formattedDate,
-			};
-		}
-		isFormModalOpen.value = false;
-		showToast('success', 'Berhasil Diperbarui', `Roadmap "${formData.title}" berhasil diperbarui.`);
-	} else {
-		const newId = roadmapsList.value.length > 0 ? Math.max(...roadmapsList.value.map((r) => r.id)) + 1 : 1;
-		roadmapsList.value.unshift({
-			id: newId,
-			...formData,
-			task_count: 0,
-			student_count: 0,
-			updated_at: formattedDate,
-		});
-		isFormModalOpen.value = false;
-		showToast('success', 'Berhasil Ditambahkan', `Roadmap "${formData.title}" berhasil ditambahkan.`);
-	}
+    // ==========================================
+    // LANJUT PROSES SUBMIT
+    // ==========================================
+    if (isEditing.value && editingId.value) {
+        // UPDATE DATA
+        router.post(`/admin/roadmap/${editingId.value}`, {
+            _method: 'put',
+            ...formData
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                isFormModalOpen.value = false;
+            }
+        });
+    } else {
+        // CREATE DATA
+        router.post('/admin/roadmap', formData, {
+            preserveScroll: true,
+            onSuccess: () => {
+                isFormModalOpen.value = false;
+            }
+        });
+    }
 };
 
-// MODAL DELETE CONFIRMATION
+// DELETE ACTION
 const isDeleteModalOpen = ref(false);
 const deletingRoadmap = ref(null);
 const isDeleting = ref(false);
 
 const openDeleteModal = (roadmap) => {
-	deletingRoadmap.value = roadmap;
-	isDeleteModalOpen.value = true;
+    deletingRoadmap.value = roadmap;
+    isDeleteModalOpen.value = true;
 };
 
 const closeDeleteModal = () => {
-	if (isDeleting.value) return;
-	isDeleteModalOpen.value = false;
-	deletingRoadmap.value = null;
+    if (isDeleting.value) return;
+    isDeleteModalOpen.value = false;
+    deletingRoadmap.value = null;
 };
 
 const confirmDeleteRoadmap = () => {
-	if (!deletingRoadmap.value) return;
-	const roadmap = deletingRoadmap.value;
-	isDeleting.value = true;
+    if (!deletingRoadmap.value) return;
+    isDeleting.value = true;
 
-	setTimeout(() => {
-		roadmapsList.value = roadmapsList.value.filter((r) => r.id !== roadmap.id);
-		isDeleting.value = false;
-		isDeleteModalOpen.value = false;
-		deletingRoadmap.value = null;
-		showToast('success', 'Berhasil Dihapus', `Roadmap "${roadmap.title}" berhasil dihapus.`);
-	}, 200);
+    router.delete(`/admin/roadmap/${deletingRoadmap.value.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isDeleting.value = false;
+            closeDeleteModal();
+            // Flash dari Laravel otomatis bikin toast sukses
+        },
+        onError: () => {
+            isDeleting.value = false;
+        }
+    });
 };
 </script>
 
@@ -557,15 +397,15 @@ const confirmDeleteRoadmap = () => {
 								<!-- Top Cover Banner (Rounded [10px] as in Figma) -->
 								<div class="relative flex h-[175px] sm:h-[190px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
 									<img
-										v-if="item.thumbnail"
-										:src="item.thumbnail"
-										:alt="item.title"
+										v-if="item.gambar"
+										:src="item.gambar"
+										:alt="item.nama_roadmap"
 										class="h-full w-full object-cover"
 									/>
 									<!-- Soft Geometric Mural Banner Pattern -->
 									<div
 										v-else
-										:class="['relative h-full w-full bg-gradient-to-br flex items-center justify-center overflow-hidden select-none', getCardGradient(item.category)]"
+										:class="['relative h-full w-full bg-gradient-to-br flex items-center justify-center overflow-hidden select-none', getCardGradient(item.kategori)]"
 									>
 										<!-- Geometric Abstract SVG Mural Background -->
 										<svg
@@ -594,7 +434,7 @@ const confirmDeleteRoadmap = () => {
 										<!-- Clean Typography Content -->
 										<div class="relative z-10 flex flex-col items-center justify-center text-center px-4">
 											<span class="font-poppins text-[15px] sm:text-[16px] font-bold tracking-wide text-white drop-shadow-xs">
-												{{ item.category || 'Roadmap' }}
+												{{ item.kategori || 'Roadmap' }}
 											</span>
 											<p class="mt-0.5 font-inter text-[11px] sm:text-[12px] font-medium text-white/80">
 												Talenta Manajemen Hutan
@@ -606,22 +446,22 @@ const confirmDeleteRoadmap = () => {
 								<!-- Card Meta Bar: Tasks & Student Counter -->
 								<div class="mt-4 flex items-center justify-between">
 									<span class="font-inter text-[13px] font-semibold text-[#475569]">
-										{{ item.task_count }} Task
+										<!-- {{ item.task_count }} --> Task
 									</span>
 									<span class="inline-flex items-center gap-1.5 rounded-full bg-[#183669] px-2.5 py-1 font-inter text-[12px] font-semibold text-white shadow-xs">
 										<svg class="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
 											<path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 18a9.953 9.953 0 01-5.385-1.572zM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 00-1.588-3.755 4.502 4.502 0 015.874 4.316.892.892 0 01-.413.372H14.5z" />
 										</svg>
-										<span>{{ item.student_count }}</span>
+										<span>{{ item.partisipan }}</span>
 									</span>
 								</div>
 
 								<!-- Roadmap Title -->
 								<h3
 									class="mt-2.5 line-clamp-2 text-[16px] sm:text-[17px] font-bold leading-snug text-[#17334F] transition group-hover:text-[#183669]"
-									:title="item.title"
+									:title="item.nama_roadmap"
 								>
-									{{ item.title }}
+									{{ item.nama_roadmap }}
 								</h3>
 
 								<!-- Category Badges -->
@@ -645,8 +485,8 @@ const confirmDeleteRoadmap = () => {
 									Diperbarui : {{ item.updated_at }}
 								</span>
 								<div class="flex items-center gap-1.5" @click.stop.prevent>
-									<EditButtonTable :label="`Edit ${item.title}`" @click="openEditModal(item)" />
-									<DeleteButtonTable :label="`Hapus ${item.title}`" @click="openDeleteModal(item)" />
+									<EditButtonTable :label="`Edit ${item.nama_roadmap}`" @click="openEditModal(item)" />
+									<DeleteButtonTable :label="`Hapus ${item.nama_roadmap}`" @click="openDeleteModal(item)" />
 								</div>
 							</div>
 						</Link>
@@ -681,7 +521,7 @@ const confirmDeleteRoadmap = () => {
 
 				<!-- Pagination Component -->
 				<TablePagination
-					v-if="filteredRoadmaps.length > 0"
+					v-if="paginatedRoadmaps.length > 0"
 					:current-page="currentPage"
 					:total-pages="totalPages"
 					:rows-per-page="rowsPerPage"

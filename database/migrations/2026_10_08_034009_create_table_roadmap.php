@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('roadmap', function (Blueprint $table) {
             $table->id();
             $table->string('nama_roadmap');
-            $table->string('deskripsi');
-            $table->string('foto')->nullable();
+            $table->string('gambar')->nullable();
             $table->enum('kategori',['profesional','bisnis','birokrasi','akademisi']);
             $table->integer('partisipan');
             $table->timestamps();
@@ -36,7 +35,7 @@ return new class extends Migration
 
         Schema::create('materi_roadmap', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_roadmap')->constrained('roadmap')->onDelete('cascade'); 
+            $table->foreignId('id_bulan_roadmap')->constrained('bulan_roadmap')->onDelete('cascade'); 
             $table->string('judul');
             $table->boolean('tipe');
             $table->string('topik');

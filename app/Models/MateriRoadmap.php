@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Traits\Timestamp;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -13,16 +14,19 @@ class MateriRoadmap extends Model
     protected $fillable=[
         'id_bulan_roadmap',
         'judul',
-        'isi',
+        'deskripsi',
         'tipe',
         'topik',
         'maksimal_tugas',
+        'kartu_konten',
     ];
 
     protected $casts = [
         'kartu_konten'=>'array',
         'maksimal_tugas'=>'integer',
     ];  
+
+    public $timestamps = false;
 
     public function bulanRoadmap(){
         return $this->belongsTo(BulanRoadmap::class, 'id_bulan_roadmap', 'id');

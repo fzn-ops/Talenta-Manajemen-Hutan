@@ -21,7 +21,7 @@ class AktivitasController extends Controller
         $filters = [
             'search'=> $request->input('search'),
             'jenis'=> $request->input('jenis'),
-            'bulan'=> $request->input('bulan'), // Format: 'YYYY-MM'
+            'bulan'=> $request->input('bulan'),
             'kategori'=> $request->input('kategori'),
             'status'=> $request->input('status'),
             'waktu'     => $request->input('waktu'),
@@ -33,7 +33,7 @@ class AktivitasController extends Controller
         
         $aktivitasList = $this->aktivitasService->getPaginationAktivitas($filters, $perPage);
 
-        return Inertia::render('/dashboard/admin/ActivityList',[
+        return Inertia::render('dashboard/admin/ActivityList',[
             'aktivitasData' => $aktivitasList, 
             'filters'       => $filters
         ]);

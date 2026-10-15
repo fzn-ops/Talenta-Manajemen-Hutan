@@ -26,7 +26,7 @@ class BeritaService
             ->when($sort, function ($query) use ($sort, $direction) {
                 $query->orderBy($sort, $direction ?? 'desc');
             }, function ($query) {
-                $query->latest(); // Default kalau lagi nggak nge-sort
+                $query->latest();
             })
             ->paginate($perPage)
             ->withQueryString();

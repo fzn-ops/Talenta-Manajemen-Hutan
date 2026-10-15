@@ -8,6 +8,7 @@ use App\Http\Controllers\Dashboard\Admin\AktivitasController;
 use App\Http\Controllers\Dashboard\Mahasiswa\ProfileController as MahasiswaProfileController;
 use App\Http\Controllers\Dashboard\Admin\BeritaController;
 use App\Http\Controllers\Dashboard\Admin\KarirController;
+use App\Http\Controllers\Dashboard\Admin\RoadmapController as AdminRoadmapController;
 
 /* Route Landing dan Website Public*/
 
@@ -71,10 +72,6 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
     Route::get('/mahasiswa', function () {
         return Inertia::render('dashboard/admin/Mahasiswa');
     })->name('mahasiswa');
-
-    Route::get('/roadmap', function () {
-        return Inertia::render('dashboard/admin/Roadmap');
-    })->name('roadmap');
 
     Route::get('/roadmap/{id}', function ($id = 1) {
         return Inertia::render('dashboard/admin/RoadmapDetail', [
