@@ -8,11 +8,9 @@ use App\Http\Controllers\Dashboard\Admin\AktivitasController;
 use App\Http\Controllers\Dashboard\Mahasiswa\ProfileController as MahasiswaProfileController;
 use App\Http\Controllers\Dashboard\Admin\BeritaController;
 use App\Http\Controllers\Dashboard\Admin\KarirController;
-<<<<<<< HEAD
 use App\Http\Controllers\Dashboard\Admin\RoadmapController as AdminRoadmapController;
-=======
 use App\Http\Controllers\Dashboard\Admin\MahasiswaController;
->>>>>>> 44839f2d73b90cf52178c5d769de92e12c999648
+
 
 /* Route Landing dan Website Public*/
 
@@ -79,6 +77,11 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
     Route::delete('/mahasiswa/{id}', [MahasiswaController::class, 'destroy'])->name('mahasiswa.destroy');
     Route::post('/mahasiswa/bulk-delete', [MahasiswaController::class, 'bulkDelete'])->name('mahasiswa.bulkDelete');
     Route::post('/mahasiswa/import', [MahasiswaController::class, 'import'])->name('mahasiswa.import');
+
+    Route::get('/roadmap', [AdminRoadmapController::class, 'index'])->name('roadmap.index');
+    Route::post('/roadmap', [AdminRoadmapController::class, 'store'])->name('roadmap.store');
+    Route::put('/roadmap/{id}', [AdminRoadmapController::class, 'update'])->name('roadmap.update');
+    Route::delete('/roadmap/{id}', [AdminRoadmapController::class, 'destroy'])->name('roadmap.destroy');
 
     Route::get('/roadmap/{id}', function ($id = 1) {
         return Inertia::render('dashboard/admin/RoadmapDetail', [

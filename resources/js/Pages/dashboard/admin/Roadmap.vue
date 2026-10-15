@@ -250,15 +250,16 @@ const confirmDeleteRoadmap = () => {
 				</div>
 
 				<!-- Action Bar (Search, Filter, Tambah Button) -->
-				<div class="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+				<div class="flex flex-row items-center gap-2 sm:gap-3 w-full">
 					<!-- Search Input Component -->
 					<SearchBarTable
+						class="w-full flex-1 min-w-0"
 						v-model="searchQuery"
 						placeholder="Cari roadmap disini"
 					/>
 
 					<!-- Action Buttons Row -->
-					<div class="flex items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
+					<div class="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
 						<!-- Filter Button with Unified Dropdown -->
 						<div ref="filterContainerRef" class="relative" @click.stop @keydown.escape="isFilterOpen = false">
 							<button
