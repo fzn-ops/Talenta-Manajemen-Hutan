@@ -13,26 +13,15 @@ import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 
 import ModalFormPendaftaranMahasiswa from '@/Components/dashboard/admin/ModalFormPendaftaranMahasiswa.vue';
 
-// 10 Data Dummy Sesuai Gambar
-const kegiatan = ref([
-  { id: 1, judul_aktivitas: 'Lorem ipsum dolor sit amet', nama_tim: 'Tim Biasa Aja', peserta: ['Fauzan Fuadiansyah - J0403231085', 'Farhan Hakim - J0403231075', 'Rintan Arufafa Aji - J0403231113'], kategori: ['Bisnis', 'Akademisi', 'Birokrat'], gambar: '123.jpeg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 2, judul_aktivitas: 'Lomba Cerdas Cermat IT', nama_tim: 'Tim Tech Gen', peserta: ['Budi Santoso - J0403231001', 'Andi Wijaya - J0403231002'], kategori: ['Bisnis'], gambar: 'bukti.jpeg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 3, judul_aktivitas: 'Hackathon Nasional 2026', nama_tim: 'White Hat ID', peserta: ['Siti Aminah - J0403231011', 'Dewi Lestari - J0403231012'], kategori: ['Profesional', 'Akademisi'], gambar: 'transfer.jpeg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 4, judul_aktivitas: 'Seminar Bisnis Digital', nama_tim: 'Creative Hub', peserta: ['Rizky Febrian - J0403231021'], kategori: ['Birokrat'], gambar: 'resi-456.jpeg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 5, judul_aktivitas: 'Kompetisi Startup Kampus', nama_tim: 'Robo Mania', peserta: ['Deni Setiawan - J0403231031', 'Eko Prasetyo - J0403231032'], kategori: ['Akademisi', 'Birokrat'], gambar: 'bukti-bayar.jpeg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 6, judul_aktivitas: 'Pelatihan Cyber Security', nama_tim: 'Pena Muda', peserta: ['Nurul Hidayah - J0403231041'], kategori: ['Bisnis'], gambar: 'esai.jpeg', status: 'Disetujui', alasan_tolak: '' },
-  { id: 7, judul_aktivitas: 'Pekan Olahraga Mahasiswa', nama_tim: 'Jaringan Ngebut', peserta: ['Hendra Gunawan - J0403231051', 'Ahmad Fauzi - J0403231053'], kategori: ['Profesional'], gambar: 'mikrotik.jpeg', status: 'Ditolak', alasan_tolak: 'Kurang Mantap' },
-  { id: 8, judul_aktivitas: 'Lomba Debat Bahasa Inggris', nama_tim: 'Code Builder', peserta: ['Taufik Hidayat - J0403231061', 'Sri Wahyuni - J0403231062'], kategori: ['Akademisi'], gambar: 'hackathon.jpeg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 9, judul_aktivitas: 'Olimpiade Matematika', nama_tim: 'Bakti Nusa', peserta: ['Joko Susilo - J0403231071', 'Wawan Setiawan - J0403231072'], kategori: ['Bisnis', 'Birokrat'], gambar: 'olimpiade.jpeg', status: 'Disetujui', alasan_tolak: '' },
-  { id: 10, judul_aktivitas: 'Festival Seni Budaya', nama_tim: 'Cloud Native', peserta: ['Faisal Akbar - J0403231081'], kategori: ['Profesional', 'Birokrat'], gambar: 'budaya.jpeg', status: 'Menunggu', alasan_tolak: '' },
-]);
+const props = defineProps({
+  pendaftaranData: Object,
+  filters: Object
+});
 
-const searchQuery = ref('');
-const filterStatus = ref('');
+// 1. Inisialisasi Filter (Ambil dari backend biar pas di-refresh nggak ilang)
+const searchQuery = ref(props.filters?.search || '');
+const filterStatus = ref(props.filters?.status || '');
 const showFilter = ref(false);
-
-const sortColumn = ref('id');
-const sortDirection = ref('asc');
 
 const showDetailModal = ref(false);
 const showRejectModal = ref(false);
@@ -50,73 +39,33 @@ const showToast = (message, type = 'success') => {
   }, 50);
 };
 
-// Fungsi Sortir
-const handleSort = (column) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'asc';
-  }
-};
+// 2. Data Kegiatan Langsung Diambil dari Backend
+const kegiatanList = computed(() => {
+  // Paginator Laravel nyimpen datanya di dalam object .data
+  return props.pendaftaranData?.data || [];
+});
 
-const processedKegiatan = computed(() => {
-  let data = [...kegiatan.value];
-
-  if (filterStatus.value) {
-    data = data.filter(item => item.status === filterStatus.value);
-  }
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    data = data.filter(item => 
-      item.nama_tim.toLowerCase().includes(query) ||
-      item.peserta.join(', ').toLowerCase().includes(query)
-    );
-  }
-
-  if (sortColumn.value) {
-    data.sort((a, b) => {
-      let valA = a[sortColumn.value];
-      let valB = b[sortColumn.value];
-
-      if (sortColumn.value === 'peserta') {
-        valA = a.peserta.join(', ');
-        valB = b.peserta.join(', ');
+// 3. Sistem Filter Otomatis (Nembak ke Backend)
+let searchTimeout = null;
+watch([searchQuery, filterStatus], ([newSearch, newStatus]) => {
+  // Pakai setTimeout biar nggak nyepam request ke server tiap ngetik 1 huruf (Debounce)
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    router.get(
+      '/admin/aktivitas/bukti-pendaftaran', // Sesuaikan URL dengan route di web.php
+      { search: newSearch, status: newStatus },
+      { 
+        preserveState: true, 
+        replace: true, 
+        preserveScroll: true 
       }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  return data;
+    );
+  }, 300); // Nunggu 300ms setelah user berhenti ngetik baru dikirim
 });
 
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-
-onMounted(() => {
-  if (window.innerWidth < 768) {
-    rowsPerPage.value = 5;
-  }
-});
-
-const paginatedKegiatan = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  return processedKegiatan.value.slice(start, start + rowsPerPage.value);
-});
-
-const totalPages = computed(() => Math.ceil(processedKegiatan.value.length / rowsPerPage.value));
-
-watch([searchQuery, filterStatus, rowsPerPage], () => {
-  currentPage.value = 1;
-});
-
+// ==========================================
+// FUNGSI MODAL
+// ==========================================
 const openDetail = (item) => {
   selectedItem.value = item;
   showDetailModal.value = true;
@@ -138,29 +87,67 @@ const openImage = (gambar) => {
   showImageModal.value = true;
 };
 
+// ==========================================
+// FUNGSI AKSI (APPROVE & REJECT) VIA INERTIA
+// ==========================================
 const handleApprove = (item) => {
   const target = item || selectedItem.value;
   if (target) {
-    const idx = kegiatan.value.findIndex(k => k.id === target.id);
-    if (idx !== -1) {
-      kegiatan.value[idx].status = 'Disetujui';
-    }
+    // Kirim request PATCH ke controller lu
+    router.patch(`/admin/aktivitas/bukti-pendaftaran/${target.id}/approve`, {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showDetailModal.value = false;
+        showToast('Pendaftaran berhasil disetujui!', 'success');
+      },
+      onError: () => {
+        showToast('Gagal menyetujui pendaftaran.', 'error');
+      }
+    });
   }
-  showDetailModal.value = false;
-  showToast('Pendaftaran berhasil disetujui!', 'success');
 };
 
 const handleReject = (reason) => {
   if (selectedItem.value) {
-    const idx = kegiatan.value.findIndex(k => k.id === selectedItem.value.id);
-    if (idx !== -1) {
-      kegiatan.value[idx].status = 'Ditolak';
-      kegiatan.value[idx].alasan_tolak = reason;
-    }
+    // Kirim request PATCH beserta alasan penolakan
+    router.patch(`/admin/aktivitas/bukti-pendaftaran/${selectedItem.value.id}/reject`, {
+      catatan_penolakan: reason // Nama field wajib sama kayak validasi di Controller
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showRejectModal.value = false;
+        showDetailModal.value = false; 
+        showToast('Pendaftaran berhasil ditolak.', 'success'); // Success karena aksinya berhasil diproses
+      },
+      onError: (errors) => {
+        // Misal gagal karena alasan kosong (validasi Laravel jalan)
+        showToast(errors.catatan_penolakan || 'Gagal menolak pendaftaran.', 'error');
+      }
+    });
   }
-  showRejectModal.value = false;
-  showDetailModal.value = false; 
-  showToast(`Pendaftaran ditolak. Alasan: ${reason || 'Tidak ada'}`, 'error');
+};
+
+const handlePageChange = (newPage) => {
+  router.get('/admin/aktivitas/bukti-pendaftaran', {
+    search: searchQuery.value,   
+    status: filterStatus.value,  
+    page: newPage                
+  }, {
+    preserveState: true,
+    preserveScroll: true,
+  });
+};
+
+const handleRowsChange = (newRows) => {
+  router.get('/admin/aktivitas/bukti-pendaftaran', {
+    search: searchQuery.value,
+    status: filterStatus.value,
+    per_page: newRows, 
+    page: 1 
+  }, {
+    preserveState: true,
+    preserveScroll: true,
+  });
 };
 </script>
 
@@ -199,9 +186,9 @@ const handleReject = (reason) => {
                 <div v-if="showFilter" class="absolute right-0 top-14 z-40 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
                   <p class="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase">Filter Status</p>
                   <button @click="filterStatus = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium" :class="!filterStatus ? 'bg-gray-100' : ''">Semua Data</button>
-                  <button @click="filterStatus = 'Menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium" :class="filterStatus === 'Menunggu' ? 'bg-gray-100' : ''">Menunggu</button>
-                  <button @click="filterStatus = 'Disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium" :class="filterStatus === 'Disetujui' ? 'bg-green-50' : ''">Disetujui</button>
-                  <button @click="filterStatus = 'Ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium" :class="filterStatus === 'Ditolak' ? 'bg-red-50' : ''">Ditolak</button>
+                  <button @click="filterStatus = 'menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium" :class="filterStatus === 'menunggu' ? 'bg-gray-100' : ''">Menunggu</button>
+                  <button @click="filterStatus = 'disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium" :class="filterStatus === 'disetujui' ? 'bg-green-50' : ''">Disetujui</button>
+                  <button @click="filterStatus = 'ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium" :class="filterStatus === 'ditolak' ? 'bg-red-50' : ''">Ditolak</button>
                 </div>
               </Transition>
             </div>
@@ -251,21 +238,23 @@ const handleReject = (reason) => {
               </thead>
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
-                <tr v-for="(item, index) in paginatedKegiatan" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                <tr v-for="(item, index) in kegiatanList" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
+                  <td class="px-3 py-2.5 text-center">{{ (pendaftaranData?.from || 1) + index }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_tim">{{ item.nama_tim }}</td>
-                  <td class="px-3 py-2.5 text-left truncate" :title="item.peserta.join(', ')">{{ item.peserta.join(', ') }}</td>
+                  <td class="px-3 py-2.5 text-left truncate" :title="item.peserta.map(p => p.nama).join(', ')">
+                    {{ item.peserta.map(p => p.nama).join(', ') }}
+                  </td>
                   <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.gambar === 'object' ? item.gambar.name : item.gambar">
-                      {{ (item.gambar && typeof item.gambar === 'object' && item.gambar.name) ? item.gambar.name : item.gambar }}
+                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.bukti_pendaftaran === 'object' ? item.bukti_pendaftaran.name : item.bukti_pendaftaran">
+                      {{ (item.bukti_pendaftaran && typeof item.bukti_pendaftaran === 'object' && item.bukti_pendaftaran.name) ? item.bukti_pendaftaran.name : item.bukti_pendaftaran }}
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
                          :class="{
-                           'bg-gray-100 text-gray-600 border-gray-200': item.status === 'Menunggu',
-                           'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
-                           'bg-red-50 text-red-600 border-red-200': item.status === 'Ditolak'
+                           'bg-gray-100 text-gray-600 border-gray-200': item.status === 'menunggu',
+                           'bg-green-50 text-green-600 border-green-200': item.status === 'disetujui',
+                           'bg-red-50 text-red-600 border-red-200': item.status === 'ditolak'
                          }">
                       <svg v-if="item.status === 'Menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="9" />
@@ -288,7 +277,7 @@ const handleReject = (reason) => {
                     </div>
                   </td>
                 </tr>
-                <tr v-if="paginatedKegiatan.length === 0">
+                <tr v-if="kegiatanList.length === 0">
                   <td colspan="6" class="px-4 py-12 text-center text-gray-500 font-medium">Data tidak ditemukan sesuai filter/pencarian Anda.</td>
                 </tr>
               </tbody>
@@ -297,11 +286,11 @@ const handleReject = (reason) => {
         </div>
 
         <TablePagination 
-          :current-page="currentPage" 
-          :total-pages="totalPages" 
-          :rows-per-page="rowsPerPage"
-          @update:current-page="currentPage = $event"
-          @update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+            :current-page="pendaftaranData?.current_page || 1" 
+            :total-pages="pendaftaranData?.last_page || 1" 
+            :rows-per-page="pendaftaranData?.per_page || 10"
+            @update:current-page="handlePageChange"
+            @update:rows-per-page="handleRowsChange"
         />
       </div>
     </section>

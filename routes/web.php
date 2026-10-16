@@ -11,6 +11,7 @@ use App\Http\Controllers\Dashboard\Admin\KarirController;
 use App\Http\Controllers\Dashboard\Admin\RoadmapController as AdminRoadmapController;
 use App\Http\Controllers\Dashboard\Admin\RoadmapDetailController;
 use App\Http\Controllers\Dashboard\Admin\MahasiswaController;
+use App\Http\Controllers\Dashboard\Admin\PendaftaranAktivitasController as AdminPendaftaranAktivitasController;
 
 
 /* Route Landing dan Website Public*/
@@ -98,9 +99,14 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
             return Inertia::render('dashboard/admin/ActivityApproval');
         })->name('persetujuan');
 
-        Route::get('/bukti-pendaftaran', function () {
-            return Inertia::render('dashboard/admin/ActivityRegister');
-        })->name('bukti');
+        Route::get('/bukti-pendaftaran', [AdminPendaftaranAktivitasController::class, 'index'])
+            ->name('bukti');
+
+        Route::patch('/bukti-pendaftaran/{id}/approve', [AdminPendaftaranAktivitasController::class, 'approve'])
+            ->name('bukti.approve');
+            
+        Route::patch('/bukti-pendaftaran/{id}/reject', [AdminPendaftaranAktivitasController::class, 'reject'])
+            ->name('bukti.reject');
 
         Route::get('/hasil', function () {
             return Inertia::render('dashboard/admin/ActivityResult');

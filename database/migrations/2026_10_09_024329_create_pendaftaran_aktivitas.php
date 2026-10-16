@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('pendaftaran_aktivitas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_user')->constrained('users')->onDelete('cascade'); 
-            $table->foreignId('id_aktivitas')->constrained('aktivitas')->onDelete('cascade'); 
-            $table->string('bukti_pendaftaran'); 
+
+            $table->foreignId('id_aktivitas')->constrained('aktivitas')->onDelete('cascade');
+            $table->string('nama_tim'); 
+            $table->string('bukti_pendaftaran');
             $table->string('catatan_penolakan')->nullable(); 
             $table->enum('status', ['menunggu', 'disetujui', 'ditolak'])->default('menunggu'); 
             $table->timestamps();

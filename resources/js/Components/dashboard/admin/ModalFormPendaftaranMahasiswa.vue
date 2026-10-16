@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
 									<input
 										type="text"
 										readonly
-										:value="data?.judul_aktivitas || '-'"
+										:value="data?.activity?.judul || '-'"
 										class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] outline-none ring-0 focus:outline-none focus:ring-0 focus:border-[#d6e0ee] focus-visible:outline-none focus-visible:ring-0 cursor-default select-text transition-none"
 										style="outline: none !important; box-shadow: none !important;"
 									/>
@@ -157,17 +157,17 @@ onBeforeUnmount(() => {
 									</label>
 									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Daftar mahasiswa & NIM peserta</p>
 									<div class="flex flex-col gap-2 mt-1 sm:mt-1.5">
-										<template v-if="Array.isArray(data?.peserta) && data.peserta.length > 0">
-											<input
-												v-for="(org, i) in data.peserta"
-												:key="i"
-												type="text"
-												readonly
-												:value="org"
-												class="h-[42px] sm:h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] outline-none ring-0 focus:outline-none focus:ring-0 focus:border-[#d6e0ee] focus-visible:outline-none focus-visible:ring-0 cursor-default select-text transition-none"
-												style="outline: none !important; box-shadow: none !important;"
-											/>
-										</template>
+									<template v-if="Array.isArray(data?.peserta) && data.peserta.length > 0">
+									    <input
+									        v-for="(org, i) in data.peserta"
+									        :key="org.id || i"
+									        type="text"
+									        readonly
+									        :value="org.nama" 
+									        class="mt-1 sm:mt-1.5 mb-2 h-[42px] sm:h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] outline-none ring-0 focus:outline-none focus:ring-0 focus:border-[#d6e0ee] focus-visible:outline-none focus-visible:ring-0 cursor-default select-text transition-none"
+									        style="outline: none !important; box-shadow: none !important;"
+									    />
+									</template>
 										<template v-else-if="data?.peserta">
 											<input
 												type="text"
@@ -193,9 +193,9 @@ onBeforeUnmount(() => {
 									</label>
 									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1.5">Kategori roadmap aktivitas</p>
 									<div class="flex flex-wrap items-center gap-1.5 min-h-[42px] sm:min-h-[44px] p-2.5 rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc]">
-										<template v-if="data?.kategori && (Array.isArray(data.kategori) ? data.kategori.length > 0 : String(data.kategori).trim().length > 0)">
+										<template v-if="data.activity?.kategori && (Array.isArray(data.activity.kategori) ? data.activity.kategori.length > 0 : String(data.activity.kategori).trim().length > 0)">
 											<span
-												v-for="(cat, catIdx) in (Array.isArray(data.kategori) ? data.kategori : data.kategori.split(',').map(s => s.trim()))"
+												v-for="(cat, catIdx) in (Array.isArray(data.activity.kategori) ? data.activity.kategori : data.activity.kategori.split(',').map(s => s.trim()))"
 												:key="catIdx"
 												:class="[
 													'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',

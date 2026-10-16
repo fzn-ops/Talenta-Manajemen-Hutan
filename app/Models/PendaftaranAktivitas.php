@@ -12,22 +12,24 @@ class PendaftaranAktivitas extends Model
 
     protected $table='Pendaftaran_aktivitas';
     protected $fillable=[
-        'id_user',
-        'judul',
-        'deskripsi',
-        'kategori',
+        'id_aktivitas',
+        'nama_tim',
+        'bukti_pendaftaran',
+        'catatan_penolakan',
         'status',
-        'deadline',
-        'created_at',
-        'updated_at',
     ];
 
-    protected $casts = [
-        'deadline' => 'datetime',
-    ];
+    public function activity(){
+        return $this->belongsTo(Aktivitas::class,'id_aktivitas', 'id');
+    }
 
-    public function user()
+    public function peserta()
     {
-        return $this->belongsTo(User::class, 'id_user', 'id');
+        return $this->belongsToMany(
+            User::class, 
+            'pendaftaran_peserta', 
+            'id_pendaftaran', 
+            'id_user'
+        );
     }
 }
