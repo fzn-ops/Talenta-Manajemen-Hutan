@@ -28,10 +28,13 @@ class AktivitasService
         $query = Aktivitas::with('gambarAktivitas');
 
         if (!empty($filters['sort']) && !empty($filters['direction'])) {
-            $query->orderBy($filters['sort'], $filters['direction']);
+            $allowedSorts = ['id', 'judul', 'deadline', 'created_at'];
+            $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'id';
+            $direction = strtolower($filters['direction']) === 'asc' ? 'asc' : 'desc';
+            $query->orderBy($sortColumn, $direction);
         } else {
             // Urutan default kalau baru buka halaman pertama kali
-            $query->orderBy('created_at', 'desc'); 
+            $query->orderBy('id', 'desc'); 
         }
 
         // 1. Fitur Search
