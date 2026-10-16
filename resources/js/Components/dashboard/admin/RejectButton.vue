@@ -1,7 +1,19 @@
 <script setup>
+const props = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  title: {
+    type: String,
+    default: 'Tolak',
+  },
+});
+
 const emit = defineEmits(['click']);
 
 const handleClick = (e) => {
+	if (props.disabled) return;
 	if (e && e.currentTarget && typeof e.currentTarget.blur === 'function') {
 		e.currentTarget.blur();
 	}
@@ -12,8 +24,10 @@ const handleClick = (e) => {
 <template>
   <button 
     type="button"
-    title="Tolak" 
-    class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 active:brightness-60 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 cursor-pointer reject-table-btn"
+    :disabled="disabled"
+    :title="title" 
+    class="inline-flex items-center justify-center rounded-[6px] transition-all duration-150 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 reject-table-btn"
+    :class="disabled ? 'opacity-35 cursor-not-allowed filter grayscale-[40%]' : 'cursor-pointer active:brightness-60'"
     style="outline: none !important; box-shadow: none !important;"
     @click="handleClick($event)"
   >
@@ -23,7 +37,7 @@ const handleClick = (e) => {
 
 <style scoped>
 @media (hover: hover) and (pointer: fine) {
-  .reject-table-btn:hover {
+  .reject-table-btn:not(:disabled):hover {
     filter: brightness(0.75);
   }
 }

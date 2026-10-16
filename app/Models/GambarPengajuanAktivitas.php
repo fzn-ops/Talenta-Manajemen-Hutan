@@ -11,14 +11,14 @@ class GambarPengajuanAktivitas extends Model
     use HasFactory;
     protected $table='gambar_pengajuan_aktivitas';
     protected $fillable = [
-        'id_pengangajuan_aktivitas',
+        'id_pengajuan_aktivitas',
         'gambar',
         'utama',
     ];
 
     public function pengajuanAktivitas()
     {
-        return $this->belongsTo(PengajuanAktivitas::class, 'id_pengangajuan_aktivitas', 'id');
+        return $this->belongsTo(PengajuanAktivitas::class, 'id_pengajuan_aktivitas', 'id');
     }
 
     public function scopeUtama($query)

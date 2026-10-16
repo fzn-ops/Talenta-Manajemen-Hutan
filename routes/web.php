@@ -12,6 +12,7 @@ use App\Http\Controllers\Dashboard\Admin\RoadmapController as AdminRoadmapContro
 use App\Http\Controllers\Dashboard\Admin\RoadmapDetailController;
 use App\Http\Controllers\Dashboard\Admin\MahasiswaController;
 use App\Http\Controllers\Dashboard\Admin\PendaftaranAktivitasController as AdminPendaftaranAktivitasController;
+use App\Http\Controllers\Dashboard\Admin\PersetujuanAktivitasController as AdminPersetujuanAktivitasController;
 
 
 /* Route Landing dan Website Public*/
@@ -95,9 +96,9 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
     Route::delete('/roadmap/materi/{materiId}', [RoadmapDetailController::class, 'destroyMateri'])->name('roadmap.materi.destroy');
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
-        Route::get('/persetujuan', function () {
-            return Inertia::render('dashboard/admin/ActivityApproval');
-        })->name('persetujuan');
+        Route::get('/persetujuan', [AdminPersetujuanAktivitasController::class, 'index'])->name('persetujuan');
+        Route::post('/persetujuan/{id}/approve', [AdminPersetujuanAktivitasController::class, 'approve'])->name('persetujuan.approve');
+        Route::post('/persetujuan/{id}/reject', [AdminPersetujuanAktivitasController::class, 'reject'])->name('persetujuan.reject');
 
         Route::get('/bukti-pendaftaran', [AdminPendaftaranAktivitasController::class, 'index'])
             ->name('bukti');

@@ -75,7 +75,5 @@ class PendaftaranAktivitasSeeder extends Seeder
 
         // Masukin Farhan aja ke Tim 3
         $timTiga->peserta()->sync([$farhan->id]);
-
-        $this->command->info('Seeder Pendaftaran Aktivitas berhasil disuntik sempurna! 🔥');
     }
 }

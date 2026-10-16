@@ -3,6 +3,10 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps({
   show: Boolean,
+  isApproved: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['close', 'submit']);
@@ -90,9 +94,13 @@ onBeforeUnmount(() => {
               </svg>
             </div>
 
-            <h2 class="text-[17px] sm:text-[19px] font-bold text-[#183669] mb-4 sm:mb-5 px-2 leading-snug">
-              Apakah Kamu yakin Ingin Menolak Pengajuan Ini?
+            <h2 class="text-[17px] sm:text-[19px] font-bold text-[#183669] mb-3 px-2 leading-snug">
+              {{ isApproved ? 'Batalkan Persetujuan & Tolak Pengajuan Ini?' : 'Apakah Kamu yakin Ingin Menolak Pengajuan Ini?' }}
             </h2>
+
+            <div v-if="isApproved" class="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-left font-inter text-[12px] text-amber-800 leading-relaxed">
+              <strong>Peringatan:</strong> Pengajuan ini sebelumnya telah <strong>disetujui</strong> dan diterbitkan ke List Aktivitas. Menolak pengajuan ini akan otomatis <strong>mencabut/menghapus</strong> aktivitas terkait dari List Aktivitas.
+            </div>
 
             <div class="text-left mb-6 relative">
               <label class="block text-xs text-red-500 mb-1.5 font-medium">*Masukan alasan dari penolakan</label>

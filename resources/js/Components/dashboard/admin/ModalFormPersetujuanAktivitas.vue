@@ -54,26 +54,33 @@ const showImageModal = ref(false);
 const selectedImage = ref('');
 
 const imageList = computed(() => {
-	if (!props.data?.gambar) return [];
-	if (Array.isArray(props.data.gambar)) {
-		return props.data.gambar.slice(0, 3);
+	const raw = props.data?.gambar_pengajuan_aktivitas || props.data?.gambar;
+	if (!raw) return [];
+	if (Array.isArray(raw)) {
+		return raw.slice(0, 3);
 	}
-	if (typeof props.data.gambar === 'string') {
-		const arr = props.data.gambar.split(',').map(s => s.trim()).filter(Boolean);
+	if (typeof raw === 'string') {
+		const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
 		return arr.slice(0, 3);
 	}
-	return [props.data.gambar];
+	return [raw];
 });
 
 const getImageSrc = (gambar) => {
-	if (gambar && typeof gambar === 'object' && gambar.url) {
+	if (!gambar) return '';
+	if (typeof gambar === 'object' && gambar.gambar) {
+		gambar = gambar.gambar;
+	}
+	if (typeof gambar === 'object' && gambar.url) {
 		return gambar.url;
 	}
-	if (gambar && typeof gambar === 'object' && gambar.file) {
+	if (typeof gambar === 'object' && gambar.file) {
 		return URL.createObjectURL(gambar.file);
 	}
-	if (gambar && typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
-		return gambar;
+	if (typeof gambar === 'string') {
+		if (gambar.startsWith('http://') || gambar.startsWith('https://')) return gambar;
+		if (gambar.startsWith('/')) return gambar;
+		return '/' + gambar;
 	}
 	return `https://picsum.photos/seed/${(typeof gambar === 'string' ? gambar : 'dummy')}/800/600`;
 };
@@ -325,11 +332,11 @@ onBeforeUnmount(() => {
 									</p>
 									<div
 										class="flex-1 min-h-[90px] rounded-[10px] p-3.5 font-inter text-[13px] sm:text-[14px] leading-relaxed border select-text"
-										:class="data?.status === 'Ditolak' && (data?.alasan_tolak || true)
+										:class="String(data?.status).toLowerCase() === 'ditolak'
 											? 'border-red-200 bg-red-50/70 text-red-700'
 											: 'border-[#d6e0ee] bg-[#f8fafc] text-[#7188a3] italic'"
 									>
-										{{ (data?.status === 'Ditolak') ? (data?.alasan_tolak || 'Data tidak lengkap atau format gambar kurang jelas.') : '- Tidak ada catatan penolakan sebelumnya -' }}
+										{{ (String(data?.status).toLowerCase() === 'ditolak') ? (data?.catatan_penolakan || data?.alasan_tolak || 'Data tidak lengkap atau format gambar kurang jelas.') : '- Tidak ada catatan penolakan sebelumnya -' }}
 									</div>
 								</div>
 							</div>
@@ -348,7 +355,8 @@ onBeforeUnmount(() => {
 							<button
 								type="button"
 								@click="$emit('reject', data)"
-								class="h-[42px] sm:h-[44px] min-w-[100px] sm:min-w-[120px] px-5 sm:px-6 rounded-[10px] bg-[#ef4444] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-red-600 active:scale-98 focus:outline-none focus:ring-0 cursor-pointer select-none whitespace-nowrap outline-none"
+								:disabled="String(data?.status).toLowerCase() === 'ditolak'"
+								class="h-[42px] sm:h-[44px] min-w-[100px] sm:min-w-[120px] px-5 sm:px-6 rounded-[10px] bg-[#ef4444] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-red-600 active:scale-98 focus:outline-none focus:ring-0 cursor-pointer select-none whitespace-nowrap outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 								style="outline: none !important; box-shadow: none !important;"
 							>
 								Tolak
@@ -356,7 +364,8 @@ onBeforeUnmount(() => {
 							<button
 								type="button"
 								@click="$emit('approve', data)"
-								class="h-[42px] sm:h-[44px] min-w-[100px] sm:min-w-[120px] px-5 sm:px-6 rounded-[10px] bg-[#10b981] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-[#059669] active:scale-98 focus:outline-none focus:ring-0 cursor-pointer select-none whitespace-nowrap outline-none"
+								:disabled="String(data?.status).toLowerCase() === 'disetujui'"
+								class="h-[42px] sm:h-[44px] min-w-[100px] sm:min-w-[120px] px-5 sm:px-6 rounded-[10px] bg-[#10b981] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-[#059669] active:scale-98 focus:outline-none focus:ring-0 cursor-pointer select-none whitespace-nowrap outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 								style="outline: none !important; box-shadow: none !important;"
 							>
 								Setujui

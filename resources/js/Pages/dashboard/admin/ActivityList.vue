@@ -172,20 +172,21 @@ const openEdit = (item) => {
   
   if (item.gambar_aktivitas && item.gambar_aktivitas.length > 0) {
     existingImages = item.gambar_aktivitas.map(g => {
+      let imgUrl = g.gambar;
+      if (imgUrl && !imgUrl.startsWith('http://') && !imgUrl.startsWith('https://')) {
+        imgUrl = imgUrl.startsWith('/') ? imgUrl : `/${imgUrl}`;
+      }
       return {
         id: g.id, 
-        // Bikin URL lengkap biar preview-nya bisa nampilin gambar
-        url: `/${g.gambar}`, 
-        isNew: false // Ini penting biar pas dikirim nggak dianggap upload file baru
+        url: imgUrl, 
+        isNew: false
       };
     });
   }
 
   // 2. MASUKKAN DATA KE FORM
-  // Sesuaikan 'selectedActivityData.value' dengan nama variabel form lu (bisa jadi form.value atau yang lain)
   selectedActivityData.value = {
     ...item,
-    // TIMPA properti gambar dengan array existingImages yang udah kita format
     gambar: existingImages 
   };
   
@@ -195,8 +196,10 @@ const openEdit = (item) => {
 const openImage = (gambar) => {
   if (typeof gambar === 'object' && gambar.url) {
     selectedImage.value = gambar.url;
-  } else if (typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
+  } else if (typeof gambar === 'string' && (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('/'))) {
     selectedImage.value = gambar;
+  } else if (typeof gambar === 'string') {
+    selectedImage.value = `/${gambar}`;
   } else {
     selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
   }
@@ -287,8 +290,8 @@ const handleFormSubmit = (formData) => {
 const formatFilename = (path) => {
     if (!path) return '';
     
-    // Ambil nama filenya aja dari path
-    const filename = path.split('/').pop();
+    // Ambil nama filenya aja dari path (bersihkan query string)
+    const filename = path.split('?')[0].split('/').pop() || 'gambar.jpg';
     
     // Batas maksimal huruf yang mau ditampilin (bisa lu ubah sesuka hati, misal 15)
     const maxLength = 8;
@@ -525,7 +528,7 @@ const formatFilename = (path) => {
                  <td class="px-3 py-2.5 text-center">
                      <div class="flex items-center justify-center gap-1.5 flex-wrap">
                        <span v-for="(gbr, i) in item.gambar_aktivitas" :key="i" class="inline-flex items-center">
-                         <button @click="openImage('/' + gbr.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer" :title="gbr.gambar.split('/').pop()">
+                         <button @click="openImage(gbr.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer" :title="gbr.gambar.split('/').pop()">
                            <!-- Panggil fungsinya di sini wok! -->
                            {{ formatFilename(gbr.gambar) }}
                          </button>
