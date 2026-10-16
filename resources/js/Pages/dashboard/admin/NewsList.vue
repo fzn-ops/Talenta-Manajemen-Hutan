@@ -31,19 +31,7 @@ const sortColumn = ref(props.filters?.sort || 'created_at');
 const sortDirection = ref(props.filters?.direction || 'desc');
 const showFilter = ref(false);
 
-const resetFilters = () => {
-  filterBulan.value = '';
-  showFilter.value = false;
-};
 
-const handleSort = (column) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'asc';
-  }
-};
 
 // Format Tanggal untuk tampilan di tabel
 const formatTanggal = (dateString) => {
@@ -123,41 +111,76 @@ const paginatedData = computed(() => {
   return processedNews.value; 
 });
 
-let searchTimeout = null;
+// Loading state untuk efek blur dan mencegah spam click saat filtering/sorting
+const isLoading = ref(false);
 
-watch([searchQuery, filterBulan, sortColumn, sortDirection, rowsPerPage], () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        router.get('/admin/berita/list', {
-            search: searchQuery.value,
-            bulan: filterBulan.value,
-            sort: sortColumn.value,
-            direction: sortDirection.value,
-            per_page: rowsPerPage.value, 
-            page: 1 
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true
-        });
-    }, 300);
+const fetchBerita = (page = null) => {
+  isLoading.value = true;
+  const targetPage = page !== null ? page : currentPage.value;
+  router.get('/admin/berita/list', {
+    search: searchQuery.value || undefined,
+    bulan: filterBulan.value || undefined,
+    sort: sortColumn.value || undefined,
+    direction: sortDirection.value || undefined,
+    per_page: rowsPerPage.value || undefined, 
+    page: targetPage > 1 ? targetPage : undefined
+  }, {
+    preserveState: true,
+    preserveScroll: true,
+    replace: true,
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
+};
+
+let searchTimeout = null;
+watch([searchQuery, filterBulan], () => {
+  currentPage.value = 1;
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetchBerita(1);
+  }, 300);
 }, { deep: true });
 
-watch(currentPage, (newPage, oldPage) => {
-  if (newPage !== oldPage) {
-      router.get('/admin/berita/list', { 
-          search: searchQuery.value,       
-          bulan: filterBulan.value,         
-          sort: sortColumn.value,           
-          direction: sortDirection.value,   
-          per_page: rowsPerPage.value,      
-          page: newPage                    
-      }, {
-          preserveState: true,  
-          preserveScroll: true  
-      });
+watch(() => props.beritaData?.current_page, (newPage) => {
+  if (newPage && newPage !== currentPage.value) {
+    currentPage.value = newPage;
   }
 });
+
+const resetFilters = () => {
+  if (isLoading.value) return;
+  filterBulan.value = '';
+  searchQuery.value = '';
+  showFilter.value = false;
+  currentPage.value = 1;
+  fetchBerita(1);
+};
+
+const handleSort = (column) => {
+  if (isLoading.value) return;
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
+  }
+  fetchBerita(currentPage.value);
+};
+
+const handlePageChange = (newPage) => {
+  if (isLoading.value) return;
+  currentPage.value = newPage;
+  fetchBerita(newPage);
+};
+
+const handleRowsPerPageChange = (newRows) => {
+  if (isLoading.value) return;
+  rowsPerPage.value = newRows;
+  currentPage.value = 1;
+  fetchBerita(1);
+};
 
 // ==========================================
 // 4. STATE TOAST, DELETE, PREVIEW GAMBAR
@@ -377,13 +400,13 @@ const handleModalSubmit = (formData) => {
         <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-30"></div>
 
         <!-- TABEL DATA -->
-        <div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+        <div :class="['overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee] transition-all', isLoading ? 'cursor-wait' : '']">
           <div class="overflow-x-auto lg:overflow-visible">
             <table class="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
               <thead class="bg-[#416f65]">
                 <tr class="h-[48px]">
                   <th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
-                    <button type="button" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
                       <span>No</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'id'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -392,7 +415,7 @@ const handleModalSubmit = (formData) => {
                     </button>
                   </th>
                   <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('created_at')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('created_at')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Tanggal">
                       <span>Tanggal</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'created_at'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -401,7 +424,7 @@ const handleModalSubmit = (formData) => {
                     </button>
                   </th>
                   <th class="w-[280px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('judul')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('judul')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Judul Berita">
                       <span>Judul Berita</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'judul'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -415,7 +438,7 @@ const handleModalSubmit = (formData) => {
                 </tr>
               </thead>
               
-              <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
+              <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
                   <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
                   <td class="px-3 py-2.5 text-center font-medium">{{ formatTanggal(item.created_at) }}</td>
@@ -451,8 +474,9 @@ const handleModalSubmit = (formData) => {
           :current-page="currentPage" 
           :total-pages="totalPages" 
           :rows-per-page="rowsPerPage"
-          @update:current-page="currentPage = $event"
-          @update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+          :disabled="isLoading"
+          @update:current-page="handlePageChange"
+          @update:rows-per-page="handleRowsPerPageChange"
         />
       </div>
     </section>
