@@ -17,12 +17,12 @@ class UserDummy extends Seeder
         //
         User::create([
             'nama' => 'Fauzan Fuadiansyah',
-            'nim' => 'J3C123456',
+            'nim' => 'J0403231085',
             'email' => 'fauzan@apps.ipb.ac.id',
             'password' => Hash::make('password123'),
             'role' => 'mahasiswa',
             'angkatan' => 60,
-            'talent_mapping' => 'Web Development',
+            'talent_mapping' => 'Profesional',
             'no_handphone' => '08123456789'
         ]);
         User::create([
@@ -42,8 +42,8 @@ class UserDummy extends Seeder
             'password' => Hash::make('admin123'),
             'role' => 'admin',
             'angkatan' => 2023,
-            'talent_mapping' => 'Web Development',
-            'no_handphone' => '08123456789'
+            'talent_mapping' => ' ',
+            'no_handphone' => ' '
         ]);
     }
 }

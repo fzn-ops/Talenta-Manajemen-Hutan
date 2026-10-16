@@ -18,6 +18,10 @@ const props = defineProps({
 		type: [Number, String, null],
 		default: null,
 	},
+	loading: {
+		type: Boolean,
+		default: false,
+	},
 });
 
 const emit = defineEmits(['close', 'submit']);
@@ -38,6 +42,15 @@ const isDragging = ref(false);
 const previewingImage = ref(null);
 const isCategoryDropdownOpen = ref(false);
 const categoryDropdownRef = ref(null);
+
+const getImageUrl = (path) => {
+	if (!path) return '';
+	if (typeof path !== 'string') return '';
+	if (path.startsWith('data:') || path.startsWith('blob:') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/storage/')) {
+		return path;
+	}
+	return `/storage/${path}`;
+};
 
 const openImagePreview = (imgUrl) => {
 	previewingImage.value = imgUrl;
@@ -114,7 +127,7 @@ watch(
             errors.value = {};
             isCategoryDropdownOpen.value = false;
             
-            thumbnailPreview.value = ''; 
+            thumbnailPreview.value = props.initialData?.gambar ? getImageUrl(props.initialData.gambar) : ''; 
             
             form.value = {
                 nama_roadmap: props.initialData?.nama_roadmap || '',
@@ -162,8 +175,6 @@ const handleSubmit = () => {
 		kategori: inputCategory,
 		gambar: form.value.gambar,
 	});
-
-	handleClose();
 };
 
 const handleKeyDown = (e) => {
@@ -389,7 +400,7 @@ const handleBackdropMouseUp = (e) => {
 									<div v-else class="w-full flex justify-center">
 										<div class="group relative w-full max-w-[280px] sm:max-w-[320px] aspect-video overflow-hidden rounded-[8px] border border-[#d6e0ee] transition-all shadow-xs bg-slate-100">
 											
-											<img :src="thumbnailPreview ? thumbnailPreview : '/storage/' + form.gambar" 
+											<img :src="thumbnailPreview || getImageUrl(form.gambar)" 
 											alt="Preview Thumbnail" class="h-full w-full object-cover" />
 											
 											<!-- Delete Button -->
@@ -407,7 +418,7 @@ const handleBackdropMouseUp = (e) => {
 											<!-- Zoom / Preview Button -->
 											<button
 												type="button"
-												@click.stop="openImagePreview(thumbnailPreview ? thumbnailPreview : '/storage/' + form.gambar)"
+												@click.stop="openImagePreview(thumbnailPreview || getImageUrl(form.gambar))"
 												class="absolute right-1.5 bottom-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 hover:bg-black/85 text-white shadow-md backdrop-blur-xs transition hover:scale-110 active:scale-95 focus:outline-none cursor-pointer"
 												title="Lihat Ukuran Penuh"
 											>
@@ -447,9 +458,17 @@ const handleBackdropMouseUp = (e) => {
 								</button>
 								<button
 									type="submit"
-									class="h-[42px] sm:h-[44px] flex-1 sm:flex-initial sm:min-w-[170px] px-4 sm:px-6 rounded-[10px] bg-[#183669] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-[#122b54] active:scale-98 focus:outline-none cursor-pointer select-none whitespace-nowrap"
+									:disabled="loading"
+									class="h-[42px] sm:h-[44px] flex-1 sm:flex-initial sm:min-w-[170px] px-4 sm:px-6 rounded-[10px] bg-[#183669] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-[#122b54] active:scale-98 focus:outline-none cursor-pointer select-none whitespace-nowrap disabled:opacity-60 disabled:cursor-wait"
 								>
-									Simpan
+									<span v-if="loading" class="flex items-center justify-center gap-2">
+										<svg class="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+										<span>Menyimpan...</span>
+									</span>
+									<span v-else>{{ isEditing ? 'Simpan Perubahan' : 'Buat Roadmap' }}</span>
 								</button>
 							</div>
 						</form>

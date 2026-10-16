@@ -61,6 +61,9 @@ const selectedCategories = ref(props.filters?.kategori ? props.filters.kategori.
 const currentPage = ref(props.roadmapData?.current_page || 1);
 const totalPages = computed(() => props.roadmapData?.last_page || 1);
 const rowsPerPage = ref(props.roadmapData?.per_page || 6);
+const rowsOptions = [6, 12, 18, 24];
+const isLoading = ref(false);
+const isSubmittingForm = ref(false);
 
 // Datanya LANGSUNG ngambil dari Laravel (nggak usah di-slice manual lagi)
 const paginatedRoadmaps = computed(() => props.roadmapData?.data || []);
@@ -72,15 +75,17 @@ let searchTimeout = null;
 watch([searchQuery, selectedCategories, rowsPerPage], () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        router.get('/admin/roadmap', { // SESUAIKAN DENGAN URL ROUTE LU
+        router.get('/admin/roadmap', {
             search: searchQuery.value,
-            kategori: selectedCategories.value.join(','), // Gabungin array jadi string
+            kategori: selectedCategories.value.join(','),
             per_page: rowsPerPage.value,
-            page: 1 // Reset ke halaman 1
+            page: 1
         }, {
             preserveState: true,
             preserveScroll: true,
-            replace: true
+            replace: true,
+            onBefore: () => { isLoading.value = true; },
+            onFinish: () => { isLoading.value = false; }
         });
     }, 300);
 }, { deep: true });
@@ -88,12 +93,17 @@ watch([searchQuery, selectedCategories, rowsPerPage], () => {
 // Watcher untuk ganti halaman (Next/Prev Page)
 watch(currentPage, (newPage, oldPage) => {
     if (newPage !== oldPage) {
-        router.get('/admin/roadmap', { // SESUAIKAN DENGAN URL ROUTE LU
+        router.get('/admin/roadmap', {
             search: searchQuery.value,
             kategori: selectedCategories.value.join(','),
             per_page: rowsPerPage.value,
             page: newPage
-        }, { preserveState: true, preserveScroll: true });
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            onBefore: () => { isLoading.value = true; },
+            onFinish: () => { isLoading.value = false; }
+        });
     }
 });
 
@@ -161,23 +171,19 @@ const openEditModal = (roadmap) => {
 };
 
 const handleFormSubmit = (formData) => {
-    // ==========================================
+    if (isSubmittingForm.value) return;
+
     // TAMENG GAMBAR: Cek apakah gambar benar-benar file
-    // ==========================================
-    // Kalau 'gambar' bentuknya cuma teks/string (atau kosong), hapus dari payload
-    // biar Laravel nggak ngevalidasi itu sebagai file upload.
     if (formData.gambar && !(formData.gambar instanceof File)) {
         delete formData.gambar;
     }
     
-    // Kalau benar-benar kosong/null, hapus juga biar aman
     if (!formData.gambar) {
         delete formData.gambar;
     }
 
-    // ==========================================
-    // LANJUT PROSES SUBMIT
-    // ==========================================
+    isSubmittingForm.value = true;
+
     if (isEditing.value && editingId.value) {
         // UPDATE DATA
         router.post(`/admin/roadmap/${editingId.value}`, {
@@ -185,16 +191,34 @@ const handleFormSubmit = (formData) => {
             ...formData
         }, {
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 isFormModalOpen.value = false;
+                const msg = page.props?.flash?.success || `Data Roadmap "${formData.nama_roadmap || ''}" berhasil diperbarui!`;
+                showToast('success', 'Berhasil Diperbarui', msg);
+            },
+            onError: (errs) => {
+                const firstErr = Object.values(errs)[0] || 'Gagal memperbarui data roadmap.';
+                showToast('error', 'Gagal', firstErr);
+            },
+            onFinish: () => {
+                isSubmittingForm.value = false;
             }
         });
     } else {
         // CREATE DATA
         router.post('/admin/roadmap', formData, {
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 isFormModalOpen.value = false;
+                const msg = page.props?.flash?.success || `Roadmap "${formData.nama_roadmap || ''}" berhasil dibuat!`;
+                showToast('success', 'Berhasil Ditambahkan', msg);
+            },
+            onError: (errs) => {
+                const firstErr = Object.values(errs)[0] || 'Gagal menambahkan roadmap.';
+                showToast('error', 'Gagal', firstErr);
+            },
+            onFinish: () => {
+                isSubmittingForm.value = false;
             }
         });
     }
@@ -222,20 +246,37 @@ const confirmDeleteRoadmap = () => {
 
     router.delete(`/admin/roadmap/${deletingRoadmap.value.id}`, {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
             isDeleting.value = false;
             closeDeleteModal();
-            // Flash dari Laravel otomatis bikin toast sukses
+            const msg = page.props?.flash?.success || 'Roadmap dan seluruh materinya berhasil dihapus!';
+            showToast('success', 'Berhasil Dihapus', msg);
         },
-        onError: () => {
+        onError: (errs) => {
             isDeleting.value = false;
+            const firstErr = Object.values(errs)[0] || 'Gagal menghapus roadmap.';
+            showToast('error', 'Gagal', firstErr);
         }
     });
 };
 
 const getCountByCategory = (cat) => {
-	const key = cat.toLowerCase();
-    return props.categoryCounts?.[key] || 0;
+    return props.categoryCounts?.[cat] || props.categoryCounts?.[cat.toLowerCase()] || 0;
+};
+
+const formatUpdatedDate = (dateStr) => {
+	if (!dateStr) return '-';
+	const date = new Date(dateStr);
+	if (isNaN(date.getTime())) return dateStr;
+
+	const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+	const dayName = days[date.getDay()];
+
+	const day = String(date.getDate()).padStart(2, '0');
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const year = date.getFullYear();
+
+	return `${dayName}, ${day}-${month}-${year}`;
 };
 </script>
 
@@ -489,7 +530,7 @@ const getCountByCategory = (cat) => {
 							<!-- Card Footer: Last Updated & Action Buttons -->
 							<div class="mt-5 flex items-center justify-between border-t border-[#f1f5f9] pt-3">
 								<span class="font-inter text-[11px] font-normal text-[#94a3b8]">
-									Diperbarui : {{ item.updated_at }}
+									Diperbarui : {{ formatUpdatedDate(item.updated_at) }}
 								</span>
 								<div class="flex items-center gap-1.5" @click.stop.prevent>
 									<EditButtonTable :label="`Edit ${item.nama_roadmap}`" @click="openEditModal(item)" />
@@ -546,6 +587,7 @@ const getCountByCategory = (cat) => {
 			:is-editing="isEditing"
 			:initial-data="selectedRoadmap || {}"
 			:editing-id="editingId"
+			:loading="isSubmittingForm"
 			@close="isFormModalOpen = false"
 			@submit="handleFormSubmit"
 		/>

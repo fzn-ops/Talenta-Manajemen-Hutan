@@ -40,10 +40,10 @@ class RoadmapController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_roadmap'      => 'required|string|max:255',
-            'kategori'   => 'nullable|string',
-            'partisipan' => 'nullable|integer',
-            'gambar'     => 'nullable|image|mimes:jpeg,png,jpg|max:5120', 
+            'nama_roadmap' => 'required|string|max:255',
+            'kategori'     => 'required|string|in:Profesional,Bisnis,Birokrasi,Akademisi',
+            'partisipan'   => 'nullable|integer',
+            'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:5120', 
         ]);
 
         $this->roadmapService->createRoadmap($validated);
@@ -57,10 +57,10 @@ class RoadmapController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'nama_roadmap'=> 'required|string|max:255',
-            'kategori'   => 'nullable|string',
-            'partisipan' => 'nullable|integer',
-            'gambar'     => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'nama_roadmap' => 'required|string|max:255',
+            'kategori'     => 'required|string|in:Profesional,Bisnis,Birokrasi,Akademisi',
+            'partisipan'   => 'nullable|integer',
+            'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
         $this->roadmapService->updateRoadmap($id, $validated);

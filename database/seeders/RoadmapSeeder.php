@@ -24,7 +24,7 @@ class RoadmapSeeder extends Seeder
         $roadmapsData = [
             [
                 'nama_roadmap' => 'Persiapan Karir Software Engineer & Fullstack Developer',
-                'kategori'     => 'profesional',
+                'kategori'     => 'Profesional',
                 'partisipan'   => 48,
                 'months'       => [
                     [
@@ -158,7 +158,7 @@ class RoadmapSeeder extends Seeder
             ],
             [
                 'nama_roadmap' => 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
-                'kategori'     => 'bisnis',
+                'kategori'     => 'Bisnis',
                 'partisipan'   => 72,
                 'months'       => [
                     [
@@ -207,7 +207,7 @@ class RoadmapSeeder extends Seeder
             ],
             [
                 'nama_roadmap' => 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
-                'kategori'     => 'birokrasi',
+                'kategori'     => 'Birokrasi',
                 'partisipan'   => 35,
                 'months'       => [
                     [
@@ -256,7 +256,7 @@ class RoadmapSeeder extends Seeder
             ],
             [
                 'nama_roadmap' => 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
-                'kategori'     => 'akademisi',
+                'kategori'     => 'Akademisi',
                 'partisipan'   => 28,
                 'months'       => [
                     [
@@ -305,7 +305,7 @@ class RoadmapSeeder extends Seeder
             ],
             [
                 'nama_roadmap' => 'Sertifikasi Konsultan Lingkungan & AMDAL Profesional',
-                'kategori'     => 'profesional',
+                'kategori'     => 'Profesional',
                 'partisipan'   => 63,
                 'months'       => [
                     [
@@ -354,7 +354,7 @@ class RoadmapSeeder extends Seeder
             ],
             [
                 'nama_roadmap' => 'Pengembangan Usaha Ekowisata & Agroforestry Berkelanjutan',
-                'kategori'     => 'bisnis',
+                'kategori'     => 'Bisnis',
                 'partisipan'   => 31,
                 'months'       => [
                     [

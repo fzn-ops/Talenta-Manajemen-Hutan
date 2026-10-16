@@ -52,9 +52,14 @@ public function createRoadmap(array $data)
             }
 
             // B. Buat Roadmap-nya
-            $kategori = strtolower(trim($data['kategori'] ?? 'profesional'));
-            if (!in_array($kategori, ['profesional', 'bisnis', 'birokrasi', 'akademisi'])) {
-                $kategori = 'profesional';
+            $validCategories = ['Profesional', 'Bisnis', 'Birokrasi', 'Akademisi'];
+            $rawKategori = trim($data['kategori'] ?? 'Profesional');
+            $kategori = 'Profesional';
+            foreach ($validCategories as $validCat) {
+                if (strcasecmp($validCat, $rawKategori) === 0) {
+                    $kategori = $validCat;
+                    break;
+                }
             }
 
             $roadmap = Roadmap::create([
@@ -112,7 +117,16 @@ public function createRoadmap(array $data)
             }
 
             if (!empty($data['kategori'])) {
-                $data['kategori'] = strtolower(trim($data['kategori']));
+                $validCategories = ['Profesional', 'Bisnis', 'Birokrasi', 'Akademisi'];
+                $rawKategori = trim($data['kategori']);
+                $kategori = 'Profesional';
+                foreach ($validCategories as $validCat) {
+                    if (strcasecmp($validCat, $rawKategori) === 0) {
+                        $kategori = $validCat;
+                        break;
+                    }
+                }
+                $data['kategori'] = $kategori;
             }
 
             $roadmap->update($data);
