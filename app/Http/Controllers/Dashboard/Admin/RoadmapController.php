@@ -26,9 +26,10 @@ class RoadmapController extends Controller
         $perPage = $request->input('per_page', 10);
 
         $roadmapData = $this->roadmapService->getPaginationRoadmap($filters, $perPage);
-
+        $categoryCounts = $this->roadmapService->getCategoryCounts();
         return Inertia::render('dashboard/admin/Roadmap', [
             'roadmapData' => $roadmapData,
+            'categoryCounts'=> $categoryCounts, 
             'filters'     => $filters
         ]);
     }

@@ -12,7 +12,8 @@ import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
     roadmapData: Object,
-    filters: Object
+    filters: Object,
+	categoryCounts: Object,
 });
 
 const page = usePage();
@@ -231,6 +232,11 @@ const confirmDeleteRoadmap = () => {
         }
     });
 };
+
+const getCountByCategory = (cat) => {
+	const key = cat.toLowerCase();
+    return props.categoryCounts?.[key] || 0;
+};
 </script>
 
 <template>
@@ -399,7 +405,7 @@ const confirmDeleteRoadmap = () => {
 								<div class="relative flex h-[175px] sm:h-[190px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
 									<img
 										v-if="item.gambar"
-										:src="item.gambar"
+										:src="`/storage/${item.gambar}`"
 										:alt="item.nama_roadmap"
 										class="h-full w-full object-cover"
 									/>

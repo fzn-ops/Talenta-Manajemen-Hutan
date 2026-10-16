@@ -77,24 +77,25 @@ const handleDrop = (e) => {
 };
 
 const processFile = (file) => {
-	if (!file.type.match(/^image\/(jpeg|png|jpg)$/i)) {
-		errors.value.gambar = 'Harap upload file gambar yang valid (PNG, JPG, JPEG).';
-		return;
-	}
+    if (!file.type.match(/^image\/(jpeg|png|jpg)$/i)) {
+        errors.value.gambar = 'Harap upload file gambar yang valid (PNG, JPG, JPEG).';
+        return;
+    }
 
-	if (file.size > 5 * 1024 * 1024) {
-		errors.value.gambar = 'Ukuran gambar tidak boleh melebihi 5MB.';
-		return;
-	}
+    if (file.size > 5 * 1024 * 1024) {
+        errors.value.gambar = 'Ukuran gambar tidak boleh melebihi 5MB.';
+        return;
+    }
 
-	errors.value.gambar = '';
+    errors.value.gambar = '';
 
-	const reader = new FileReader();
-	reader.onload = (event) => {
-		thumbnailPreview.value = event.target.result;
-		form.value.gambar = event.target.result;
-	};
-	reader.readAsDataURL(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        thumbnailPreview.value = event.target.result; 
+    };
+    reader.readAsDataURL(file);
+
+    form.value.gambar = file; 
 };
 
 const removeThumbnail = () => {
@@ -106,24 +107,26 @@ const removeThumbnail = () => {
 };
 
 watch(
-	() => props.show,
-	(isOpen) => {
-		if (isOpen) {
-			formError.value = '';
-			errors.value = {};
-			isCategoryDropdownOpen.value = false;
-			thumbnailPreview.value = props.initialData?.gambar || '';
-			form.value = {
-				nama_roadmap: props.initialData?.nama_roadmap || '',
-				kategori: props.initialData?.kategori || '',
-				gambar: props.initialData?.gambar || '',
-			};
-			if (fileInputRef.value) {
-				fileInputRef.value.value = '';
-			}
-		}
-	},
-	{ immediate: true }
+    () => props.show,
+    (isOpen) => {
+        if (isOpen) {
+            formError.value = '';
+            errors.value = {};
+            isCategoryDropdownOpen.value = false;
+            
+            thumbnailPreview.value = ''; 
+            
+            form.value = {
+                nama_roadmap: props.initialData?.nama_roadmap || '',
+                kategori: props.initialData?.kategori || '',
+                gambar: props.initialData?.gambar || '',
+            };
+            if (fileInputRef.value) {
+                fileInputRef.value.value = '';
+            }
+        }
+    },
+    { immediate: true }
 );
 
 const handleClose = () => {
@@ -347,7 +350,7 @@ const handleBackdropMouseUp = (e) => {
 								<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
 									Pilih gambar sebagai Thumbnail utama (Disarankan rasio 16:9, cth: 1280 &times; 720 px)
 								</p>
-
+								
 								<!-- Image Upload Box Container (Identical to ModalFormAktivitasDosen) -->
 								<div
 									@dragover.prevent="isDragging = true"
@@ -385,8 +388,10 @@ const handleBackdropMouseUp = (e) => {
 									<!-- State 2: Image uploaded (Preview rendered INSIDE the box) -->
 									<div v-else class="w-full flex justify-center">
 										<div class="group relative w-full max-w-[280px] sm:max-w-[320px] aspect-video overflow-hidden rounded-[8px] border border-[#d6e0ee] transition-all shadow-xs bg-slate-100">
-											<img :src="thumbnailPreview || form.gambar" alt="Preview Thumbnail" class="h-full w-full object-cover" />
-
+											
+											<img :src="thumbnailPreview ? thumbnailPreview : '/storage/' + form.gambar" 
+											alt="Preview Thumbnail" class="h-full w-full object-cover" />
+											
 											<!-- Delete Button -->
 											<button
 												type="button"
@@ -402,7 +407,7 @@ const handleBackdropMouseUp = (e) => {
 											<!-- Zoom / Preview Button -->
 											<button
 												type="button"
-												@click.stop="openImagePreview(thumbnailPreview || form.gambar)"
+												@click.stop="openImagePreview(thumbnailPreview ? thumbnailPreview : '/storage/' + form.gambar)"
 												class="absolute right-1.5 bottom-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 hover:bg-black/85 text-white shadow-md backdrop-blur-xs transition hover:scale-110 active:scale-95 focus:outline-none cursor-pointer"
 												title="Lihat Ukuran Penuh"
 											>

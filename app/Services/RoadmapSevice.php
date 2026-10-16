@@ -15,20 +15,27 @@ class RoadmapSevice {
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('nama_roadmap', 'like', "%{$search}%")
-                  ->orWhere('deskripsi', 'like', "%{$search}%");
+                $q->where('nama_roadmap', 'like', "%{$search}%");
             });
         }
 
-        // 2. Filter Kategori
+        // 2. Filter Kategori (VERSI BENER BUAT STRING/VARCHAR)
         if (!empty($filters['kategori'])) {
-            $kategoriArray = explode(',', $filters['kategori']);
-            foreach ($kategoriArray as $kat) {
-                $query->whereJsonContains('kategori', trim($kat));
-            }
+            // Pecah "Profesional,Akademik" jadi array dan bersihin spasinya
+            $kategoriArray = array_map('trim', explode(',', $filters['kategori']));
+        
+            // Langsung cari yang kategorinya ada di dalam daftar array tersebut
+            $query->whereIn('kategori', $kategoriArray);
         }
 
-        return $query->paginate($perPage)->withQueryString();
+            return $query->paginate($perPage)->withQueryString();
+    }
+
+    public function getCategoryCounts() 
+    {
+        return Roadmap::select('kategori', DB::raw('count(*) as total'))
+            ->groupBy('kategori')
+            ->pluck('total', 'kategori');
     }
 
 public function createRoadmap(array $data)
