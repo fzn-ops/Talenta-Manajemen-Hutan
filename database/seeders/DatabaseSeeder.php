@@ -21,5 +21,6 @@ class DatabaseSeeder extends Seeder
         $this->call(AktivitasSeeder::class);
         $this->call(KarirSeeder::class);
         $this->call(BeritaSeeder::class);
+        $this->call(RoadmapSeeder::class);
     }
 }

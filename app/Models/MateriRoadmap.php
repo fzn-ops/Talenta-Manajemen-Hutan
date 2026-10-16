@@ -22,11 +22,12 @@ class MateriRoadmap extends Model
     ];
 
     protected $casts = [
-        'kartu_konten'=>'array',
-        'maksimal_tugas'=>'integer',
+        'kartu_konten'   => 'array',
+        'maksimal_tugas' => 'integer',
+        'tipe'           => 'boolean',
     ];  
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function bulanRoadmap(){
         return $this->belongsTo(BulanRoadmap::class, 'id_bulan_roadmap', 'id');

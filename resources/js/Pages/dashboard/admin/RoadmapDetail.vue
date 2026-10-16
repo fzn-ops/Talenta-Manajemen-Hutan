@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import ModalFormMateriTask from '@/Components/dashboard/admin/ModalFormMateriTask.vue';
@@ -10,9 +10,13 @@ import RoadmapMaterialNavigation from '@/Components/dashboard/admin/RoadmapMater
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
-	roadmapId: {
-		type: [Number, String],
-		default: 1,
+	roadmap: {
+		type: Object,
+		required: true,
+	},
+	months: {
+		type: Array,
+		default: () => [],
 	},
 });
 
@@ -37,148 +41,39 @@ const closeToast = () => {
 	toast.value.show = false;
 };
 
-// Roadmaps Data Store
-const roadmapsData = {
-	1: {
-		id: 1,
-		category: 'Profesional',
-		title: 'Persiapan Karir Software Engineer & Fullstack Developer',
-		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
-	},
-	2: {
-		id: 2,
-		category: 'Bisnis',
-		title: 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
-		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
-	},
-	3: {
-		id: 3,
-		category: 'Birokrasi',
-		title: 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
-		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
-	},
-	4: {
-		id: 4,
-		category: 'Akademisi',
-		title: 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
-		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
-	},
-	5: {
-		id: 5,
-		category: 'Profesional',
-		title: 'Sertifikasi Konsultan Lingkungan & AMDAL Profesional',
-		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
-	},
-	6: {
-		id: 6,
-		category: 'Bisnis',
-		title: 'Pengembangan Usaha Ekowisata & Agroforestry Berkelanjutan',
-		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
-	}
-};
-
 const currentRoadmap = computed(() => {
-	return roadmapsData[props.roadmapId] || {
-		id: props.roadmapId,
+	return props.roadmap || {
+		id: 1,
 		category: 'Roadmap',
-		title: `Roadmap ${props.roadmapId}`,
+		title: 'Roadmap',
 		subTitle: 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
 	};
 });
 
 // Months Data Structure with Materials & Tasks
-const months = ref([
-	{
-		id: 1,
-		name: 'Bulan 1',
-		items: [
-			{
-				id: 101,
-				type: 'Materi',
-				title: 'Materi 1',
-				topic: 'Cara Mendapatkan Return Usaha 100% dalam 1 Bulan',
-				file: null,
-				fileName: '',
-				description: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc ac varius massa, eu pulvinar neque. Mauris viverra lectus et massa porttitor molestie. Curabitur pharetra, mauris eget bibendum convallis, quam lorem iaculis magna, in pulvinar nisi risus accumsan sem. Mauris condimentum ex et nisi facilisis vehicula. Etiam finibus vulputate dolor, a malesuada leo ultrices quis. Praesent nec porta dolor. Proin bibendum urna est, at cursus lorem condimentum ut. Aenean et dolor magna. Duis ac purus nisi. Pellentesque vulputate sapien et lorem volutpat, eget egestas orci faucibus. Praesent maximus, ex a luctus volutpat, dolor purus ultricies nibh, et facilisis magna nisi et lacus. Nullam ac tincidunt purus.
-
-Duis nisl nulla, ultricies consequat risus vitae, ullamcorper varius metus. Vestibulum in mollis ante. Nullam ut libero enim. Vestibulum rutrum justo ex. In a ex elit. In sed elit in nibh pellentesque facilisis. Nullam a elit ipsum. Nullam tortor magna, suscipit nec consectetur at, pellentesque non nibh. Proin ut arcu aliquam, ornare risus at, viverra sem. Nulla semper posuere lacus eget tincidunt. Integer tortor justo, blandit at interdum in, varius ac justo. Phasellus eleifend a massa suscipit hendrerit. Donec quis felis est. Sed non dui sem. Sed faucibus, purus eget ornare tempus, nibh metus porta eros, semper feugiat metus risus ac mi.`,
-			},
-			{
-				id: 102,
-				type: 'Tugas',
-				title: 'Tugas 1',
-				topic: 'Analisis Kelayakan Finansial dan Pasar Produk Hutan',
-				file: null,
-				fileName: '',
-				description: `Tugas mandiri untuk menganalisis potensi pasar dan perhitungan ROI serta payback period dari produk olahan hutan berkelanjutan. Kerjakan analisis sesuai dengan format dokumen yang telah disediakan.`,
-			},
-			{
-				id: 103,
-				type: 'Materi',
-				title: 'Materi 2',
-				topic: 'Strategi Pemasaran Digital & Branding Komoditas Kehutanan',
-				file: null,
-				fileName: '',
-				description: `Memahami cara membangun identitas brand ramah lingkungan dan optimalisasi kanal digital seperti social media dan marketplace untuk penetrasi pasar produk kehutanan.`,
-			},
-			{
-				id: 104,
-				type: 'Tugas',
-				title: 'Tugas 2',
-				topic: 'Pembuatan Pitch Deck Bisnis Agroforestry',
-				file: null,
-				fileName: '',
-				description: `Susun pitch deck sebanyak 10-12 slide yang merangkum model bisnis, value proposition, segmentasi pasar, dan proyeksi keuangan usaha rintisan Anda.`,
-			},
-			{
-				id: 105,
-				type: 'Materi',
-				title: 'Materi 3',
-				topic: 'Manajemen Operasional & Rantai Pasok Hasil Hutan',
-				file: null,
-				fileName: '',
-				description: `Tata kelola logistik, standardisasi mutu, dan sertifikasi legalitas kayu dan non-kayu untuk memastikan pasokan yang stabil dan memenuhi regulasi pasar.`,
-			},
-			{
-				id: 106,
-				type: 'Tugas',
-				title: 'Tugas 3',
-				topic: 'Simulasi Perencanaan Rantai Pasok Berkelanjutan',
-				file: null,
-				fileName: '',
-				description: `Lakukan simulasi alur rantai pasok dari hulu ke hilir dengan meminimalkan jejak karbon dan memaksimalkan efisiensi biaya logistik.`,
-			},
-		],
-	},
-	{
-		id: 2,
-		name: 'Bulan 2',
-		items: [
-			{
-				id: 201,
-				type: 'Materi',
-				title: 'Materi 1',
-				topic: 'Pengembangan Model Bisnis Ekowisata Berbasis Komunitas',
-				file: null,
-				fileName: '',
-				description: `Pelajari tahapan merancang paket ekowisata, pelibatan masyarakat lokal, serta sistem bagi hasil yang adil dan berkelanjutan.`,
-			},
-			{
-				id: 202,
-				type: 'Tugas',
-				title: 'Tugas 1',
-				topic: 'Rancangan Program Eduwisata Hutan Pendidikan',
-				file: null,
-				fileName: '',
-				description: `Buat proposal program eduwisata lengkap dengan jadwal kegiatan, estimasi anggaran, dan analisis dampak lingkungan.`,
-			},
-		],
-	},
-]);
+const months = ref(props.months || []);
 
 // Active Tab & Selection State
-const activeMonthId = ref(1);
-const selectedItemId = ref(101);
+const activeMonthId = ref(props.months?.[0]?.id || 1);
+const selectedItemId = ref(props.months?.[0]?.items?.[0]?.id || null);
+
+// Keep months in sync with props
+watch(
+	() => props.months,
+	(newMonths) => {
+		months.value = newMonths || [];
+		if (!months.value.some((m) => m.id === activeMonthId.value)) {
+			activeMonthId.value = months.value[0]?.id || null;
+			selectedItemId.value = months.value[0]?.items?.[0]?.id || null;
+		} else {
+			const curM = months.value.find((m) => m.id === activeMonthId.value);
+			if (curM && !curM.items.some((i) => i.id === selectedItemId.value)) {
+				selectedItemId.value = curM.items[0]?.id || null;
+			}
+		}
+	},
+	{ deep: true }
+);
 
 const currentMonth = computed(() => {
 	return months.value.find((m) => m.id === activeMonthId.value) || months.value[0];
@@ -255,14 +150,15 @@ const getPdfUrl = (dataUrl) => {
 	return dataUrl;
 };
 
+const isSaving = ref(false);
+
 const stripError = (cards) => {
 	return cards.map(c => ({
 		id: c.id,
 		type: c.type,
 		content: c.content,
-		fileName: c.fileName,
-		isFixed: c.isFixed || false,
-		file: c.file ? { name: c.file.name, size: c.file.size, type: c.file.type, dataUrl: c.file.dataUrl } : null
+		fileName: c.fileName || '',
+		isFixed: Boolean(c.isFixed),
 	}));
 };
 
@@ -275,7 +171,7 @@ const isModified = computed(() => {
 const syncEditorState = () => {
 	isEditingContent.value = false;
 	if (currentItem.value) {
-		editTopic.value = currentItem.value.topic || '';
+		editTopic.value = currentItem.value.judul || currentItem.value.topic || '';
 		
 		if (currentItem.value.cards) {
 			editCards.value = JSON.parse(JSON.stringify(currentItem.value.cards));
@@ -309,7 +205,7 @@ const syncEditorState = () => {
 				editCards.value.push({
 					id: Date.now() + 'ts',
 					type: 'task_submission',
-					content: `Ikuti Kegiatan Terkait ${currentItem.value.topic || 'Tugas'}`,
+					content: `Ikuti Kegiatan Terkait ${currentItem.value.judul || currentItem.value.topic || 'Tugas'}`,
 					fileName: '',
 					isFixed: true, // Cannot be deleted
 				});
@@ -428,12 +324,12 @@ const getTaskInstructionText = (item) => {
 		const tCard = item.cards.find(c => c.type === 'task_submission');
 		if (tCard && tCard.content) return tCard.content;
 	}
-	return `Ikuti Kegiatan Terkait ${item.topic || 'Tugas'}`;
+	return `Ikuti Kegiatan Terkait ${item.judul || item.topic || 'Tugas'}`;
 };
 
 // Save Item Content
 const handleSaveItem = () => {
-	if (!currentItem.value) return;
+	if (!currentItem.value || isSaving.value) return;
 
 	if (editCards.value.length === 0) {
 		showToast('error', 'Gagal Disimpan', 'Materi harus memiliki minimal 1 konten (Gambar, Teks, PDF, atau Video).');
@@ -458,18 +354,24 @@ const handleSaveItem = () => {
 		return;
 	}
 
-	currentItem.value.topic = editTopic.value.trim();
-	currentItem.value.cards = JSON.parse(JSON.stringify(editCards.value));
-	
-	// Backward compatibility
-	const textCard = currentItem.value.cards.find(c => c.type === 'text');
-	currentItem.value.description = textCard ? textCard.content : '';
-	const fileCard = currentItem.value.cards.find(c => c.type === 'image' || c.type === 'pdf');
-	currentItem.value.file = fileCard ? fileCard.file : null;
-	currentItem.value.fileName = fileCard ? fileCard.fileName : '';
-
-	isEditingContent.value = false;
-	showToast('success', 'Berhasil Disimpan', `Konten "${currentItem.value.title}" berhasil diperbarui.`);
+	isSaving.value = true;
+	router.put(`/admin/roadmap/materi/${currentItem.value.id}`, {
+		judul: editTopic.value.trim(),
+		topic: editTopic.value.trim(),
+		cards: stripError(editCards.value),
+	}, {
+		preserveScroll: true,
+		onSuccess: () => {
+			isSaving.value = false;
+			isEditingContent.value = false;
+			showToast('success', 'Berhasil Disimpan', `Konten "${currentItem.value.title}" berhasil diperbarui.`);
+		},
+		onError: (err) => {
+			isSaving.value = false;
+			const msg = Object.values(err)[0] || 'Gagal menyimpan konten.';
+			showToast('error', 'Gagal Disimpan', msg);
+		},
+	});
 };
 
 // Reset/Cancel Item Changes
@@ -514,6 +416,17 @@ const getVideoEmbedUrl = (url) => {
 		return null;
 	}
 	return null;
+};
+
+// Open external links in rich text safely in a new tab
+const handleRichTextClick = (e) => {
+	const link = e.target.closest('a');
+	if (!link) return;
+	const href = link.getAttribute('href');
+	if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//'))) {
+		e.preventDefault();
+		window.open(href, '_blank', 'noopener,noreferrer');
+	}
 };
 
 // File Upload Handlers
@@ -590,26 +503,23 @@ const handleAddMonth = () => {
 		return;
 	}
 
-	const nextMonthNum = months.value.length + 1;
-	const newMonth = {
-		id: Date.now(),
-		name: `Bulan ${nextMonthNum}`,
-		items: [
-			{
-				id: Date.now() + 1,
-				type: 'Materi',
-				title: 'Materi 1',
-				topic: 'Pengantar Modul Baru',
-				file: null,
-				fileName: '',
-				description: '',
-			},
-		],
-	};
-	months.value.push(newMonth);
-	activeMonthId.value = newMonth.id;
-	selectedItemId.value = newMonth.items[0].id;
-	showToast('success', 'Bulan Ditambahkan', `Tab "${newMonth.name}" berhasil ditambahkan.`);
+	router.post(`/admin/roadmap/${props.roadmap.id}/bulan`, {}, {
+		preserveScroll: true,
+		onSuccess: (page) => {
+			const newMonthId = page.props.flash?.newMonthId;
+			if (newMonthId) {
+				activeMonthId.value = newMonthId;
+			} else if (months.value.length > 0) {
+				const lastMonth = months.value[months.value.length - 1];
+				activeMonthId.value = lastMonth.id;
+			}
+			showToast('success', 'Bulan Ditambahkan', 'Tab Bulan berhasil ditambahkan.');
+		},
+		onError: (err) => {
+			const msg = Object.values(err)[0] || 'Gagal menambahkan bulan.';
+			showToast('error', 'Gagal', msg);
+		},
+	});
 };
 
 // Delete Month Confirmation
@@ -629,20 +539,20 @@ const confirmDeleteMonth = (month, e) => {
 const executeDeleteMonth = () => {
 	if (!monthToDelete.value) return;
 	const deletedId = monthToDelete.value.id;
-	months.value = months.value.filter((m) => m.id !== deletedId);
 
-	// Renumber months
-	months.value.forEach((m, idx) => {
-		m.name = `Bulan ${idx + 1}`;
+	router.delete(`/admin/roadmap/${props.roadmap.id}/bulan/${deletedId}`, {
+		preserveScroll: true,
+		onSuccess: () => {
+			isDeleteMonthModalOpen.value = false;
+			monthToDelete.value = null;
+			showToast('success', 'Bulan Dihapus', 'Bulan berhasil dihapus dari roadmap.');
+		},
+		onError: (err) => {
+			isDeleteMonthModalOpen.value = false;
+			const msg = Object.values(err)[0] || 'Gagal menghapus bulan.';
+			showToast('error', 'Gagal', msg);
+		},
 	});
-
-	if (activeMonthId.value === deletedId) {
-		const firstMonth = months.value[0];
-		activeMonthId.value = firstMonth.id;
-		selectedItemId.value = firstMonth.items[0]?.id || null;
-	}
-	isDeleteMonthModalOpen.value = false;
-	showToast('success', 'Bulan Dihapus', 'Bulan berhasil dihapus dari roadmap.');
 };
 
 // Add Item (Materi / Tugas) Modal
@@ -654,26 +564,43 @@ const openAddModal = () => {
 
 const handleSaveNewItem = (itemData) => {
 	if (!currentMonth.value) return;
-	const newItem = {
-		id: Date.now(),
-		type: itemData.type || 'Materi',
-		title: itemData.title,
-		topic: `Topik ${itemData.title}`,
-		file: null,
-		fileName: '',
-		description: '',
-	};
 
-	currentMonth.value.items.push(newItem);
-	selectedItemId.value = newItem.id;
-	isAddModalOpen.value = false;
-	showToast('success', 'Item Ditambahkan', `"${newItem.title}" berhasil ditambahkan ke ${currentMonth.value.name}.`);
+	router.post(`/admin/roadmap/${props.roadmap.id}/bulan/${currentMonth.value.id}/materi`, {
+		type: itemData.type,
+		title: itemData.title,
+	}, {
+		preserveScroll: true,
+		onSuccess: (page) => {
+			const newItemId = page.props.flash?.newItemId;
+			if (newItemId) {
+				selectedItemId.value = newItemId;
+			}
+			isAddModalOpen.value = false;
+			showToast('success', 'Item Ditambahkan', `"${itemData.title}" berhasil ditambahkan.`);
+		},
+		onError: (err) => {
+			const msg = Object.values(err)[0] || 'Gagal menambahkan item.';
+			showToast('error', 'Gagal', msg);
+		},
+	});
 };
 
 // Handle Item Title Update from Sidebar
 const updateItemTitle = (item, newTitle) => {
-	item.title = newTitle;
-	showToast('success', 'Judul Diperbarui', `Nama item diubah menjadi "${item.title}".`);
+	router.patch(`/admin/roadmap/materi/${item.id}/title`, {
+		title: newTitle,
+	}, {
+		preserveScroll: true,
+		onSuccess: () => {
+			item.title = newTitle;
+			item.topik = newTitle;
+			showToast('success', 'Judul Diperbarui', `Nama item diubah menjadi "${newTitle}".`);
+		},
+		onError: (err) => {
+			const msg = Object.values(err)[0] || 'Gagal memperbarui judul.';
+			showToast('error', 'Gagal', msg);
+		},
+	});
 };
 
 // Delete Item Confirmation
@@ -693,14 +620,24 @@ const confirmDeleteItem = (item, e) => {
 const executeDeleteItem = () => {
 	if (!currentMonth.value || !itemToDelete.value) return;
 	const deletedId = itemToDelete.value.id;
-	
-	currentMonth.value.items = currentMonth.value.items.filter((i) => i.id !== deletedId);
 
-	if (selectedItemId.value === deletedId) {
-		selectedItemId.value = currentMonth.value.items[0]?.id || null;
-	}
-	isDeleteItemModalOpen.value = false;
-	showToast('success', 'Item Dihapus', 'Item berhasil dihapus dari daftar.');
+	router.delete(`/admin/roadmap/materi/${deletedId}`, {
+		preserveScroll: true,
+		onSuccess: () => {
+			if (selectedItemId.value === deletedId) {
+				const remaining = currentMonth.value.items.filter((i) => i.id !== deletedId);
+				selectedItemId.value = remaining[0]?.id || null;
+			}
+			isDeleteItemModalOpen.value = false;
+			itemToDelete.value = null;
+			showToast('success', 'Item Dihapus', 'Item berhasil dihapus dari daftar.');
+		},
+		onError: (err) => {
+			isDeleteItemModalOpen.value = false;
+			const msg = Object.values(err)[0] || 'Gagal menghapus item.';
+			showToast('error', 'Gagal', msg);
+		},
+	});
 };
 </script>
 
@@ -715,7 +652,7 @@ const executeDeleteItem = () => {
 					Daftar Roadmap
 				</Link>
 				<span class="text-[#8ca1b9]">/</span>
-				<span class="text-[#7188a3] font-medium">...</span>
+				<span class="text-[#7188a3] font-medium truncate max-w-sm">{{ currentRoadmap.title }}</span>
 			</nav>
 
 			<!-- Page Header Section -->
@@ -804,7 +741,7 @@ const executeDeleteItem = () => {
 								<!-- Title & Edit Button -->
 								<div class="flex items-start gap-4">
 									<h2 class="flex-1 min-w-0 font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight break-words">
-										{{ currentItem?.topic || 'Belum ada topik' }}
+										{{ currentItem?.judul || currentItem?.topic || 'Belum ada judul' }}
 									</h2>
 									<div class="shrink-0 pt-1">
 										<EditButtonTable @click="startEditContent" label="Edit Konten" />
@@ -812,7 +749,7 @@ const executeDeleteItem = () => {
 								</div>
 
 								<!-- Media & Content Display (Read Only) -->
-								<div v-if="currentItem?.cards && currentItem.cards.length > 0" class="flex flex-col gap-6 mt-6">
+								<div v-if="currentItem?.cards && currentItem.cards.length > 0" class="flex flex-col gap-6 sm:gap-7 mt-6">
 									<div v-for="card in currentItem.cards" :key="card.id" class="w-full">
 										<!-- IMAGE -->
 										<div v-if="card.type === 'image' && card.content" class="w-full aspect-video rounded-[10px] overflow-hidden border border-[#d6e0ee] shadow-sm bg-slate-50">
@@ -847,8 +784,12 @@ const executeDeleteItem = () => {
 										</div>
 										
 										<!-- TEXT -->
-										<div v-else-if="card.type === 'text'" class="font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#334155] text-justify prose prose-sm sm:prose-base max-w-none prose-p:my-2 prose-h1:text-[22px] prose-h2:text-[18px] prose-h3:text-[16px]" v-html="card.content">
-										</div>
+										<div 
+											v-else-if="card.type === 'text'" 
+											class="w-full rendered-rich-text text-left font-inter text-[13.5px] sm:text-[14.5px] text-[#334155] leading-relaxed break-words" 
+											@click="handleRichTextClick" 
+											v-html="card.content"
+										></div>
 										
 										<!-- VIDEO -->
 										<div v-else-if="card.type === 'video' && card.content" class="aspect-video w-full min-h-[250px] sm:min-h-0 rounded-[10px] overflow-hidden border border-[#d6e0ee] bg-black shadow-sm">
@@ -887,9 +828,11 @@ const executeDeleteItem = () => {
 									</div>
 
 									<!-- Description Display -->
-									<div class="font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#334155] whitespace-pre-wrap text-justify mt-6">
-										{{ currentItem?.description }}
-									</div>
+									<div 
+										class="font-inter text-[13.5px] sm:text-[14.5px] leading-relaxed text-[#334155] text-left rendered-rich-text break-words mt-6"
+										@click="handleRichTextClick"
+										v-html="currentItem?.description"
+									></div>
 								</div>
 								
 								<!-- Empty State Guide -->
@@ -1054,18 +997,22 @@ const executeDeleteItem = () => {
 									<button
 										type="button"
 										@click="handleSaveItem"
-										:disabled="!isModified"
+										:disabled="!isModified || isSaving"
 										:class="[
 											'flex items-center gap-2 rounded-[8px] px-6 py-2.5 text-[13px] font-semibold shadow-sm transition focus:outline-none',
-											isModified 
+											isModified && !isSaving
 												? 'bg-[#183669] text-white hover:bg-[#122b54] cursor-pointer' 
 												: 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
 										]"
 									>
-										<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+										<svg v-if="isSaving" class="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+										</svg>
+										<svg v-else class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
 											<path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-7 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H6V5h9v4z"/>
 										</svg>
-										Simpan Materi
+										{{ isSaving ? 'Menyimpan...' : 'Simpan Materi' }}
 									</button>
 								</div>
 							</template>
@@ -1223,3 +1170,140 @@ const executeDeleteItem = () => {
 		/>
 	</AdminLayout>
 </template>
+
+<style>
+/* Rich Text Render Styling */
+.rendered-rich-text {
+	word-break: break-word;
+	color: #334155;
+	font-family: 'Inter', sans-serif;
+	line-height: 1.7;
+}
+
+.rendered-rich-text p {
+	margin-top: 0.5rem !important;
+	margin-bottom: 0.5rem !important;
+	line-height: 1.7 !important;
+}
+
+.rendered-rich-text p:first-child {
+	margin-top: 0 !important;
+}
+
+.rendered-rich-text p:last-child {
+	margin-bottom: 0 !important;
+}
+
+.rendered-rich-text h1 {
+	display: block !important;
+	font-size: 1.45rem !important;
+	font-weight: 700 !important;
+	color: #17334F !important;
+	margin-top: 1.25rem !important;
+	margin-bottom: 0.5rem !important;
+	line-height: 1.3 !important;
+}
+
+.rendered-rich-text h2 {
+	display: block !important;
+	font-size: 1.25rem !important;
+	font-weight: 700 !important;
+	color: #17334F !important;
+	margin-top: 1rem !important;
+	margin-bottom: 0.4rem !important;
+	line-height: 1.35 !important;
+}
+
+.rendered-rich-text h3 {
+	display: block !important;
+	font-size: 1.1rem !important;
+	font-weight: 600 !important;
+	color: #17334F !important;
+	margin-top: 0.85rem !important;
+	margin-bottom: 0.35rem !important;
+	line-height: 1.4 !important;
+}
+
+.rendered-rich-text b,
+.rendered-rich-text strong {
+	font-weight: 700 !important;
+	color: #0f2347 !important;
+}
+
+.rendered-rich-text i,
+.rendered-rich-text em {
+	font-style: italic !important;
+}
+
+.rendered-rich-text u {
+	text-decoration: underline !important;
+}
+
+.rendered-rich-text s,
+.rendered-rich-text strike {
+	text-decoration: line-through !important;
+}
+
+.rendered-rich-text ul {
+	display: block !important;
+	list-style-type: disc !important;
+	padding-left: 1.6rem !important;
+	margin-top: 0.5rem !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.rendered-rich-text ol {
+	display: block !important;
+	list-style-type: decimal !important;
+	padding-left: 1.6rem !important;
+	margin-top: 0.5rem !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.rendered-rich-text li {
+	display: list-item !important;
+	margin-top: 0.25rem !important;
+	margin-bottom: 0.25rem !important;
+	line-height: 1.65 !important;
+}
+
+.rendered-rich-text a {
+	color: #2563eb !important;
+	text-decoration: underline !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	transition: color 0.15s ease, opacity 0.15s ease !important;
+}
+
+.rendered-rich-text a:hover {
+	color: #1d4ed8 !important;
+	opacity: 0.9 !important;
+}
+
+.rendered-rich-text blockquote {
+	display: block !important;
+	border-left: 4px solid #183669 !important;
+	background: #f8fafc !important;
+	padding: 0.6rem 1rem !important;
+	margin: 0.75rem 0 !important;
+	color: #475569 !important;
+	font-style: italic !important;
+	border-radius: 0 8px 8px 0 !important;
+}
+
+.rendered-rich-text code {
+	background: #f1f5f9 !important;
+	color: #e05252 !important;
+	padding: 0.2rem 0.4rem !important;
+	border-radius: 4px !important;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+	font-size: 0.875em !important;
+}
+
+.rendered-rich-text hr {
+	border: 0 !important;
+	height: 1px !important;
+	background: #d6e0ee !important;
+	margin: 1.25rem 0 !important;
+}
+</style>

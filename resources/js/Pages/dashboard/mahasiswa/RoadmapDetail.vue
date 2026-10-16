@@ -417,6 +417,17 @@ const getVideoEmbedUrl = (url) => {
 	return null;
 };
 
+// Open external links in rich text safely in a new tab
+const handleRichTextClick = (e) => {
+	const link = e.target.closest('a');
+	if (!link) return;
+	const href = link.getAttribute('href');
+	if (href && (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//'))) {
+		e.preventDefault();
+		window.open(href, '_blank', 'noopener,noreferrer');
+	}
+};
+
 // PDF URL Helper
 const getPdfUrl = (content) => {
 	if (!content) return '';
@@ -537,7 +548,7 @@ const getPdfUrl = (content) => {
 							</div>
 
 							<!-- Media & Content Display (Read Only) -->
-							<div v-if="currentItem?.cards && currentItem.cards.length > 0" class="flex flex-col gap-6 mt-6">
+							<div v-if="currentItem?.cards && currentItem.cards.length > 0" class="flex flex-col gap-6 sm:gap-7 mt-6">
 								<div v-for="card in currentItem.cards" :key="card.id" class="w-full">
 									<!-- IMAGE -->
 									<div v-if="card.type === 'image' && card.content" class="w-full aspect-video rounded-[10px] overflow-hidden border border-[#d6e0ee] shadow-sm bg-slate-50">
@@ -585,7 +596,8 @@ const getPdfUrl = (content) => {
 									<!-- TEXT -->
 									<div
 										v-else-if="card.type === 'text'"
-										class="font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#334155] text-justify prose prose-sm sm:prose-base max-w-none prose-p:my-2 prose-h1:text-[22px] prose-h2:text-[18px] prose-h3:text-[16px]"
+										class="w-full rendered-rich-text text-left font-inter text-[13.5px] sm:text-[14.5px] text-[#334155] leading-relaxed break-words"
+										@click="handleRichTextClick"
 										v-html="card.content"
 									></div>
 

@@ -28,3 +28,140 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* =========================================================
+   RICH TEXT RENDERED STYLES (Used in Roadmap & CMS views)
+   ========================================================= */
+.rendered-rich-text {
+  word-break: break-word;
+  color: #334155;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.7;
+}
+
+.rendered-rich-text p {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.7 !important;
+}
+
+.rendered-rich-text p:first-child {
+  margin-top: 0 !important;
+}
+
+.rendered-rich-text p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.rendered-rich-text h1 {
+  display: block !important;
+  font-size: 1.45rem !important; /* ~23-24px */
+  font-weight: 700 !important;
+  color: #17334F !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.3 !important;
+}
+
+.rendered-rich-text h2 {
+  display: block !important;
+  font-size: 1.25rem !important; /* ~20px */
+  font-weight: 700 !important;
+  color: #17334F !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.4rem !important;
+  line-height: 1.35 !important;
+}
+
+.rendered-rich-text h3 {
+  display: block !important;
+  font-size: 1.1rem !important; /* ~17-18px */
+  font-weight: 600 !important;
+  color: #17334F !important;
+  margin-top: 0.85rem !important;
+  margin-bottom: 0.35rem !important;
+  line-height: 1.4 !important;
+}
+
+.rendered-rich-text b,
+.rendered-rich-text strong {
+  font-weight: 700 !important;
+  color: #0f2347 !important;
+}
+
+.rendered-rich-text i,
+.rendered-rich-text em {
+  font-style: italic !important;
+}
+
+.rendered-rich-text u {
+  text-decoration: underline !important;
+}
+
+.rendered-rich-text s,
+.rendered-rich-text strike {
+  text-decoration: line-through !important;
+}
+
+.rendered-rich-text ul {
+  display: block !important;
+  list-style-type: disc !important;
+  padding-left: 1.6rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.rendered-rich-text ol {
+  display: block !important;
+  list-style-type: decimal !important;
+  padding-left: 1.6rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.rendered-rich-text li {
+  display: list-item !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 1.65 !important;
+}
+
+.rendered-rich-text a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease, opacity 0.15s ease !important;
+}
+
+.rendered-rich-text a:hover {
+  color: #1d4ed8 !important;
+  opacity: 0.9 !important;
+}
+
+.rendered-rich-text blockquote {
+  display: block !important;
+  border-left: 4px solid #183669 !important;
+  background: #f8fafc !important;
+  padding: 0.6rem 1rem !important;
+  margin: 0.75rem 0 !important;
+  color: #475569 !important;
+  font-style: italic !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+.rendered-rich-text code {
+  background: #f1f5f9 !important;
+  color: #e05252 !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 4px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.875em !important;
+}
+
+.rendered-rich-text hr {
+  border: 0 !important;
+  height: 1px !important;
+  background: #d6e0ee !important;
+  margin: 1.25rem 0 !important;
+}
