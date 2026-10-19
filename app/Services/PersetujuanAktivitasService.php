@@ -21,10 +21,10 @@ class PersetujuanAktivitasService
         if (!empty($filters['sort']) && !empty($filters['direction'])) {
             $allowedSorts = ['id', 'judul', 'deadline', 'created_at', 'status'];
             $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'id';
-            $direction = strtolower($filters['direction']) === 'asc' ? 'asc' : 'desc';
+            $direction = strtolower($filters['direction']) === 'desc' ? 'desc' : 'asc';
             $query->orderBy($sortColumn, $direction);
         } else {
-            $query->orderBy('id', 'desc');
+            $query->orderBy('id', 'asc');
         }
 
         // 2. Pencarian (Search)

@@ -22,8 +22,8 @@ const props = defineProps({
 const searchQuery = ref(props.filters?.search || '');
 const showFilter = ref(false);
 
-const sortColumn = ref(props.filters?.sort || 'created_at');
-const sortDirection = ref(props.filters?.direction || 'desc');
+const sortColumn = ref(props.filters?.sort || 'id');
+const sortDirection = ref(props.filters?.direction || 'asc');
 
 const filters = ref({
   kategori: props.filters?.kategori
@@ -39,6 +39,14 @@ const rowsPerPage = ref(Number(props.filters?.per_page || props.karirData?.per_p
 const totalPages = computed(() => props.karirData?.last_page || 1);
 const totalItems = computed(() => props.karirData?.total || 0);
 const paginatedData = computed(() => props.karirData?.data || []);
+
+const getRowNumber = (index) => {
+  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
+    const total = totalItems.value;
+    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
+  }
+  return ((props.karirData?.current_page || currentPage.value) - 1) * (props.karirData?.per_page || rowsPerPage.value) + index + 1;
+};
 
 // Loading state untuk mencegah spamming klik filter/sort/pagination sebelum render tuntas
 const isLoading = ref(false);
@@ -469,7 +477,7 @@ const handleModalSubmit = (formData) => {
               
               <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-opacity duration-200', isLoading ? 'opacity-40 pointer-events-none select-none cursor-wait' : '']">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center font-medium">{{ ((karirData?.current_page || currentPage) - 1) * (karirData?.per_page || rowsPerPage) + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_instansi || item.instansi">{{ item.nama_instansi || item.instansi }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.posisi">{{ item.posisi }}</td>
                   <!-- <td class="px-3 py-2.5 text-center">

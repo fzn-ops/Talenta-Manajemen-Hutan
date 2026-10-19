@@ -26,7 +26,7 @@ const searchQuery = ref(props.filters?.search || '');
 const showFilter = ref(false);
 
 const sortColumn = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'desc');
+const sortDirection = ref(props.filters?.direction || 'asc');
 
 const filterState = ref({
   // Jika dari backend dikirim string dipisah koma, kita jadikan array lagi
@@ -40,6 +40,14 @@ const listKategori = ['Profesional', 'Bisnis', 'Akademisi', 'Birokrat'];
 const currentPage = ref(props.aktivitasData?.current_page || 1);
 const totalPages = computed(() => props.aktivitasData?.last_page || 1);
 const rowsPerPage = ref(props.aktivitasData?.per_page || 10);
+
+const getRowNumber = (index) => {
+  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
+    const total = props.aktivitasData?.total || 0;
+    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
+  }
+  return (props.aktivitasData?.from || 1) + index;
+};
 
 onMounted(() => {
   if (window.innerWidth < 768) {
@@ -485,7 +493,7 @@ const formatFilename = (path) => {
               
               <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
                 <tr v-for="(item,index) in aktivitasData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center font-medium">{{ (aktivitasData?.from || 1) + index }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left align-middle relative">
                     <div class="flex items-center gap-1.5 flex-nowrap w-full" v-if="item.kategori">

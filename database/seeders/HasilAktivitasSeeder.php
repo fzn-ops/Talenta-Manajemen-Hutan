@@ -78,7 +78,7 @@ class HasilAktivitasSeeder extends Seeder
                 'user' => $farhan,
                 'status' => 'ditolak',
                 'deskripsi' => "Laporan magang lapangan singkat pengenalan spesies flora endemik di Taman Nasional.",
-                'media' => 'laporan_flora_singkat.pdf',
+                'media' => 'laporan_flora_singkat.jpg',
                 'catatan_penolakan' => 'Data Tidak Lengkap. Format laporan tidak sesuai dengan template resmi Talenta.',
             ],
             [

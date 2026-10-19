@@ -128,6 +128,14 @@ const paginatedStudents = computed(() => {
 	return [];
 });
 
+const getRowNumber = (idx) => {
+	if (sortKey.value === 'id' && sortDirection.value === 'desc') {
+		const total = totalItems.value;
+		return total - ((currentPage.value - 1) * rowsPerPage.value + idx);
+	}
+	return ((props.mahasiswaData?.current_page || currentPage.value) - 1) * (props.mahasiswaData?.per_page || rowsPerPage.value) + idx + 1;
+};
+
 const allExistingStudents = computed(() => {
 	if (props.existingStudents && props.existingStudents.length > 0) {
 		return props.existingStudents;
@@ -755,7 +763,7 @@ const confirmDeleteStudent = () => {
 							>
 								<!-- No -->
 								<td class="px-3 py-2.5 text-center font-medium">
-									{{ ((mahasiswaData?.current_page || currentPage) - 1) * (mahasiswaData?.per_page || rowsPerPage) + idx + 1 }}
+									{{ getRowNumber(idx) }}
 								</td>
 
 								<!-- NIM -->

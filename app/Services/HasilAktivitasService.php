@@ -52,7 +52,7 @@ class HasilAktivitasService
                     break;
             }
         } else {
-            $query->orderBy('hasil_aktivitas.id', 'desc');
+            $query->orderBy('hasil_aktivitas.id', 'asc');
         }
 
         // 2. Pencarian (Search)

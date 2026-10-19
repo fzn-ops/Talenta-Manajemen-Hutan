@@ -24,7 +24,18 @@ class PendaftaranAktivitasService {
             $query->where('status', $filters['status']);
         }
 
-        return $query->latest()->paginate($perPage)->withQueryString();
+        if (!empty($filters['sort']) && !empty($filters['direction'])) {
+            $direction = strtolower($filters['direction']) === 'desc' ? 'desc' : 'asc';
+            if ($filters['sort'] === 'nama_tim') {
+                $query->orderBy('nama_tim', $direction);
+            } else {
+                $query->orderBy('id', $direction);
+            }
+        } else {
+            $query->orderBy('id', 'asc');
+        }
+
+        return $query->paginate($perPage)->withQueryString();
     }
 
     // 2. Fungsi pas Admin klik tombol "Setujui"

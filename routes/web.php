@@ -15,7 +15,7 @@ use App\Http\Controllers\Dashboard\Admin\PendaftaranAktivitasController as Admin
 use App\Http\Controllers\Dashboard\Admin\PersetujuanAktivitasController as AdminPersetujuanAktivitasController;
 use App\Http\Controllers\Dashboard\Admin\HasilAktivitasController as AdminHasilAktivitasController;
 use App\Http\Controllers\Dashboard\Mahasiswa\PengajuanAktivitasController as MahasiswaPengajuanAktivitas;
-
+use App\Http\Controllers\Dashboard\Admin\DashboardController as AdminDashboardController;
 
 /* Route Landing dan Website Public*/
 
@@ -65,16 +65,14 @@ Route::get('/dashboard', function () {
         return redirect()->route('mahasiswa.dashboard');
     }
     if ($user && $user->role === 'admin') {
-        return redirect()->route('dashboard');
+        return redirect('/admin/dashboard');
     }
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified']);
 
 /* Admin Dashboard Routes */
 Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
-    Route::get('/dashboard', function () {
-        return Inertia::render('dashboard/admin/Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/mahasiswa', [MahasiswaController::class, 'index'])->name('mahasiswa');
     Route::post('/mahasiswa/store', [MahasiswaController::class, 'store'])->name('mahasiswa.store');

@@ -34,7 +34,7 @@ class AktivitasService
             $query->orderBy($sortColumn, $direction);
         } else {
             // Urutan default kalau baru buka halaman pertama kali
-            $query->orderBy('id', 'desc'); 
+            $query->orderBy('id', 'asc'); 
         }
 
         // 1. Fitur Search

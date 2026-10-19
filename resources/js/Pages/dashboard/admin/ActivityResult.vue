@@ -27,12 +27,20 @@ const filterStatus = ref(props.filters?.status || '');
 const showFilter = ref(false);
 
 const sortColumn = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'desc');
+const sortDirection = ref(props.filters?.direction || 'asc');
 
 // Pagination
 const currentPage = ref(props.hasilData?.current_page || 1);
 const totalPages = computed(() => props.hasilData?.last_page || 1);
 const rowsPerPage = ref(props.hasilData?.per_page || 10);
+
+const getRowNumber = (index) => {
+  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
+    const total = props.hasilData?.total || 0;
+    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
+  }
+  return (props.hasilData?.from || 1) + index;
+};
 
 onMounted(() => {
   if (window.innerWidth < 768) {
@@ -162,9 +170,18 @@ const getImageSrc = (val) => {
     if (val.startsWith('http://') || val.startsWith('https://')) return val;
     if (val.startsWith('/')) return val;
     if (val.startsWith('storage/')) return '/' + val;
-    return '/storage/' + val;
+    if (val.startsWith('aktivitas/') || val.startsWith('berita/') || val.startsWith('karir/') || val.startsWith('roadmap_images/') || val.startsWith('bukti/')) {
+      return '/storage/' + val;
+    }
+    const cleanName = val.split('/').pop().replace(/\.[^/.]+$/, "");
+    return `https://picsum.photos/seed/${cleanName || 'hasil'}/800/600`;
   }
   return `https://picsum.photos/seed/hasil/800/600`;
+};
+
+const onImageError = (e) => {
+  const seed = String(selectedImage.value || 'hasil').replace(/[^a-zA-Z0-9]/g, '');
+  e.target.src = `https://picsum.photos/seed/${seed || 'hasil'}/800/600`;
 };
 
 const openImage = (val) => {
@@ -365,7 +382,7 @@ const handleReject = (reason) => {
               
               <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
                 <tr v-for="(item, index) in hasilData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center font-medium">{{ (hasilData?.from || 1) + index }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_mahasiswa">{{ item.nama_mahasiswa }}</td>
                   <td class="px-3 py-2.5 text-center font-medium">{{ item.nim }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="item.nama_kegiatan">{{ item.nama_kegiatan }}</td>
@@ -485,9 +502,11 @@ const handleReject = (reason) => {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+
               <img
                 :src="selectedImage"
                 alt="Zoomed Preview"
+                @error="onImageError"
                 class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
               />
             </div>

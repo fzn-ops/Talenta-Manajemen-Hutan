@@ -381,6 +381,7 @@ onBeforeUnmount(() => {
 						<img
 							:src="selectedImage"
 							alt="Preview Bukti"
+							@error="(e) => { e.target.src = 'https://picsum.photos/seed/talenta/800/600'; }"
 							class="max-h-[85vh] max-w-[90vw] w-auto h-auto min-w-[280px] sm:min-w-[480px] rounded-xl object-contain shadow-2xl"
 						/>
 					</div>

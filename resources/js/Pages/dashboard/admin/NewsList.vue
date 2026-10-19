@@ -27,8 +27,8 @@ const newsList = computed(() => props.beritaData?.data || []);
 
 const searchQuery = ref(props.filters?.search || '');
 const filterBulan = ref(props.filters?.bulan || '');
-const sortColumn = ref(props.filters?.sort || 'created_at');
-const sortDirection = ref(props.filters?.direction || 'desc');
+const sortColumn = ref(props.filters?.sort || 'id');
+const sortDirection = ref(props.filters?.direction || 'asc');
 const showFilter = ref(false);
 
 
@@ -110,6 +110,14 @@ onMounted(() => {
 const paginatedData = computed(() => {
   return processedNews.value; 
 });
+
+const getRowNumber = (index) => {
+  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
+    const total = props.beritaData?.total || 0;
+    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
+  }
+  return (props.beritaData?.from || 1) + index;
+};
 
 // Loading state untuk efek blur dan mencegah spam click saat filtering/sorting
 const isLoading = ref(false);
@@ -440,7 +448,7 @@ const handleModalSubmit = (formData) => {
               
               <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-center font-medium">{{ formatTanggal(item.created_at) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="stripHtml(item.deskripsi)">{{ stripHtml(item.deskripsi) }}</td>

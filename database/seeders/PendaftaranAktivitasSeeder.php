@@ -39,7 +39,7 @@ class PendaftaranAktivitasSeeder extends Seeder
         $timSatu = PendaftaranAktivitas::create([
             'id_aktivitas'      => $lomba->id,
             'nama_tim'          => 'Tim Biasa Aja',
-            'bukti_pendaftaran' => 'bukti/dummy-bukti-1.pdf', // Pura-puranya ini path file PDF
+            'bukti_pendaftaran' => 'bukti/dummy-bukti-1.jpg',
             'status'            => 'Menunggu',
             // catatan_penolakan sengaja kosong
         ]);
@@ -54,7 +54,7 @@ class PendaftaranAktivitasSeeder extends Seeder
         $timDua = PendaftaranAktivitas::create([
             'id_aktivitas'      => $pelatihan->id,
             'nama_tim'          => 'Data Miners IPB',
-            'bukti_pendaftaran' => 'bukti/dummy-bukti-2.pdf',
+            'bukti_pendaftaran' => 'bukti/dummy-bukti-2.jpg',
             'status'            => 'Disetujui',
         ]);
 
@@ -68,7 +68,7 @@ class PendaftaranAktivitasSeeder extends Seeder
         $timTiga = PendaftaranAktivitas::create([
             'id_aktivitas'      => $lomba->id,
             'nama_tim'          => 'Tim Coba Coba',
-            'bukti_pendaftaran' => 'bukti/dummy-bukti-3.pdf',
+            'bukti_pendaftaran' => 'bukti/dummy-bukti-3.jpg',
             'catatan_penolakan' => 'Dokumen bukti pendaftaran buram dan tidak terbaca. Mohon upload ulang dokumen yang lebih jelas.',
             'status'            => 'Ditolak',
         ]);

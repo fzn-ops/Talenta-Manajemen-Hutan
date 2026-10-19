@@ -18,9 +18,12 @@ const props = defineProps({
   filters: Object
 });
 
-// 1. Inisialisasi Filter (Ambil dari backend biar pas di-refresh nggak ilang)
+// 1. Inisialisasi Filter & Sort
 const searchQuery = ref(props.filters?.search || '');
 const filterStatus = ref(props.filters?.status || '');
+const sortColumn = ref(props.filters?.sort || 'id');
+const sortDirection = ref(props.filters?.direction || 'asc');
+const isLoading = ref(false);
 const showFilter = ref(false);
 
 const showDetailModal = ref(false);
@@ -41,30 +44,81 @@ const showToast = (message, type = 'success') => {
 
 // 2. Data Kegiatan Langsung Diambil dari Backend
 const kegiatanList = computed(() => {
-  // Paginator Laravel nyimpen datanya di dalam object .data
   return props.pendaftaranData?.data || [];
 });
 
-// 3. Sistem Filter Otomatis (Nembak ke Backend)
+const currentPage = ref(props.pendaftaranData?.current_page || 1);
+const rowsPerPage = ref(props.pendaftaranData?.per_page || 10);
+
+const getRowNumber = (index) => {
+  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
+    const total = props.pendaftaranData?.total || 0;
+    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
+  }
+  return (props.pendaftaranData?.from || 1) + index;
+};
+
+// 3. Fetch ke Backend
+const fetchPendaftaran = (page = null) => {
+  isLoading.value = true;
+  const targetPage = page !== null ? page : currentPage.value;
+  router.get(
+    '/admin/aktivitas/bukti-pendaftaran',
+    {
+      search: searchQuery.value || undefined,
+      status: filterStatus.value || undefined,
+      sort: sortColumn.value || undefined,
+      direction: sortDirection.value || undefined,
+      per_page: rowsPerPage.value || undefined,
+      page: targetPage > 1 ? targetPage : undefined,
+    },
+    { 
+      preserveState: true, 
+      replace: true, 
+      preserveScroll: true,
+      onFinish: () => {
+        isLoading.value = false;
+      }
+    }
+  );
+};
+
+const handleSort = (column) => {
+  if (isLoading.value) return;
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
+  }
+  fetchPendaftaran(currentPage.value);
+};
+
+const handlePageChange = (newPage) => {
+  if (isLoading.value) return;
+  currentPage.value = newPage;
+  fetchPendaftaran(newPage);
+};
+
+const handleRowsChange = (newRows) => {
+  if (isLoading.value) return;
+  rowsPerPage.value = newRows;
+  currentPage.value = 1;
+  fetchPendaftaran(1);
+};
+
+// 4. Sistem Filter Otomatis (Debounce)
 let searchTimeout = null;
-watch([searchQuery, filterStatus], ([newSearch, newStatus]) => {
-  // Pakai setTimeout biar nggak nyepam request ke server tiap ngetik 1 huruf (Debounce)
+watch([searchQuery, filterStatus], () => {
+  currentPage.value = 1;
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    router.get(
-      '/admin/aktivitas/bukti-pendaftaran', // Sesuaikan URL dengan route di web.php
-      { search: newSearch, status: newStatus },
-      { 
-        preserveState: true, 
-        replace: true, 
-        preserveScroll: true 
-      }
-    );
-  }, 300); // Nunggu 300ms setelah user berhenti ngetik baru dikirim
+    fetchPendaftaran(1);
+  }, 300);
 });
 
 // ==========================================
-// FUNGSI MODAL
+// FUNGSI MODAL & PREVIEW DOKUMEN/GAMBAR
 // ==========================================
 const openDetail = (item) => {
   selectedItem.value = item;
@@ -76,15 +130,31 @@ const openReject = (item) => {
   showRejectModal.value = true;
 };
 
-const openImage = (gambar) => {
+const getImageSrc = (gambar) => {
   if (gambar && typeof gambar === 'object' && gambar.url) {
-    selectedImage.value = gambar.url;
-  } else if (gambar && typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
-    selectedImage.value = gambar;
-  } else {
-    selectedImage.value = `https://picsum.photos/seed/${gambar || 'dummy'}/800/600`;
+    return gambar.url;
   }
+  if (gambar && typeof gambar === 'string') {
+    if (gambar.startsWith('http://') || gambar.startsWith('https://')) return gambar;
+    if (gambar.startsWith('/')) return gambar;
+    if (gambar.startsWith('storage/')) return '/' + gambar;
+    if (gambar.startsWith('aktivitas/') || gambar.startsWith('berita/') || gambar.startsWith('karir/') || gambar.startsWith('roadmap_images/') || gambar.startsWith('bukti/')) {
+      return '/storage/' + gambar;
+    }
+    const cleanName = gambar.split('/').pop().replace(/\.[^/.]+$/, "");
+    return `https://picsum.photos/seed/${cleanName || 'dummy'}/800/600`;
+  }
+  return `https://picsum.photos/seed/pendaftaran/800/600`;
+};
+
+const openImage = (gambar) => {
+  selectedImage.value = getImageSrc(gambar);
   showImageModal.value = true;
+};
+
+const onImageError = (e) => {
+  const seed = String(selectedImage.value || 'talenta').replace(/[^a-zA-Z0-9]/g, '');
+  e.target.src = `https://picsum.photos/seed/${seed || 'talenta'}/800/600`;
 };
 
 // ==========================================
@@ -125,29 +195,6 @@ const handleReject = (reason) => {
       }
     });
   }
-};
-
-const handlePageChange = (newPage) => {
-  router.get('/admin/aktivitas/bukti-pendaftaran', {
-    search: searchQuery.value,   
-    status: filterStatus.value,  
-    page: newPage                
-  }, {
-    preserveState: true,
-    preserveScroll: true,
-  });
-};
-
-const handleRowsChange = (newRows) => {
-  router.get('/admin/aktivitas/bukti-pendaftaran', {
-    search: searchQuery.value,
-    status: filterStatus.value,
-    per_page: newRows, 
-    page: 1 
-  }, {
-    preserveState: true,
-    preserveScroll: true,
-  });
 };
 </script>
 
@@ -199,13 +246,13 @@ const handleRowsChange = (newRows) => {
         <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-30"></div>
 
         <!-- TABEL DATA -->
-        <div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+        <div :class="['overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee] transition-all', isLoading ? 'cursor-wait' : '']">
           <div class="overflow-x-auto lg:overflow-visible">
             <table class="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
               <thead class="bg-[#416f65]">
                 <tr class="h-[48px]">
                   <th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
-                    <button type="button" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85">
                       <span>No</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'id'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -214,7 +261,7 @@ const handleRowsChange = (newRows) => {
                     </button>
                   </th>
                   <th class="w-[200px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('nama_tim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('nama_tim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85">
                       <span>Nama Tim</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'nama_tim'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -223,7 +270,7 @@ const handleRowsChange = (newRows) => {
                     </button>
                   </th>
                   <th class="w-[280px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('peserta')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('peserta')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85">
                       <span>Nama Peserta</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'peserta'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -231,21 +278,21 @@ const handleRowsChange = (newRows) => {
                       </span>
                     </button>
                   </th>
-                  <th class="w-[180px] px-2 px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti Registrasi</th>
-                  <th class="w-[150px] px-2 px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Status</th>
+                  <th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti Registrasi</th>
+                  <th class="w-[150px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Status</th>
                   <th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
-              <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
+              <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
                 <tr v-for="(item, index) in kegiatanList" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center">{{ (pendaftaranData?.from || 1) + index }}</td>
+                  <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_tim">{{ item.nama_tim }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="item.peserta.map(p => p.nama).join(', ')">
                     {{ item.peserta.map(p => p.nama).join(', ') }}
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.bukti_pendaftaran === 'object' ? item.bukti_pendaftaran.name : item.bukti_pendaftaran">
+                    <button @click="openImage(item.bukti_pendaftaran || item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" :title="typeof item.bukti_pendaftaran === 'object' ? item.bukti_pendaftaran.name : item.bukti_pendaftaran">
                       {{ (item.bukti_pendaftaran && typeof item.bukti_pendaftaran === 'object' && item.bukti_pendaftaran.name) ? item.bukti_pendaftaran.name : item.bukti_pendaftaran }}
                     </button>
                   </td>
@@ -333,9 +380,11 @@ const handleRowsChange = (newRows) => {
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+
               <img
                 :src="selectedImage"
                 alt="Zoomed Preview"
+                @error="onImageError"
                 class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
               />
             </div>
