@@ -24,5 +24,6 @@ class DatabaseSeeder extends Seeder
         $this->call(RoadmapSeeder::class);
         $this->call(PendaftaranAktivitasSeeder::class);
         $this->call(PengajuanAktivitasSeeder::class);
+        $this->call(HasilAktivitasSeeder::class);
     }
 }

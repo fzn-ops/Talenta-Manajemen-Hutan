@@ -1,42 +1,125 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import RejectModal from '@/Components/dashboard/RejectModal.vue';
+import ApproveModal from '@/Components/dashboard/ApproveModal.vue';
 import ModalFormHasilAktivitas from '@/Components/dashboard/admin/ModalFormHasilAktivitas.vue';
 
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 
-// Data Dummy Sesuai Gambar Hasil Aktivitas
-const kegiatan = ref([
-  { id: 1, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Lorem ipsum dolor sit amet, duis officia reprehenderit esse duis. Dolore cupidatat aliqua veniam eu culpa reprehenderit in excepteur exercitation adipiscing. Aliquip esse laborum cupidatat duis in excepteur enim dolore sed incididunt proident aliquip. Aute consectetur nulla proident ea sunt qui in culpa est.\n\nDuis consequat proident culpa est tempor nulla in. Sunt anim ad occaecat pariatur exercitation reprehenderit proident duis tempor proident cillum nisi. Aliqua nulla laboris esse dolor ea esse anim. Pariatur excepteur enim in labore esse eu proident sint exercitation labore laborum. Dolore laboris veniam qui officia velit irure sint commodo excepteur. Excepteur incididunt excepteur aute laborum ullamco eiusmod consectetur ut voluptate sunt officia laboris.', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 2, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 3, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 4, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 5, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Disetujui', alasan_tolak: '' },
-  { id: 6, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 7, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Ditolak', alasan_tolak: 'Kurang Mantap' },
-  { id: 8, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 9, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-  { id: 10, nama_mahasiswa: 'Fauzan Fuadiansyah', nim: 'J0403231085', jenis_roadmap: 'Professional', nama_kegiatan: 'Hackaton V2.0 Tahun 2026', deskripsi: 'Deskripsi hasil kegiatan...', gambar: '123.jpg', status: 'Menunggu', alasan_tolak: '' },
-]);
+const props = defineProps({
+  hasilData: Object,
+  filters: Object,
+});
 
-const searchQuery = ref('');
-const filterStatus = ref('');
+// ==============================
+// 1. STATE FILTER & PENCARIAN
+// ==============================
+const searchQuery = ref(props.filters?.search || '');
+const filterStatus = ref(props.filters?.status || '');
 const showFilter = ref(false);
 
-const sortColumn = ref('id');
-const sortDirection = ref('asc');
+const sortColumn = ref(props.filters?.sort || 'id');
+const sortDirection = ref(props.filters?.direction || 'desc');
 
+// Pagination
+const currentPage = ref(props.hasilData?.current_page || 1);
+const totalPages = computed(() => props.hasilData?.last_page || 1);
+const rowsPerPage = ref(props.hasilData?.per_page || 10);
+
+onMounted(() => {
+  if (window.innerWidth < 768) {
+    rowsPerPage.value = 5;
+  }
+});
+
+// Loading state untuk efek blur tabel saat filtering/sorting
+const isLoading = ref(false);
+
+// ==============================
+// 2. FETCH KE BACKEND
+// ==============================
+const fetchHasil = (page = null) => {
+  isLoading.value = true;
+  const targetPage = page !== null ? page : currentPage.value;
+
+  router.get('/admin/aktivitas/hasil', {
+    search: searchQuery.value || undefined,
+    status: filterStatus.value || undefined,
+    sort: sortColumn.value || undefined,
+    direction: sortDirection.value || undefined,
+    per_page: rowsPerPage.value || undefined,
+    page: targetPage > 1 ? targetPage : undefined,
+  }, {
+    preserveState: true,
+    preserveScroll: true,
+    replace: true,
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
+};
+
+// Debounce untuk Search dan Filter
+let timeout = null;
+watch([searchQuery, filterStatus], () => {
+  currentPage.value = 1;
+  clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    fetchHasil(1);
+  }, 300);
+});
+
+watch(() => props.hasilData?.current_page, (newPage) => {
+  if (newPage && newPage !== currentPage.value) {
+    currentPage.value = newPage;
+  }
+});
+
+// ==============================
+// 3. FUNGSI SORTING & PAGINASI
+// ==============================
+const handleSort = (column) => {
+  if (isLoading.value) return;
+
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
+  }
+  fetchHasil(currentPage.value);
+};
+
+const handlePageChange = (newPage) => {
+  if (isLoading.value) return;
+  currentPage.value = newPage;
+  fetchHasil(newPage);
+};
+
+const handleRowsPerPageChange = (newRows) => {
+  if (isLoading.value) return;
+  rowsPerPage.value = newRows;
+  currentPage.value = 1;
+  fetchHasil(1);
+};
+
+// ==============================
+// 4. MODALS & TOAST STATE
+// ==============================
 const showDetailModal = ref(false);
 const showRejectModal = ref(false);
+const showConfirmApproveModal = ref(false);
+const itemToApprove = ref(null);
 const selectedItem = ref(null);
+
 const showImageModal = ref(false);
 const selectedImage = ref('');
 
@@ -50,78 +133,87 @@ const showToast = (message, type = 'success') => {
   }, 50);
 };
 
+// Pantau flash message dari Laravel redirect
+const page = usePage();
+watch(() => page.props.flash?.success, (msg) => {
+  if (msg) showToast(msg, 'success');
+}, { immediate: true });
+watch(() => page.props.flash?.error, (msg) => {
+  if (msg) showToast(msg, 'error');
+}, { immediate: true });
+
 // ==============================
-// FUNGSI SORTING & FILTERING
+// 5. HELPER FORMATTER & MEDIA
 // ==============================
-const handleSort = (column) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'asc';
+const getMediaName = (val) => {
+  if (!val) return '-';
+  if (typeof val === 'object' && val.name) return val.name;
+  if (typeof val === 'string') {
+    const clean = val.split('?')[0];
+    return clean.split('/').pop() || 'media.jpg';
   }
+  return 'media.jpg';
 };
 
-const processedKegiatan = computed(() => {
-  let data = [...kegiatan.value];
-
-  if (filterStatus.value) {
-    data = data.filter(item => item.status === filterStatus.value);
+const getImageSrc = (val) => {
+  if (!val) return '';
+  if (typeof val === 'object' && val.url) return val.url;
+  if (typeof val === 'string') {
+    if (val.startsWith('http://') || val.startsWith('https://')) return val;
+    if (val.startsWith('/')) return val;
+    if (val.startsWith('storage/')) return '/' + val;
+    return '/storage/' + val;
   }
+  return `https://picsum.photos/seed/hasil/800/600`;
+};
 
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    data = data.filter(item => 
-      item.nama_mahasiswa.toLowerCase().includes(query) ||
-      item.nim.toLowerCase().includes(query) ||
-      item.jenis_roadmap.toLowerCase().includes(query) ||
-      item.nama_kegiatan.toLowerCase().includes(query)
-    );
-  }
-
-  if (sortColumn.value) {
-    data.sort((a, b) => {
-      let valA = a[sortColumn.value];
-      let valB = b[sortColumn.value];
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  return data;
-});
-
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-
-onMounted(() => {
-  if (window.innerWidth < 768) {
-    rowsPerPage.value = 5;
-  }
-});
-
-const paginatedKegiatan = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  return processedKegiatan.value.slice(start, start + rowsPerPage.value);
-});
-
-const totalPages = computed(() => Math.ceil(processedKegiatan.value.length / rowsPerPage.value) || 1);
-
-watch([searchQuery, filterStatus, rowsPerPage], () => {
-  currentPage.value = 1;
-});
+const openImage = (val) => {
+  if (!val) return;
+  selectedImage.value = getImageSrc(val);
+  showImageModal.value = true;
+};
 
 // ==============================
-// FUNGSI MODAL & AKSI
+// 6. ACTION HANDLERS
 // ==============================
 const openDetail = (item) => {
   selectedItem.value = item;
   showDetailModal.value = true;
+};
+
+const promptApprove = (item) => {
+  const target = item || selectedItem.value;
+  if (!target) return;
+
+  if (String(target.status).toLowerCase() === 'disetujui') {
+    showToast('Hasil aktivitas ini sudah disetujui sebelumnya.', 'error');
+    return;
+  }
+
+  itemToApprove.value = target;
+  showConfirmApproveModal.value = true;
+};
+
+const executeApprove = () => {
+  if (!itemToApprove.value) return;
+  const targetId = itemToApprove.value.id;
+
+  showConfirmApproveModal.value = false;
+  showDetailModal.value = false;
+  isLoading.value = true;
+
+  router.post(`/admin/aktivitas/hasil/${targetId}/approve`, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      itemToApprove.value = null;
+    },
+    onError: () => {
+      showToast('Gagal menyetujui hasil aktivitas.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
 };
 
 const openReject = (item) => {
@@ -129,40 +221,25 @@ const openReject = (item) => {
   showRejectModal.value = true;
 };
 
-const openImage = (gambar) => {
-  if (gambar && typeof gambar === 'object' && gambar.url) {
-    selectedImage.value = gambar.url;
-  } else if (gambar && typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
-    selectedImage.value = gambar;
-  } else {
-    selectedImage.value = `https://picsum.photos/seed/${gambar || 'dummy'}/800/600`;
-  }
-  showImageModal.value = true;
-};
-
-const handleApprove = (item) => {
-  const target = item || selectedItem.value;
-  if (target) {
-    const idx = kegiatan.value.findIndex(k => k.id === target.id);
-    if (idx !== -1) {
-      kegiatan.value[idx].status = 'Disetujui';
-    }
-  }
-  showDetailModal.value = false;
-  showToast('Hasil aktivitas berhasil disetujui!', 'success');
-};
-
 const handleReject = (reason) => {
-  if (selectedItem.value) {
-    const idx = kegiatan.value.findIndex(k => k.id === selectedItem.value.id);
-    if (idx !== -1) {
-      kegiatan.value[idx].status = 'Ditolak';
-      kegiatan.value[idx].alasan_tolak = reason;
-    }
-  }
+  if (!selectedItem.value) return;
+  const targetId = selectedItem.value.id;
+
   showRejectModal.value = false;
-  showDetailModal.value = false; 
-  showToast(`Hasil aktivitas ditolak. Alasan: ${reason || 'Tidak ada'}`, 'error');
+  showDetailModal.value = false;
+  isLoading.value = true;
+
+  router.post(`/admin/aktivitas/hasil/${targetId}/reject`, {
+    catatan: reason || ''
+  }, {
+    preserveScroll: true,
+    onError: () => {
+      showToast('Gagal menolak hasil aktivitas.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
 };
 </script>
 
@@ -200,10 +277,10 @@ const handleReject = (reason) => {
               <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
                 <div v-if="showFilter" class="absolute right-0 top-14 z-40 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-lg font-inter">
                   <p class="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase">Filter Status</p>
-                  <button @click="filterStatus = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium cursor-pointer" :class="!filterStatus ? 'bg-gray-100' : ''">Semua Data</button>
-                  <button @click="filterStatus = 'Menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium cursor-pointer" :class="filterStatus === 'Menunggu' ? 'bg-gray-100' : ''">Menunggu</button>
-                  <button @click="filterStatus = 'Disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium cursor-pointer" :class="filterStatus === 'Disetujui' ? 'bg-green-50' : ''">Disetujui</button>
-                  <button @click="filterStatus = 'Ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium cursor-pointer" :class="filterStatus === 'Ditolak' ? 'bg-red-50' : ''">Ditolak</button>
+                  <button @click="filterStatus = ''; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 font-medium cursor-pointer" :class="!filterStatus ? 'bg-gray-100 font-semibold' : ''">Semua Data</button>
+                  <button @click="filterStatus = 'menunggu'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium cursor-pointer" :class="filterStatus === 'menunggu' ? 'bg-gray-100 font-semibold' : ''">Menunggu</button>
+                  <button @click="filterStatus = 'disetujui'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium cursor-pointer" :class="filterStatus === 'disetujui' ? 'bg-green-50 font-semibold' : ''">Disetujui</button>
+                  <button @click="filterStatus = 'ditolak'; showFilter = false" class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium cursor-pointer" :class="filterStatus === 'ditolak' ? 'bg-red-50 font-semibold' : ''">Ditolak</button>
                 </div>
               </Transition>
             </div>
@@ -213,14 +290,16 @@ const handleReject = (reason) => {
         <!-- Overlay penutup filter jika klik di luar -->
         <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-30"></div>
 
-        <!-- TABEL DATA -->
-        <div class="overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee]">
+        <!-- TABEL DATA DENGAN BLUR LOADING EFFECT -->
+        <div :class="['overflow-x-auto lg:overflow-visible rounded-[12px] bg-white shadow-sm ring-1 ring-[#d6e0ee] transition-all', isLoading ? 'cursor-wait' : '']">
           <div class="overflow-x-auto lg:overflow-visible">
             <table class="w-full min-w-[1040px] table-fixed border-separate border-spacing-0 text-sm">
               <thead class="bg-[#416f65]">
                 <tr class="h-[48px]">
+                  
+                  <!-- Kolom No -->
                   <th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
-                    <button type="button" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
                       <span>No</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'id'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -228,8 +307,10 @@ const handleReject = (reason) => {
                       </span>
                     </button>
                   </th>
+
+                  <!-- Kolom Nama Mahasiswa -->
                   <th class="w-[200px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('nama_mahasiswa')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('nama_mahasiswa')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Mahasiswa">
                       <span>Nama Mahasiswa</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'nama_mahasiswa'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -237,8 +318,10 @@ const handleReject = (reason) => {
                       </span>
                     </button>
                   </th>
+
+                  <!-- Kolom NIM -->
                   <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('nim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('nim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan NIM">
                       <span>NIM</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'nim'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -246,8 +329,10 @@ const handleReject = (reason) => {
                       </span>
                     </button>
                   </th>
+
+                  <!-- Kolom Nama Kegiatan -->
                   <th class="w-[230px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" @click="handleSort('nama_kegiatan')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer">
+                    <button type="button" :disabled="isLoading" @click="handleSort('nama_kegiatan')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Kegiatan">
                       <span>Nama Kegiatan</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
                         <svg v-if="sortColumn === 'nama_kegiatan'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
@@ -255,16 +340,32 @@ const handleReject = (reason) => {
                       </span>
                     </button>
                   </th>
+
+                  <!-- Kolom Jenis Roadmap -->
                   <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Jenis Roadmap</th>
+
+                  <!-- Kolom Bukti -->
                   <th class="w-[120px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti</th>
-                  <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Status</th>
+
+                  <!-- Kolom Status -->
+                  <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+                    <button type="button" :disabled="isLoading" @click="handleSort('status')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Status">
+                      <span>Status</span>
+                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
+                        <svg v-if="sortColumn === 'status'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                      </span>
+                    </button>
+                  </th>
+
+                  <!-- Kolom Aksi -->
                   <th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
-              <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
-                <tr v-for="(item, index) in paginatedKegiatan" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
-                  <td class="px-3 py-2.5 text-center font-medium">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+              <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+                <tr v-for="(item, index) in hasilData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
+                  <td class="px-3 py-2.5 text-center font-medium">{{ (hasilData?.from || 1) + index }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_mahasiswa">{{ item.nama_mahasiswa }}</td>
                   <td class="px-3 py-2.5 text-center font-medium">{{ item.nim }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="item.nama_kegiatan">{{ item.nama_kegiatan }}</td>
@@ -281,39 +382,45 @@ const handleReject = (reason) => {
                     </span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <button @click="openImage(item.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[100px] inline-block align-middle" :title="item.gambar">
-                      {{ item.gambar }}
+                    <button 
+                      v-if="item.gambar || item.media"
+                      @click="openImage(item.gambar || item.media)" 
+                      class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[100px] inline-block align-middle" 
+                      :title="getMediaName(item.gambar || item.media)"
+                    >
+                      {{ getMediaName(item.gambar || item.media) }}
                     </button>
+                    <span v-else class="font-inter text-[14px] text-gray-400">-</span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
                          :class="{
-                           'bg-gray-100 text-gray-600 border-gray-200': item.status === 'Menunggu',
-                           'bg-green-50 text-green-600 border-green-200': item.status === 'Disetujui',
-                           'bg-red-50 text-red-600 border-red-200': item.status === 'Ditolak'
+                           'bg-gray-100 text-gray-600 border-gray-200': String(item.status).toLowerCase() === 'menunggu',
+                           'bg-green-50 text-green-600 border-green-200': String(item.status).toLowerCase() === 'disetujui',
+                           'bg-red-50 text-red-600 border-red-200': String(item.status).toLowerCase() === 'ditolak'
                          }">
-                      <svg v-if="item.status === 'Menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="9" />
                         <polyline points="12 7 12 12 15 15" />
                       </svg>
-                      <svg v-if="item.status === 'Disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <svg v-if="item.status === 'Ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>{{ item.status }}</span>
+                      <span class="capitalize">{{ item.status }}</span>
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">
-                      <AcceptButton @click="handleApprove(item)" />
+                      <AcceptButton @click="promptApprove(item)" />
                       <RejectButton @click="openReject(item)" />
                       <PreviewButtonTable @click="openDetail(item)" />
                     </div>
                   </td>
                 </tr>
-                <tr v-if="paginatedKegiatan.length === 0">
+                <tr v-if="!hasilData?.data || hasilData.data.length === 0">
                   <td colspan="8" class="px-4 py-12 text-center text-gray-500 font-medium">Data tidak ditemukan sesuai filter/pencarian Anda.</td>
                 </tr>
               </tbody>
@@ -325,8 +432,8 @@ const handleReject = (reason) => {
           :current-page="currentPage" 
           :total-pages="totalPages" 
           :rows-per-page="rowsPerPage"
-          @update:current-page="currentPage = $event"
-          @update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+          @update:current-page="handlePageChange"
+          @update:rows-per-page="handleRowsPerPageChange"
         />
       </div>
     </section>
@@ -336,8 +443,8 @@ const handleReject = (reason) => {
       :show="showDetailModal"
       :data="selectedItem"
       @close="showDetailModal = false"
-      @approve="handleApprove"
-      @reject="openReject"
+      @approve="promptApprove(selectedItem)"
+      @reject="openReject(selectedItem)"
     />
 
     <!-- MODAL GAMBAR (LIGHTBOX) DARI TABEL -->
@@ -389,8 +496,27 @@ const handleReject = (reason) => {
       </Transition>
     </Teleport>
 
-    <!-- Modal Penolakan -->
-    <RejectModal :show="showRejectModal" @close="showRejectModal = false" @submit="handleReject"/>
+    <!-- Modal Konfirmasi Setujui Hasil Aktivitas (Dengan penanganan tombol Escape) -->
+    <ApproveModal
+      :show="showConfirmApproveModal"
+      title="Setujui Hasil Aktivitas?"
+      info="<strong>Info:</strong> Status hasil aktivitas mahasiswa ini akan diperbarui menjadi <strong>Disetujui</strong>."
+      :is-loading="isLoading"
+      @close="showConfirmApproveModal = false"
+      @confirm="executeApprove"
+    >
+      <p class="text-xs sm:text-sm text-[#4d6786] font-inter mb-4 leading-relaxed">
+        Apakah Anda yakin ingin menyetujui hasil kegiatan mahasiswa <span class="font-bold text-[#183669]">"{{ itemToApprove?.nama_mahasiswa }}"</span> untuk kegiatan <span class="font-bold text-[#183669]">"{{ itemToApprove?.nama_kegiatan }}"</span>?
+      </p>
+    </ApproveModal>
+
+    <!-- Modal Penolakan (Dengan Warning Jika Sudah Disetujui) -->
+    <RejectModal 
+      :show="showRejectModal" 
+      :is-approved="String(selectedItem?.status).toLowerCase() === 'disetujui'"
+      @close="showRejectModal = false" 
+      @submit="handleReject"
+    />
 
   </AdminLayout>
 </template>

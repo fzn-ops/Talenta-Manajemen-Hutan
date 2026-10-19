@@ -62,5 +62,8 @@ class User extends Authenticatable
         return $this->hasMany(Pencapaian::class, 'id_user', 'id');
     }
 
-    
+    public function hasilAktivitas()
+    {
+        return $this->hasMany(HasilAktivitas::class, 'id_user', 'id');
+    }
 }

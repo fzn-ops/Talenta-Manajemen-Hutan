@@ -32,4 +32,9 @@ class PendaftaranAktivitas extends Model
             'id_user'
         );
     }
+
+    public function hasilAktivitas()
+    {
+        return $this->hasMany(HasilAktivitas::class, 'id_pendaftaran_aktivitas', 'id');
+    }
 }

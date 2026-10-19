@@ -7,6 +7,7 @@ import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import RejectModal from '@/Components/dashboard/RejectModal.vue';
+import ApproveModal from '@/Components/dashboard/ApproveModal.vue';
 
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
@@ -552,60 +553,19 @@ const handleReject = (reason) => {
       @reject="openReject"
     />
 
-    <!-- MODAL KONFIRMASI SETUJUI (Pencegah Kesalahan Fatal) -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div 
-          v-if="showConfirmApproveModal" 
-          class="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto overscroll-contain bg-slate-900/60 p-4 backdrop-blur-xs" 
-          @click.self="showConfirmApproveModal = false"
-        >
-          <div class="relative w-full max-w-md rounded-[18px] sm:rounded-[20px] bg-white p-6 sm:p-8 shadow-2xl text-center font-poppins border border-[#e2e8f0]">
-            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-
-            <h2 class="text-[17px] sm:text-[19px] font-bold text-[#183669] mb-3 px-2 leading-snug">
-              Setujui Pengajuan Aktivitas?
-            </h2>
-
-            <p class="text-xs sm:text-sm text-[#4d6786] font-inter mb-4 leading-relaxed">
-              Apakah Anda yakin ingin menyetujui <span class="font-bold text-[#183669]">"{{ itemToApprove?.judul }}"</span>?
-            </p>
-
-            <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-left font-inter text-[12px] text-emerald-800 leading-relaxed">
-              <strong>Info:</strong> Aktivitas ini akan langsung otomatis dibuat dan <strong>diterbitkan ke List Aktivitas</strong>.
-            </div>
-
-            <div class="flex items-center justify-center gap-3 sm:gap-4">
-              <button 
-                type="button"
-                @click="showConfirmApproveModal = false" 
-                class="min-w-[110px] sm:min-w-[130px] rounded-[10px] border border-[#d6e0ee] bg-white py-2.5 text-xs sm:text-sm font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 cursor-pointer select-none outline-none focus:outline-none"
-              >
-                Batal
-              </button>
-              <button 
-                type="button"
-                @click="executeApprove" 
-                class="min-w-[110px] sm:min-w-[130px] rounded-[10px] bg-[#10b981] py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-[#059669] shadow-sm cursor-pointer select-none outline-none focus:outline-none"
-              >
-                Ya, Setujui
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- MODAL KONFIRMASI SETUJUI (Dengan penanganan tombol Escape) -->
+    <ApproveModal
+      :show="showConfirmApproveModal"
+      title="Setujui Pengajuan Aktivitas?"
+      info="<strong>Info:</strong> Aktivitas ini akan langsung otomatis dibuat dan <strong>diterbitkan ke List Aktivitas</strong>."
+      :is-loading="isLoading"
+      @close="showConfirmApproveModal = false"
+      @confirm="executeApprove"
+    >
+      <p class="text-xs sm:text-sm text-[#4d6786] font-inter mb-4 leading-relaxed">
+        Apakah Anda yakin ingin menyetujui <span class="font-bold text-[#183669]">"{{ itemToApprove?.judul }}"</span>?
+      </p>
+    </ApproveModal>
 
     <!-- MODAL REJECT (Dengan Warning Jika Sudah Disetujui) -->
     <RejectModal 

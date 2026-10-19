@@ -13,6 +13,7 @@ use App\Http\Controllers\Dashboard\Admin\RoadmapDetailController;
 use App\Http\Controllers\Dashboard\Admin\MahasiswaController;
 use App\Http\Controllers\Dashboard\Admin\PendaftaranAktivitasController as AdminPendaftaranAktivitasController;
 use App\Http\Controllers\Dashboard\Admin\PersetujuanAktivitasController as AdminPersetujuanAktivitasController;
+use App\Http\Controllers\Dashboard\Admin\HasilAktivitasController as AdminHasilAktivitasController;
 
 
 /* Route Landing dan Website Public*/
@@ -109,9 +110,9 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
         Route::patch('/bukti-pendaftaran/{id}/reject', [AdminPendaftaranAktivitasController::class, 'reject'])
             ->name('bukti.reject');
 
-        Route::get('/hasil', function () {
-            return Inertia::render('dashboard/admin/ActivityResult');
-        })->name('hasil');
+        Route::get('/hasil', [AdminHasilAktivitasController::class, 'index'])->name('hasil');
+        Route::post('/hasil/{id}/approve', [AdminHasilAktivitasController::class, 'approve'])->name('hasil.approve');
+        Route::post('/hasil/{id}/reject', [AdminHasilAktivitasController::class, 'reject'])->name('hasil.reject');
 
         Route::get('/list', [AktivitasController::class, 'index'])->name('listAktivitasAdmin');
         Route::post('/store', [AktivitasController::class, 'store'])->name('storeAktivitasAdmin');
