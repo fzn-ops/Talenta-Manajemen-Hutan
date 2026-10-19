@@ -14,6 +14,7 @@ use App\Http\Controllers\Dashboard\Admin\MahasiswaController;
 use App\Http\Controllers\Dashboard\Admin\PendaftaranAktivitasController as AdminPendaftaranAktivitasController;
 use App\Http\Controllers\Dashboard\Admin\PersetujuanAktivitasController as AdminPersetujuanAktivitasController;
 use App\Http\Controllers\Dashboard\Admin\HasilAktivitasController as AdminHasilAktivitasController;
+use App\Http\Controllers\Dashboard\Mahasiswa\PengajuanAktivitasController as MahasiswaPengajuanAktivitas;
 
 
 /* Route Landing dan Website Public*/
@@ -159,9 +160,12 @@ Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mah
             return Inertia::render('dashboard/mahasiswa/ActivityRegister');
         })->name('pendaftaran');
 
-        Route::get('/pengajuan', function () {
-            return Inertia::render('dashboard/mahasiswa/ActivitySubmission');
-        })->name('pengajuan');
+        Route::prefix('pengajuan')->name('pengajuan.')->group(function () {
+            Route::get('/', [MahasiswaPengajuanAktivitas::class, 'index'])->name('index');
+            Route::post('/', [MahasiswaPengajuanAktivitas::class, 'store'])->name('store');
+            Route::post('/{id}', [MahasiswaPengajuanAktivitas::class, 'update'])->name('update');
+            Route::delete('/{id}', [MahasiswaPengajuanAktivitas::class, 'destroy'])->name('destroy');
+        });
     });
 
     Route::get('/profile', [MahasiswaProfileController::class, 'index'])->name('profile');

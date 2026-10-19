@@ -49,6 +49,7 @@ const form = ref({
     deadline: '',
     kategori: [],
     gambar: [],
+    gambar_dihapus: [],
     catatan_penolakan: ''
 });
 
@@ -110,11 +111,12 @@ const syncFormData = () => {
     }
 
     let gambar = [];
+    const sourceGambar = data.gambar_pengajuan_aktivitas || data.gambar;
 
-    if (Array.isArray(data.gambar)) {
-        gambar = [...data.gambar];
-    } else if (data.gambar) {
-        gambar = [data.gambar];
+    if (Array.isArray(sourceGambar)) {
+        gambar = [...sourceGambar];
+    } else if (sourceGambar) {
+        gambar = [sourceGambar];
     }
 
     form.value = {
@@ -124,6 +126,7 @@ const syncFormData = () => {
         deadline: data.deadline || '',
         kategori,
         gambar,
+        gambar_dihapus : [],
         catatan_penolakan: data.catatan_penolakan || ''
     };
 };
@@ -222,39 +225,51 @@ const triggerReplaceImage = (index) => {
 };
 
 const processFiles = (files) => {
+    console.log("1. processFiles jalan! Isi files:", files);
+
     if (!files || !files.length) {
         return;
     }
 
+    if (!Array.isArray(form.value.gambar)) {
+        form.value.gambar = [];
+    }
+
     const remainingSlot = 3 - form.value.gambar.length;
+    console.log("2. Sisa slot gambar:", remainingSlot);
 
     if (remainingSlot <= 0) {
+        alert("Slot penuh! Maksimal 3 gambar wok!");
         return;
     }
 
     const filesToAdd = files.slice(0, remainingSlot);
 
     filesToAdd.forEach((file) => {
-        // Validasi tipe
-        if (!file.type.startsWith('image/')) {
+        const isImageMime = file.type.startsWith('image/');
+        const isImageExt = file.name.match(/\.(jpg|jpeg|png)$/i);
+        
+        if (!isImageMime && !isImageExt) {
+            alert(`File ${file.name} bukan gambar JPG/PNG!`);
             return;
         }
 
         // Maksimal 10 MB
         if (file.size > 10 * 1024 * 1024) {
+            alert(`Ukuran ${file.name} kegedean! (Maks 10MB)`);
             return;
         }
 
         const previewUrl = URL.createObjectURL(file);
 
         form.value.gambar.push({
-            file,
+            file: file,
             url: previewUrl,
             isNew: true
         });
     });
 
-    if (form.value.gambar.length > 0) {
+    if (form.value.gambar.length > 0 && errors && errors.value) {
         errors.value.gambar = '';
     }
 };
@@ -335,21 +350,16 @@ const openDeleteImageModal = (index) => {
 
 const executeRemoveImage = () => {
     if (imageIndexToDelete.value !== null) {
-        const removed = form.value.gambar.splice(
-            imageIndexToDelete.value,
-            1
-        )[0];
+        const removed = form.value.gambar.splice(imageIndexToDelete.value, 1)[0];
 
-        if (
-            removed &&
-            typeof removed === 'object' &&
-            removed.isNew &&
-            removed.url
-        ) {
+        if (removed && typeof removed === 'object' && removed.id && !removed.isNew) {
+            form.value.gambar_dihapus.push(removed.id);
+        }
+
+        if (removed && typeof removed === 'object' && removed.isNew && removed.url) {
             URL.revokeObjectURL(removed.url);
         }
     }
-
     showDeleteImageModal.value = false;
     imageIndexToDelete.value = null;
 };
@@ -359,24 +369,33 @@ const executeRemoveImage = () => {
 // =====================================================
 
 const getImageSrc = (gambar) => {
-    if (
-        typeof gambar === 'object' &&
-        gambar?.url
-    ) {
-        return gambar.url;
+    if (!gambar) return 'https://picsum.photos/seed/error/300/400';
+
+    // 1. JIKA BENTUKNYA ARRAY (Data relasi dari Laravel)
+    if (Array.isArray(gambar) && gambar.length > 0) {
+        const dbPath = gambar[0].gambar; 
+        if (!dbPath) return 'https://picsum.photos/seed/error/300/400';
+        return dbPath.startsWith('http') ? dbPath : `/storage/${dbPath}`;
     }
 
-    if (
-        typeof gambar === 'string' &&
-        (
-            gambar.startsWith('http') ||
-            gambar.startsWith('/')
-        )
-    ) {
-        return gambar;
+    // 2. JIKA OBJECT TUNGGAL (Dari Modal pas dilooping)
+    if (typeof gambar === 'object' && !Array.isArray(gambar)) {
+        if (gambar.isNew && gambar.url) return gambar.url;
+        
+        if (gambar.gambar) {
+            return gambar.gambar.startsWith('http') ? gambar.gambar : `/storage/${gambar.gambar}`;
+        }
     }
 
-    return `https://picsum.photos/seed/${gambar}/300/400`;
+    // 3. JIKA STRING BIASA
+    if (typeof gambar === 'string') {
+        if (gambar.startsWith('http') || gambar.startsWith('blob:') || gambar.startsWith('/')) {
+            return gambar;
+        }
+        return `/storage/${gambar}`;
+    }
+
+    return 'https://picsum.photos/seed/error/300/400';
 };
 
 const openImage = (gambar) => {
@@ -499,15 +518,32 @@ const submit = () => {
         return;
     }
 
-    emit('submit', {
+    const payload = {
         id: form.value.id,
         judul: form.value.judul.trim(),
         deskripsi: form.value.deskripsi,
         deadline: form.value.deadline,
         kategori: [...form.value.kategori],
-        gambar: [...form.value.gambar],
         catatan_penolakan: form.value.catatan_penolakan
-    });
+    };
+
+    if (form.value.id) {
+        // 🔥 MODE EDIT
+        // 1. Kirim ID gambar yang mau dihapus
+        payload.gambar_dihapus = [...form.value.gambar_dihapus];
+        
+        // 2. Saring HANYA file fisik baru untuk di-upload
+        payload.gambar_baru = form.value.gambar
+            .filter(g => g.isNew && g.file)
+            .map(g => g.file);
+    } else {
+        // 🔥 MODE TAMBAH
+        payload.gambar = form.value.gambar
+            .filter(g => g.isNew && g.file)
+            .map(g => g.file);
+    }
+
+    emit('submit', payload);
 };
 </script>
 

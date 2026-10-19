@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('judul');
             $table->text('deskripsi');
             $table->string('kategori');
-            $table->integer('partisipan')->default(0);
             $table->enum('status', ['menunggu', 'disetujui', 'ditolak'])
                   ->default('menunggu');
             $table->dateTime('deadline')->nullable();

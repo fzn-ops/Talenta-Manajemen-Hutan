@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 
 import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
@@ -11,140 +11,71 @@ import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 
 import ActivitySubmissionModal from '@/Components/dashboard/mahasiswa/ActivitySubmissionModal.vue';
+import { data } from 'autoprefixer';
 
-// 10 Data Dummy
-const aktivitasList = ref([
-  { id: 1, judul: 'Pelatihan Manajemen Risiko Kehutanan', deskripsi: 'Pelatihan mitigasi dan tata kelola risiko bisnis kehutanan.', kategori: 'Profesional, Bisnis', deadline: '10 Juli 2029', gambar: '123.jpg', status: 'Menunggu', catatan_penolakan: '' },
-  { id: 2, judul: 'Seminar Nasional Teknologi Hijau & AI', deskripsi: 'Seminar implementasi IoT dan AI untuk restorasi hutan.', kategori: 'Akademisi, Profesional', deadline: '12 Agustus 2029', gambar: '456.jpg', status: 'Diterima', catatan_penolakan: '' },
-  { id: 3, judul: 'Kompetisi Proposal Bisnis Plan Agroforestry', deskripsi: 'Kompetisi rancang model bisnis hasil hutan bukan kayu.', kategori: 'Bisnis', deadline: '15 September 2029', gambar: '789.jpg', status: 'Ditolak', catatan_penolakan: 'Gambar bukti sertifikat kurang jelas, mohon lampirkan scan dokumen beresolusi tinggi.' },
-  { id: 4, judul: 'Workshop Kewirausahaan Digital Hasil Hutan', deskripsi: 'Workshop strategi pemasaran digital komoditas lestari.', kategori: 'Bisnis, Profesional', deadline: '20 Oktober 2029', gambar: '101.jpg', status: 'Menunggu', catatan_penolakan: '' },
-  { id: 5, judul: 'Sosialisasi Sertifikasi SVLK & Perdagangan Karbon', deskripsi: 'Sosialisasi kepatuhan sertifikasi kayu dan kredit karbon.', kategori: 'Birokrat, Akademisi', deadline: '01 November 2029', gambar: '112.jpg', status: 'Ditolak', catatan_penolakan: 'Format surat tugas belum sesuai dengan ketentuan kampus.' },
-  { id: 6, judul: 'Hackathon Konservasi Biodiversitas Tropis', deskripsi: 'Pengembangan software pemantauan satwa liar berbasis drone.', kategori: 'Profesional, Akademisi', deadline: '10 Desember 2029', gambar: '131.jpg', status: 'Diterima', catatan_penolakan: '' },
-  { id: 7, judul: 'Pelatihan Pemetaan GIS dan Remote Sensing', deskripsi: 'Pelatihan analisis tutupan tajuk pohon berbasis citra satelit.', kategori: 'Profesional', deadline: '15 Januari 2030', gambar: '141.jpg', status: 'Menunggu', catatan_penolakan: '' },
-  { id: 8, judul: 'Forum Diskusi Ekosistem Mangrove Berkelanjutan', deskripsi: 'Forum advokasi perlindungan hutan mangrove pesisir.', kategori: 'Bisnis, Profesional', deadline: '20 Februari 2030', gambar: '151.jpg', status: 'Diterima', catatan_penolakan: '' },
-  { id: 9, judul: 'Pengabdian Masyarakat Restorasi Lahan Kritis', deskripsi: 'Penanaman bibit pohon endemik bersama kelompok tani hutan.', kategori: 'Akademisi, Birokrat', deadline: '05 Maret 2030', gambar: '161.jpg', status: 'Menunggu', catatan_penolakan: '' },
-  { id: 10, judul: 'Webinar Sertifikasi AMDAL dan Audit Lingkungan', deskripsi: 'Webinar regulasi izin lingkungan hidup dan AMDAL.', kategori: 'Profesional, Akademisi', deadline: '12 April 2030', gambar: '171.jpg', status: 'Ditolak', catatan_penolakan: 'Dokumentasi kegiatan belum lengkap.' },
-]);
+const props = defineProps({
+  pengajuanData: Object,
+  filters: Object
+});
 
-const searchQuery = ref('');
-const filterStatus = ref('');
+// ==============================
+// STATE INISIALISASI DARI BACKEND
+// ==============================
+const searchQuery = ref(props.filters?.search || '');
+const filterStatus = ref(props.filters?.status || '');
 const showFilter = ref(false);
 
-const sortColumn = ref('id');
-const sortDirection = ref('asc');
+const rowsPerPage = ref(props.filters?.per_page || 10);
+const currentPage = ref(props.pengajuanData?.current_page || 1);
+const totalPages = computed(() => props.pengajuanData?.last_page || 1);
 
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
+const sortColumn = ref(props.filters?.sort_by || 'deadline');
+const sortDirection = ref(props.filters?.sort_direction || 'desc');
 
 onMounted(() => {
-  if (window.innerWidth < 768) {
+  if (window.innerWidth < 768 && !props.filters?.per_page) {
     rowsPerPage.value = 5;
   }
 });
 
-// Mapping bulan Indonesia untuk parsing tanggal
-const monthMapIndo = {
-  januari: 0, jan: 0,
-  februari: 1, feb: 1,
-  maret: 2, mar: 2,
-  april: 3, apr: 3,
-  mei: 4, may: 4,
-  juni: 5, jun: 5,
-  juli: 6, jul: 6,
-  agustus: 7, agu: 7, ags: 7, aug: 7,
-  september: 8, sep: 8, sept: 8,
-  oktober: 9, okt: 9, oct: 9,
-  november: 10, nov: 10,
-  desember: 11, des: 11, dec: 11,
-};
-
-const parseDateValue = (val) => {
-  if (!val) return 0;
-  if (val instanceof Date) return val.getTime();
-  if (typeof val === 'number') return val;
-  
-  if (typeof val === 'string') {
-    const trimmed = val.trim();
-    const parts = trimmed.split(/[\s,/-]+/);
-    if (parts.length >= 3) {
-      const day = parseInt(parts[0], 10);
-      const monthStr = parts[1].toLowerCase();
-      const year = parseInt(parts[2], 10);
-      
-      if (!isNaN(day) && monthMapIndo[monthStr] !== undefined && !isNaN(year)) {
-        return new Date(year, monthMapIndo[monthStr], day).getTime();
-      }
-    }
-
-    const parsedTime = Date.parse(trimmed);
-    if (!isNaN(parsedTime)) {
-      return parsedTime;
-    }
-  }
-  return 0;
-};
-
 // ==============================
-// FUNGSI SORTING & FILTERING
+// FUNGSI TARIK DATA (INERTIA GET)
 // ==============================
-const handleSort = (column) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'asc';
-  }
+const fetchAktivitas = (page = 1) => {
+  router.get('/mahasiswa/aktivitas/pengajuan', {
+    search: searchQuery.value,
+    status: filterStatus.value,
+    per_page: rowsPerPage.value,
+    page: page,
+    sort_by: sortColumn.value,
+    sort_direction: sortDirection.value
+  }, {
+    preserveState: true,
+    preserveScroll: true,
+    replace: true,
+  });
 };
 
-const processedAktivitas = computed(() => {
-  let data = [...aktivitasList.value];
-
-  if (filterStatus.value) {
-    data = data.filter((item) => item.status === filterStatus.value);
-  }
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    data = data.filter(
-      (item) =>
-        item.judul.toLowerCase().includes(query) ||
-        item.kategori.toLowerCase().includes(query)
-    );
-  }
-
-  if (sortColumn.value) {
-    data.sort((a, b) => {
-      let valA = a[sortColumn.value];
-      let valB = b[sortColumn.value];
-
-      if (sortColumn.value === 'deadline' || sortColumn.value === 'tanggal') {
-        const timeA = parseDateValue(valA);
-        const timeB = parseDateValue(valB);
-        return sortDirection.value === 'asc' ? timeA - timeB : timeB - timeA;
-      }
-
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-
-      if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  return data;
-});
-
-const paginatedAktivitas = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  return processedAktivitas.value.slice(start, start + rowsPerPage.value);
-});
-
-const totalPages = computed(() => Math.ceil(processedAktivitas.value.length / rowsPerPage.value));
-
+// Kalau user ngetik pencarian atau ganti status, balik ke halaman 1
 watch([searchQuery, filterStatus, rowsPerPage], () => {
-  currentPage.value = 1;
+  fetchAktivitas(1);
 });
+
+// Fungsi ini buat dikaitin ke komponen <TablePagination> lu
+const handlePageChange = (newPage) => {
+  fetchAktivitas(newPage);
+};
+
+const handleSort = (column) => {
+    if (sortColumn.value === column) {
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn.value = column;
+        sortDirection.value = 'asc';
+    }
+
+    fetchAktivitas(1); 
+};
 
 // ==============================
 // TOAST STATE
@@ -159,63 +90,37 @@ const showToast = (message, type = 'success') => {
 };
 
 // ==============================
-// DELETE MODAL
+// DELETE MODAL (INERTIA DELETE)
 // ==============================
 const showDeleteModal = ref(false);
 const itemToDelete = ref(null);
+
 const openDeleteModal = (item) => {
   itemToDelete.value = item;
   showDeleteModal.value = true;
 };
+
 const executeDelete = () => {
   if (itemToDelete.value) {
-    aktivitasList.value = aktivitasList.value.filter((k) => k.id !== itemToDelete.value.id);
+    router.delete(`/mahasiswa/aktivitas/pengajuan/${itemToDelete.value.id}`, {
+      preserveScroll: true,
+      onSuccess: () => {
+        showDeleteModal.value = false;
+        itemToDelete.value = null;
+        showToast('Pengajuan berhasil dihapus!', 'success');
+      }
+    });
   }
-  showDeleteModal.value = false;
-  itemToDelete.value = null;
-  showToast('Pengajuan berhasil dihapus!', 'success');
 };
 
 // ==============================
-// LIGHTBOX MODAL
+// LIGHTBOX MODAL (GAMBAR BACKEND)
 // ==============================
 const showImageModal = ref(false);
 const selectedImage = ref('');
-const openImage = (gambarArray) => {
-  const gmb = Array.isArray(gambarArray) ? gambarArray[0] : gambarArray;
-  if (gmb && typeof gmb === 'object' && gmb.url) {
-    selectedImage.value = gmb.url;
-  } else if (gmb && typeof gmb === 'object' && gmb.name) {
-    selectedImage.value = URL.createObjectURL(gmb);
-  } else if (gmb && typeof gmb === 'string' && (gmb.startsWith('http') || gmb.startsWith('/'))) {
-    selectedImage.value = gmb;
-  } else {
-    selectedImage.value = `https://picsum.photos/seed/${gmb || 'dummy'}/800/600`;
-  }
-  showImageModal.value = true;
-};
-
-const getGambarName = (gambar) => {
-  if (!gambar) return '-';
-  if (Array.isArray(gambar)) {
-    const first = gambar[0];
-    if (!first) return '-';
-    const name = typeof first === 'object' && first.name ? first.name : first;
-    return gambar.length > 1 ? `${name} (+${gambar.length - 1})` : name;
-  }
-  return typeof gambar === 'object' && gambar.name ? gambar.name : gambar;
-};
-
-const getGambarTitle = (gambar) => {
-  if (!gambar) return '';
-  if (Array.isArray(gambar)) {
-    return gambar.map((g) => (typeof g === 'object' && g.name ? g.name : g)).join(', ');
-  }
-  return typeof gambar === 'object' && gambar.name ? gambar.name : gambar;
-};
 
 // ==============================
-// FORM MODAL (SUBMISSION & EDIT)
+// FORM MODAL (INERTIA POST CREATE & UPDATE)
 // ==============================
 const isModalOpen = ref(false);
 const isEditMode = ref(false);
@@ -234,21 +139,120 @@ const handleEdit = (item) => {
 };
 
 const handleModalSubmit = (formData) => {
-  if (isEditMode.value && formData.id) {
-    const index = aktivitasList.value.findIndex((k) => k.id === formData.id);
-    if (index !== -1) {
-      const katString = Array.isArray(formData.kategori) ? formData.kategori.join(', ') : formData.kategori;
-      aktivitasList.value[index] = { ...aktivitasList.value[index], ...formData, kategori: katString };
-    }
-    showToast('Pengajuan berhasil diperbarui!', 'success');
-  } else {
-    const newId = aktivitasList.value.length ? Math.max(...aktivitasList.value.map((k) => k.id)) + 1 : 1;
-    const katString = Array.isArray(formData.kategori) ? formData.kategori.join(', ') : formData.kategori;
-    aktivitasList.value.unshift({ ...formData, id: newId, kategori: katString, status: 'Menunggu' });
-    showToast('Pengajuan berhasil ditambahkan!', 'success');
+  // 1. Pastiin kategori jadi string (kalau dari frontend lu dikirim sebagai array)
+  if (Array.isArray(formData.kategori)) {
+    formData.kategori = formData.kategori.join(', ');
   }
-  isModalOpen.value = false;
+
+  const ekstrakFileMurni = (fileArray) => {
+    if (!fileArray || !Array.isArray(fileArray)) return fileArray;
+    
+    return fileArray.map(item => {
+      if (item instanceof File) return item;
+      if (item && item.file instanceof File) return item.file;
+      if (item && item.raw instanceof File) return item.raw;
+      
+      return null; 
+    }).filter(item => item !== null);
+  };
+
+  // Bersihin array gambar sebelum dikirim
+  if (formData.gambar) {
+    formData.gambar = ekstrakFileMurni(formData.gambar);
+  }
+  if (formData.gambar_baru) {
+    formData.gambar_baru = ekstrakFileMurni(formData.gambar_baru);
+  }
+
+  // 2. Opsi Inertia buat nangkep error (biar tetep aman)
+const inertiaOptions = {
+    forceFormData: true,
+    preserveScroll: true,
+    onSuccess: () => {
+      isModalOpen.value = false;
+      showToast('Pengajuan berhasil disimpan!', 'success');
+    },
+    onError: (errors) => {
+      const pesanError = Object.values(errors);
+      const errorPertama = pesanError.length > 0 ? pesanError[0] : 'Terjadi kesalahan pada form!';
+      showToast(errorPertama, 'error'); 
+    }
+  };
+
+  // 3. Tembak ke Backend!
+  if (isEditMode.value && formData.id) {
+    // Mode EDIT
+    router.post(`/mahasiswa/aktivitas/pengajuan/${formData.id}`, formData, inertiaOptions);
+  } else {
+    // Mode TAMBAH
+    router.post(`/mahasiswa/aktivitas/pengajuan`, formData, inertiaOptions);
+  }
 };
+
+// ==============================
+// HELPER GAMBAR DARI DATABASE
+// ==============================
+
+const getGambarName = (gambarArray) => {
+  if (!gambarArray || !gambarArray.length) return '-';
+  
+  const firstPath = gambarArray[0].gambar; 
+  if (!firstPath) return '-';
+
+  const name = firstPath.startsWith('http') ? 'Gambar Dummy' : firstPath.split('/').pop();
+  return gambarArray.length > 1 ? `${name} (+${gambarArray.length - 1})` : name;
+};
+
+const getSingleGambarName = (gbr) => {
+    if (!gbr || !gbr.gambar) return '-';
+    
+    const path = gbr.gambar;
+    if (path.startsWith('http')) return 'Gambar Dummy';
+    
+    // Ambil nama file aslinya
+    let name = path.split('/').pop();
+    
+    // Potong teksnya kalau lebih dari 12 karakter
+    if (name.length > 12) {
+        name = name.substring(0, 10) + '...';
+    }
+    
+    return name;
+};
+
+// Buat nampilin nama FULL pas kursor diarahkan ke teksnya (tooltip hover)
+const getGambarTitle = (gbr) => {
+    if (!gbr || !gbr.gambar) return '';
+    const path = gbr.gambar;
+    return path.startsWith('http') ? 'Gambar Dummy Unsplash' : path.split('/').pop();
+};
+
+const openImage = (gbr) => {
+  if (!gbr || !gbr.gambar) return;
+  
+  const path = gbr.gambar;
+
+  if (path.startsWith('http')) {
+      selectedImage.value = path;
+  } else {
+      selectedImage.value = `/storage/${path}`;
+  }
+
+  showImageModal.value = true;
+};
+
+const paginatedData = computed(() => {
+    // GANTI 'dataAsliTabelLu' SAMA NAMA VARIABEL DATA LU (misal: props.pengajuan)
+    const data = props.pengajuanData; 
+
+    if (!data || !data.length) return [];
+
+    const start = (currentPage.value - 1) * rowsPerPage.value;
+    const end = start + rowsPerPage.value;
+    
+    return data.slice(start, end);
+});
+
 </script>
 
 <template>
@@ -310,23 +314,23 @@ const handleModalSubmit = (formData) => {
                     Semua Data
                   </button>
                   <button
-                    @click="filterStatus = 'Menunggu'; showFilter = false"
+                    @click="filterStatus = 'menunggu'; showFilter = false"
                     class="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 font-medium cursor-pointer"
-                    :class="filterStatus === 'Menunggu' ? 'bg-gray-100 font-semibold' : ''"
+                    :class="filterStatus === 'menunggu' ? 'bg-gray-100 font-semibold' : ''"
                   >
                     Menunggu
                   </button>
                   <button
-                    @click="filterStatus = 'Diterima'; showFilter = false"
+                    @click="filterStatus = 'disetujui'; showFilter = false"
                     class="w-full rounded-lg px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 font-medium cursor-pointer"
-                    :class="filterStatus === 'Diterima' ? 'bg-green-50 font-semibold' : ''"
+                    :class="filterStatus === 'disetujui' ? 'bg-green-50 font-semibold' : ''"
                   >
                     Diterima
                   </button>
                   <button
-                    @click="filterStatus = 'Ditolak'; showFilter = false"
+                    @click="filterStatus = 'ditolak'; showFilter = false"
                     class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 font-medium cursor-pointer"
-                    :class="filterStatus === 'Ditolak' ? 'bg-red-50 font-semibold' : ''"
+                    :class="filterStatus === 'ditolak' ? 'bg-red-50 font-semibold' : ''"
                   >
                     Ditolak
                   </button>
@@ -400,9 +404,9 @@ const handleModalSubmit = (formData) => {
               </thead>
               
               <tbody class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
-                <tr v-for="(item, index) in paginatedAktivitas" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
+                <tr v-for="(item, index) in pengajuanData.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
                   <!-- No -->
-                  <td class="px-3 py-2.5 text-center">{{ (currentPage - 1) * rowsPerPage + index + 1 }}</td>
+                  <td class="px-3 py-2.5 text-center">{{ pengajuanData.from + index }}</td>
                   
                   <!-- Judul -->
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">
@@ -456,14 +460,21 @@ const handleModalSubmit = (formData) => {
                   
                   <!-- Gambar -->
                   <td class="px-3 py-2.5 text-center">
-                    <button
-                      type="button"
-                      @click="openImage(item.gambar)"
-                      class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle"
-                      :title="getGambarTitle(item.gambar)"
-                    >
-                      {{ getGambarName(item.gambar) }}
-                    </button>
+                    <div class="flex items-center justify-center gap-1 flex-nowrap overflow-hidden">
+                      <template v-for="(gbr, idx) in item.gambar_pengajuan_aktivitas.slice(0, 3)" :key="idx">
+                        <button
+                          type="button"
+                          @click.stop.prevent="openImage(gbr)" 
+                          class="font-inter text-[13px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[70px] inline-block align-middle"
+                          :title="getGambarTitle(gbr)"
+                        >{{ getSingleGambarName(gbr) }}</button><span v-if="idx < Math.min(item.gambar_pengajuan_aktivitas.length, 3) - 1" class="text-gray-400 shrink-0">,</span>
+                      </template>
+                      
+                      <!-- Kalau lebih dari 3 -->
+                      <span v-if="item.gambar_pengajuan_aktivitas.length > 3" class="text-xs text-gray-500 shrink-0 ml-0.5">
+                        (+{{ item.gambar_pengajuan_aktivitas.length - 3 }})
+                      </span>
+                    </div>
                   </td>
                   
                   <!-- Status (Exact SVGs & Design dari ActivityApproval.vue) -->
@@ -471,19 +482,19 @@ const handleModalSubmit = (formData) => {
                     <div
                       class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
                       :class="{
-                        'bg-gray-100 text-gray-600 border-gray-200': item.status === 'Menunggu',
-                        'bg-green-50 text-green-600 border-green-200': item.status === 'Diterima' || item.status === 'Disetujui',
-                        'bg-red-50 text-red-600 border-red-200': item.status === 'Ditolak'
+                        'bg-gray-100 text-gray-600 border-gray-200': item.status === 'menunggu',
+                        'bg-green-50 text-green-600 border-green-200': item.status === 'diterima' || item.status === 'disetujui',
+                        'bg-red-50 text-red-600 border-red-200': item.status === 'ditolak'
                       }"
                     >
-                      <svg v-if="item.status === 'Menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg v-if="item.status === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="9" />
                         <polyline points="12 7 12 12 15 15" />
                       </svg>
-                      <svg v-if="item.status === 'Diterima' || item.status === 'Disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg v-if="item.status === 'diterima' || item.status === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <svg v-if="item.status === 'Ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg v-if="item.status === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>{{ item.status }}</span>
@@ -494,19 +505,19 @@ const handleModalSubmit = (formData) => {
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <EditButtonTable
-                        :disabled="item.status === 'Diterima' || item.status === 'Disetujui'"
-                        :title="item.status === 'Diterima' || item.status === 'Disetujui' ? 'Aktivitas yang telah disetujui tidak dapat diedit' : 'Edit Pengajuan'"
+                        :disabled="item.status === 'diterima' || item.status === 'disetujui'"
+                        :title="item.status === 'diterima' || item.status === 'disetujui' ? 'Aktivitas yang telah disetujui tidak dapat diedit' : 'Edit Pengajuan'"
                         @click="handleEdit(item)"
                       />
                       <DeleteButtonTable
-                        :disabled="item.status !== 'Menunggu'"
-                        :title="item.status !== 'Menunggu' ? 'Hanya pengajuan berstatus Menunggu yang dapat dihapus' : 'Hapus Pengajuan'"
+                        :disabled="item.status !== 'menunggu'"
+                        :title="item.status !== 'menunggu' ? 'Hanya pengajuan berstatus Menunggu yang dapat dihapus' : 'Hapus Pengajuan'"
                         @click="openDeleteModal(item)"
                       />
                     </div>
                   </td>
                 </tr>
-                <tr v-if="paginatedAktivitas.length === 0">
+                <tr v-if="pengajuanData?.data?.length === 0">
                   <td colspan="7" class="px-4 py-12 text-center text-gray-500 font-medium">
                     Data pengajuan tidak ditemukan sesuai filter/pencarian Anda.
                   </td>
@@ -518,11 +529,11 @@ const handleModalSubmit = (formData) => {
 
         <!-- PAGINATION -->
         <TablePagination 
-          :current-page="currentPage" 
+          :current-page="props.pengajuanData?.current_page || 1" 
           :total-pages="totalPages" 
           :rows-per-page="rowsPerPage"
-          @update:current-page="currentPage = $event"
-          @update:rows-per-page="rowsPerPage = $event; currentPage = 1"
+          @update:current-page="handlePageChange"
+          @update:rows-per-page="rowsPerPage = $event"
         />
       </div>
     </section>

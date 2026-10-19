@@ -15,7 +15,6 @@ class PengajuanAktivitas extends Model
         'judul',
         'deskripsi',
         'kategori',
-        'partisipan',
         'status',
         'catatan_penolakan',
         'deadline',
