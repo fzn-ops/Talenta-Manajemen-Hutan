@@ -264,11 +264,11 @@ onBeforeUnmount(() => {
 									</p>
 									<div
 										class="flex-1 min-h-[90px] rounded-[10px] p-3.5 font-inter text-[13px] sm:text-[14px] leading-relaxed border select-text"
-										:class="data?.status === 'Ditolak' && data?.alasan_tolak
+										:class="data?.status === 'ditolak' && data?.catatan_penolakan
 											? 'border-red-200 bg-red-50/70 text-red-700'
 											: 'border-[#d6e0ee] bg-[#f8fafc] text-[#7188a3] italic'"
 									>
-										{{ (data?.status === 'Ditolak' && data?.alasan_tolak) ? data.alasan_tolak : '- Tidak ada catatan penolakan sebelumnya -' }}
+										{{ (data?.status === 'ditolak' && data?.catatan_penolakan) ? data.catatan_penolakan : '- Tidak ada catatan penolakan sebelumnya -' }}
 									</div>
 								</div>
 							</div>

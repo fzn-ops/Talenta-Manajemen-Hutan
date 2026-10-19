@@ -12,7 +12,6 @@ class PengajuanAktivitas extends Model
     protected $table='pengajuan_aktivitas';
     protected $fillable = [
         'id_user',
-        'id_aktivitas',
         'judul',
         'deskripsi',
         'kategori',
