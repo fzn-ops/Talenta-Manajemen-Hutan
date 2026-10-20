@@ -22,8 +22,12 @@ const getImageSrc = (gambar) => {
 	if (gambar && typeof gambar === 'object' && gambar.url) {
 		return gambar.url;
 	}
-	if (gambar && typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
-		return gambar;
+	if (gambar && typeof gambar === 'string') {
+		if (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('blob:') || gambar.startsWith('data:')) return gambar;
+		if (gambar.startsWith('/storage/')) return gambar;
+		if (gambar.startsWith('storage/')) return '/' + gambar;
+		if (gambar.startsWith('/')) return gambar;
+		return '/storage/' + gambar;
 	}
 	return `https://picsum.photos/seed/${gambar || 'dummy'}/800/600`;
 };

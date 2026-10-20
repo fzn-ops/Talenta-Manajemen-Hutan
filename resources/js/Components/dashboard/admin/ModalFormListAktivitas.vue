@@ -242,14 +242,21 @@ const getImageSrc = (gbr) => {
 	if (typeof gbr === 'object' && gbr.url) {
 		return gbr.url;
 	}
+	if (typeof gbr === 'string') {
+		if (gbr.startsWith('http://') || gbr.startsWith('https://') || gbr.startsWith('blob:') || gbr.startsWith('data:')) return gbr;
+		if (gbr.startsWith('/storage/')) return gbr;
+		if (gbr.startsWith('storage/')) return '/' + gbr;
+		if (gbr.startsWith('/')) return gbr;
+		return '/storage/' + gbr;
+	}
 	return `https://picsum.photos/seed/${gbr}/300/400`;
 };
 
 const openImage = (gambar) => {
 	if (typeof gambar === 'object' && gambar.url) {
 		selectedImage.value = gambar.url;
-	} else if (typeof gambar === 'string' && (gambar.startsWith('http') || gambar.startsWith('/'))) {
-		selectedImage.value = gambar;
+	} else if (typeof gambar === 'string') {
+		selectedImage.value = getImageSrc(gambar);
 	} else {
 		selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
 	}

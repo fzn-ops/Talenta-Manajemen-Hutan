@@ -167,14 +167,11 @@ const getImageSrc = (val) => {
   if (!val) return '';
   if (typeof val === 'object' && val.url) return val.url;
   if (typeof val === 'string') {
-    if (val.startsWith('http://') || val.startsWith('https://')) return val;
-    if (val.startsWith('/')) return val;
+    if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('blob:') || val.startsWith('data:')) return val;
+    if (val.startsWith('/storage/')) return val;
     if (val.startsWith('storage/')) return '/' + val;
-    if (val.startsWith('aktivitas/') || val.startsWith('berita/') || val.startsWith('karir/') || val.startsWith('roadmap_images/') || val.startsWith('bukti/')) {
-      return '/storage/' + val;
-    }
-    const cleanName = val.split('/').pop().replace(/\.[^/.]+$/, "");
-    return `https://picsum.photos/seed/${cleanName || 'hasil'}/800/600`;
+    if (val.startsWith('/')) return val;
+    return '/storage/' + val;
   }
   return `https://picsum.photos/seed/hasil/800/600`;
 };

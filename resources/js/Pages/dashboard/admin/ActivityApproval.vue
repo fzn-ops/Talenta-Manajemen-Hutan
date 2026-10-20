@@ -184,10 +184,13 @@ const getImageSrc = (val) => {
   if (!val) return '';
   if (typeof val === 'object' && val.gambar) val = val.gambar;
   if (typeof val === 'object' && val.url) return val.url;
+  if (typeof val === 'object' && val.file) return URL.createObjectURL(val.file);
   if (typeof val === 'string') {
-    if (val.startsWith('http://') || val.startsWith('https://')) return val;
+    if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('blob:') || val.startsWith('data:')) return val;
+    if (val.startsWith('/storage/')) return val;
+    if (val.startsWith('storage/')) return '/' + val;
     if (val.startsWith('/')) return val;
-    return '/' + val;
+    return '/storage/' + val;
   }
   return `https://picsum.photos/seed/aktivitas/800/600`;
 };
@@ -445,23 +448,33 @@ const handleReject = (reason) => {
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
-                         :class="{
-                           'bg-gray-100 text-gray-600 border-gray-200': String(item.status).toLowerCase() === 'menunggu',
-                           'bg-green-50 text-green-600 border-green-200': String(item.status).toLowerCase() === 'disetujui',
-                           'bg-red-50 text-red-600 border-red-200': String(item.status).toLowerCase() === 'ditolak'
-                         }">
-                      <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="9" />
-                        <polyline points="12 7 12 12 15 15" />
-                      </svg>
-                      <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span class="capitalize">{{ item.status }}</span>
+                    <div class="flex flex-col items-center justify-center gap-1">
+                      <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
+                           :class="{
+                             'bg-gray-100 text-gray-600 border-gray-200': String(item.status).toLowerCase() === 'menunggu',
+                             'bg-green-50 text-green-600 border-green-200': String(item.status).toLowerCase() === 'disetujui',
+                             'bg-red-50 text-red-600 border-red-200': String(item.status).toLowerCase() === 'ditolak'
+                           }">
+                        <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="9" />
+                          <polyline points="12 7 12 12 15 15" />
+                        </svg>
+                        <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="capitalize">{{ item.status }}</span>
+                      </div>
+                      <span
+                        v-if="item.catatan_penolakan && String(item.status).toLowerCase() === 'menunggu'"
+                        class="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-inter text-[10px] font-semibold text-amber-700 whitespace-nowrap"
+                        :title="`Catatan penolakan sebelumnya: ${item.catatan_penolakan}`"
+                      >
+                        <svg class="h-2.5 w-2.5 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        Pernah Ditolak
+                      </span>
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center">

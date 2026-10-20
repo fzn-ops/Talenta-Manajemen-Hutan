@@ -135,14 +135,11 @@ const getImageSrc = (gambar) => {
     return gambar.url;
   }
   if (gambar && typeof gambar === 'string') {
-    if (gambar.startsWith('http://') || gambar.startsWith('https://')) return gambar;
-    if (gambar.startsWith('/')) return gambar;
+    if (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('blob:') || gambar.startsWith('data:')) return gambar;
+    if (gambar.startsWith('/storage/')) return gambar;
     if (gambar.startsWith('storage/')) return '/' + gambar;
-    if (gambar.startsWith('aktivitas/') || gambar.startsWith('berita/') || gambar.startsWith('karir/') || gambar.startsWith('roadmap_images/') || gambar.startsWith('bukti/')) {
-      return '/storage/' + gambar;
-    }
-    const cleanName = gambar.split('/').pop().replace(/\.[^/.]+$/, "");
-    return `https://picsum.photos/seed/${cleanName || 'dummy'}/800/600`;
+    if (gambar.startsWith('/')) return gambar;
+    return '/storage/' + gambar;
   }
   return `https://picsum.photos/seed/pendaftaran/800/600`;
 };
