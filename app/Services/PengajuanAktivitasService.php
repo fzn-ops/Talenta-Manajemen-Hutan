@@ -53,7 +53,7 @@ public function getPaginatedData(Request $request)
             'kategori'   => $request->kategori,
             'partisipan' => $request->partisipan,
             'deadline'   => $request->deadline,
-            'status'     => 'Menunggu',
+            'status'     => 'menunggu',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -84,6 +84,7 @@ public function getPaginatedData(Request $request)
             'deskripsi'  => $request->deskripsi,
             'kategori'   => $request->kategori,
             'deadline'   => $request->deadline,
+            'status'     => 'menunggu',
         ]);
 
         // Kalau ada file baru yang diupload
