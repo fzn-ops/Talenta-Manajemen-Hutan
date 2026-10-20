@@ -46,4 +46,11 @@ class PendaftaranAktivitasController extends Controller
         $this->PendaftaranAktivitasService->Rejected($id, $request->catatan_penolakan);
         return redirect()->back()->with('success', 'Registrasi tim berhasil ditolak!');
     }
+
+    // 4. Fungsi Tombol "Hapus"
+    public function destroy($id)
+    {
+        $this->PendaftaranAktivitasService->delete($id);
+        return redirect()->back()->with('success', 'Data pendaftaran aktivitas berhasil dihapus!');
+    }
 }

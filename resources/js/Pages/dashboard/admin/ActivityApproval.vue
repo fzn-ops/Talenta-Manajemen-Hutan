@@ -12,6 +12,8 @@ import ApproveModal from '@/Components/dashboard/ApproveModal.vue';
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
+import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 import ModalFormPersetujuanAktivitas from '@/Components/dashboard/admin/ModalFormPersetujuanAktivitas.vue';
 
@@ -27,8 +29,8 @@ const searchQuery = ref(props.filters?.search || '');
 const filterStatus = ref(props.filters?.status || '');
 const showFilter = ref(false);
 
-const sortColumn = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'asc');
+const sortColumn = ref(props.filters?.sort || 'updated_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
 
 // Pagination
 const currentPage = ref(props.pengajuanData?.current_page || 1);
@@ -36,10 +38,6 @@ const totalPages = computed(() => props.pengajuanData?.last_page || 1);
 const rowsPerPage = ref(props.pengajuanData?.per_page || 10);
 
 const getRowNumber = (index) => {
-  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
-    const total = props.pengajuanData?.total || 0;
-    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
-  }
   return (props.pengajuanData?.from || 1) + index;
 };
 
@@ -184,10 +182,13 @@ const getImageSrc = (val) => {
   if (!val) return '';
   if (typeof val === 'object' && val.gambar) val = val.gambar;
   if (typeof val === 'object' && val.url) return val.url;
+  if (typeof val === 'object' && val.file) return URL.createObjectURL(val.file);
   if (typeof val === 'string') {
-    if (val.startsWith('http://') || val.startsWith('https://')) return val;
+    if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('blob:') || val.startsWith('data:')) return val;
+    if (val.startsWith('/storage/')) return val;
+    if (val.startsWith('storage/')) return '/' + val;
     if (val.startsWith('/')) return val;
-    return '/' + val;
+    return '/storage/' + val;
   }
   return `https://picsum.photos/seed/aktivitas/800/600`;
 };
@@ -271,6 +272,34 @@ const handleReject = (reason) => {
     }
   });
 };
+
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
+
+const confirmDelete = (item) => {
+  itemToDelete.value = item;
+  showDeleteModal.value = true;
+};
+
+const executeDelete = () => {
+  if (!itemToDelete.value) return;
+  const targetId = itemToDelete.value.id;
+  isLoading.value = true;
+
+  router.delete(`/admin/aktivitas/persetujuan/${targetId}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showDeleteModal.value = false;
+      itemToDelete.value = null;
+    },
+    onError: () => {
+      showToast('Gagal menghapus pengajuan aktivitas.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
+};
 </script>
 
 <template>
@@ -335,10 +364,10 @@ const handleReject = (reason) => {
                   
                   <!-- Kolom No -->
                   <th class="w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
-                    <button type="button" :disabled="isLoading" @click="handleSort('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
+                    <button type="button" :disabled="isLoading" @click="handleSort('updated_at')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
                       <span>No</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'id'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg v-if="sortColumn === 'updated_at'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
                         <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
                       </span>
                     </button>
@@ -384,7 +413,7 @@ const handleReject = (reason) => {
                   </th>
 
                   <!-- Kolom Aksi -->
-                  <th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+                  <th class="w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
@@ -445,42 +474,49 @@ const handleReject = (reason) => {
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
-                         :class="{
-                           'bg-gray-100 text-gray-600 border-gray-200': String(item.status).toLowerCase() === 'menunggu',
-                           'bg-green-50 text-green-600 border-green-200': String(item.status).toLowerCase() === 'disetujui',
-                           'bg-red-50 text-red-600 border-red-200': String(item.status).toLowerCase() === 'ditolak'
-                         }">
-                      <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="9" />
-                        <polyline points="12 7 12 12 15 15" />
-                      </svg>
-                      <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span class="capitalize">{{ item.status }}</span>
+                    <div class="flex flex-col items-center justify-center gap-1">
+                      <div class="mx-auto inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
+                           :class="{
+                             'bg-gray-100 text-gray-600 border-gray-200': String(item.status).toLowerCase() === 'menunggu',
+                             'bg-green-50 text-green-600 border-green-200': String(item.status).toLowerCase() === 'disetujui',
+                             'bg-red-50 text-red-600 border-red-200': String(item.status).toLowerCase() === 'ditolak'
+                           }">
+                        <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="9" />
+                          <polyline points="12 7 12 12 15 15" />
+                        </svg>
+                        <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="capitalize">{{ item.status }}</span>
+                      </div>
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex items-center justify-center gap-1.5 sm:gap-2">
                       <!-- Accept Button: Disabled jika status sudah disetujui -->
                       <AcceptButton 
                         :disabled="String(item.status).toLowerCase() === 'disetujui'" 
                         :title="String(item.status).toLowerCase() === 'disetujui' ? 'Aktivitas sudah disetujui' : 'Setujui Aktivitas'"
                         @click="promptApprove(item)" 
                       />
-                      <!-- Reject Button: Disabled jika status sudah ditolak. Jika disetujui, bisa tolak untuk membatalkan persetujuan -->
+                      <!-- Reject Button: Disabled jika status sudah ditolak atau disetujui -->
                       <RejectButton 
-                        :disabled="String(item.status).toLowerCase() === 'ditolak'" 
-                        :title="String(item.status).toLowerCase() === 'ditolak' ? 'Aktivitas sudah ditolak' : (String(item.status).toLowerCase() === 'disetujui' ? 'Batalkan Persetujuan & Tolak' : 'Tolak Aktivitas')"
+                        :disabled="String(item.status).toLowerCase() === 'ditolak' || String(item.status).toLowerCase() === 'disetujui'" 
+                        :title="String(item.status).toLowerCase() === 'disetujui' ? 'Aktivitas sudah disetujui' : (String(item.status).toLowerCase() === 'ditolak' ? 'Aktivitas sudah ditolak' : 'Tolak Aktivitas')"
                         @click="openReject(item)" 
                       />
                       <PreviewButtonTable 
                         title="Lihat Detail Submisi"
                         @click="openDetail(item)" 
+                      />
+                      <DeleteButtonTable
+                        label="Hapus Pengajuan"
+                        title="Hapus Pengajuan"
+                        @click="confirmDelete(item)" 
                       />
                     </div>
                   </td>
@@ -565,7 +601,7 @@ const handleReject = (reason) => {
     <ApproveModal
       :show="showConfirmApproveModal"
       title="Setujui Pengajuan Aktivitas?"
-      info="<strong>Info:</strong> Aktivitas ini akan langsung otomatis dibuat dan <strong>diterbitkan ke List Aktivitas</strong>."
+      info="Aktivitas ini akan langsung otomatis <strong>dibuat dan diterbitkan ke List Aktivitas</strong>."
       :is-loading="isLoading"
       @close="showConfirmApproveModal = false"
       @confirm="executeApprove"
@@ -575,13 +611,31 @@ const handleReject = (reason) => {
       </p>
     </ApproveModal>
 
-    <!-- MODAL REJECT (Dengan Warning Jika Sudah Disetujui) -->
+    <!-- MODAL REJECT -->
     <RejectModal 
       :show="showRejectModal" 
       :is-approved="String(selectedItem?.status).toLowerCase() === 'disetujui'"
       @close="showRejectModal = false" 
       @submit="handleReject"
     />
+
+    <!-- MODAL DELETE -->
+    <DeleteModal
+      :show="showDeleteModal"
+      :is-loading="isLoading"
+      @close="showDeleteModal = false"
+      @confirm="executeDelete"
+    >
+      <template #title>
+        Hapus Pengajuan?
+      </template>
+      <template #message>
+        Apakah Anda yakin ingin menghapus pengajuan <span class="font-bold text-[#17334F]">"{{ itemToDelete?.judul }}"</span>? Tindakan ini tidak dapat dibatalkan.
+      </template>
+      <template #confirm-text>
+        Hapus Pengajuan
+      </template>
+    </DeleteModal>
 
   </AdminLayout>
 </template>

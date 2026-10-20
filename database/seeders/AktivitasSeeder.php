@@ -70,5 +70,23 @@ class AktivitasSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ],
         ]);
+
+        $dummyImages = [
+            1 => 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+            2 => 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=800&auto=format&fit=crop&q=80',
+            3 => 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&auto=format&fit=crop&q=80',
+            4 => 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800&auto=format&fit=crop&q=80',
+            5 => 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80',
+        ];
+
+        foreach ($dummyImages as $aktId => $url) {
+            DB::table('gambar_aktivitas')->insert([
+                'id_aktivitas' => $aktId,
+                'gambar' => $url,
+                'utama' => true,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+        }
     }
 }

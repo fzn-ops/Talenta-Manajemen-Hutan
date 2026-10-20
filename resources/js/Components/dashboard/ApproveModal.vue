@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 
 const props = defineProps({
   show: {
@@ -57,6 +57,12 @@ const handleKeyDown = (e) => {
     handleClose();
   }
 };
+
+const cleanInfo = computed(() => {
+  if (!props.info) return '';
+  return props.info
+    .replace(/^(\s*<[^>]+>)*\s*info\s*:?\s*(<\/[^>]+>)*\s*:?\s*/i, '');
+});
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown, true);
@@ -120,7 +126,7 @@ onBeforeUnmount(() => {
               class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-left font-inter text-[12px] text-emerald-800 leading-relaxed"
             >
               <slot name="info">
-                <span v-html="info"></span>
+                <span v-html="cleanInfo"></span>
               </slot>
             </div>
 

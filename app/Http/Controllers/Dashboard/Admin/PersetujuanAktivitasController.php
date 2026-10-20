@@ -24,8 +24,8 @@ class PersetujuanAktivitasController extends Controller
         $filters = [
             'search'    => $request->input('search'),
             'status'    => $request->input('status'),
-            'sort'      => $request->input('sort'),
-            'direction' => $request->input('direction'),
+            'sort'      => $request->input('sort', 'updated_at'),
+            'direction' => $request->input('direction', 'desc'),
         ];
 
         $perPage = $request->input('per_page', 10);
@@ -61,5 +61,15 @@ class PersetujuanAktivitasController extends Controller
         $this->persetujuanService->reject($id, $request->input('catatan'));
 
         return redirect()->back()->with('success', 'Pengajuan aktivitas berhasil ditolak.');
+    }
+
+    /**
+     * Hapus pengajuan aktivitas.
+     */
+    public function destroy($id)
+    {
+        $this->persetujuanService->delete($id);
+
+        return redirect()->back()->with('success', 'Pengajuan aktivitas berhasil dihapus!');
     }
 }

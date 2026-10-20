@@ -48,8 +48,8 @@ class AktivitasService
 
         // --- (Kodingan filter lu sisanya tetep sama) ---
         if (!empty($filters['sort']) && !empty($filters['direction'])) {
-            $allowedSorts = ['id', 'judul', 'deadline', 'created_at'];
-            $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'id';
+            $allowedSorts = ['id', 'judul', 'deadline', 'created_at', 'updated_at'];
+            $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'updated_at';
             $direction = strtolower($filters['direction']) === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortColumn, $direction);
         } else {

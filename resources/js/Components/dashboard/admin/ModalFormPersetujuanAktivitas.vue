@@ -18,6 +18,12 @@ const emit = defineEmits(['close', 'approve', 'reject']);
 const deskripsiHeight = ref(150);
 const isResizing = ref(false);
 
+watch(() => props.show, (newVal) => {
+	if (newVal) {
+		deskripsiHeight.value = 150;
+	}
+});
+
 const startResize = (e) => {
 	if (e.type === 'mousedown') {
 		e.preventDefault();
@@ -78,9 +84,11 @@ const getImageSrc = (gambar) => {
 		return URL.createObjectURL(gambar.file);
 	}
 	if (typeof gambar === 'string') {
-		if (gambar.startsWith('http://') || gambar.startsWith('https://')) return gambar;
+		if (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('blob:') || gambar.startsWith('data:')) return gambar;
+		if (gambar.startsWith('/storage/')) return gambar;
+		if (gambar.startsWith('storage/')) return '/' + gambar;
 		if (gambar.startsWith('/')) return gambar;
-		return '/' + gambar;
+		return '/storage/' + gambar;
 	}
 	return `https://picsum.photos/seed/${(typeof gambar === 'string' ? gambar : 'dummy')}/800/600`;
 };
@@ -174,7 +182,7 @@ onBeforeUnmount(() => {
 							</h2>
 						</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
 							<!-- Kolom Kiri -->
 							<div class="flex flex-col gap-3.5 sm:gap-4">
 								<!-- Judul Aktivitas -->
@@ -183,13 +191,11 @@ onBeforeUnmount(() => {
 										Judul Aktivitas
 									</label>
 									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Judul kegiatan yang diajukan</p>
-									<input
-										type="text"
-										readonly
-										:value="data?.judul || '-'"
-										class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] outline-none ring-0 focus:outline-none focus:ring-0 focus:border-[#d6e0ee] focus-visible:outline-none focus-visible:ring-0 cursor-default select-text transition-none"
-										style="outline: none !important; box-shadow: none !important;"
-									/>
+									<div
+										class="mt-1 sm:mt-1.5 min-h-[42px] sm:min-h-[44px] w-full rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] px-3.5 py-2.5 font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#1e3456] cursor-default select-text break-words whitespace-pre-wrap flex items-center"
+									>
+										{{ data?.judul || '-' }}
+									</div>
 								</div>
 
 								<!-- Deadline -->
@@ -235,14 +241,14 @@ onBeforeUnmount(() => {
 								</div>
 
 								<!-- Deskripsi Kegiatan (Tanpa Double Border, Dengan Drag Height UI) -->
-								<div class="flex-1 flex flex-col">
+								<div class="flex flex-col">
 									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
 										Deskripsi Kegiatan
 									</label>
 									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1.5">
 										Rincian lengkap aktivitas yang diajukan
 									</p>
-									<div class="relative flex-1 flex flex-col rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] overflow-hidden">
+									<div class="relative flex flex-col rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] overflow-hidden">
 										<textarea
 											readonly
 											:value="data?.deskripsi || '-'"
@@ -323,20 +329,33 @@ onBeforeUnmount(() => {
 								</div>
 
 								<!-- Catatan Penolakan Sebelumnya -->
-								<div class="flex-1 flex flex-col">
+								<div class="flex flex-col">
 									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-										Catatan Penolakan Sebelumnya
+										Catatan Penolakan
 									</label>
 									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1.5">
 										Berikut catatan penolakan jika submisi ini pernah ditolak
 									</p>
 									<div
-										class="flex-1 min-h-[90px] rounded-[10px] p-3.5 font-inter text-[13px] sm:text-[14px] leading-relaxed border select-text"
-										:class="String(data?.status).toLowerCase() === 'ditolak'
-											? 'border-red-200 bg-red-50/70 text-red-700'
+										class="min-h-[90px] rounded-[10px] p-3.5 font-inter text-[13px] sm:text-[14px] leading-relaxed border select-text"
+										:class="(data?.catatan_penolakan || data?.alasan_tolak)
+											? (String(data?.status).toLowerCase() === 'ditolak'
+												? 'border-red-200 bg-red-50/70 text-red-700'
+												: 'border-amber-300 bg-amber-50/80 text-amber-900')
 											: 'border-[#d6e0ee] bg-[#f8fafc] text-[#7188a3] italic'"
 									>
-										{{ (String(data?.status).toLowerCase() === 'ditolak') ? (data?.catatan_penolakan || data?.alasan_tolak || 'Data tidak lengkap atau format gambar kurang jelas.') : '- Tidak ada catatan penolakan sebelumnya -' }}
+										<div v-if="data?.catatan_penolakan || data?.alasan_tolak" class="flex flex-col gap-1.5">
+											<div v-if="String(data?.status).toLowerCase() !== 'ditolak'" class="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-amber-800">
+												<svg class="h-3.5 w-3.5 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+												<span>Pernah ditolak sebelumnya dengan alasan:</span>
+											</div>
+											<div v-else class="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-red-700">
+												<svg class="h-3.5 w-3.5 text-red-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+												<span>Alasan penolakan:</span>
+											</div>
+											<p class="whitespace-pre-line">{{ data?.catatan_penolakan || data?.alasan_tolak }}</p>
+										</div>
+										<span v-else>- Tidak ada catatan penolakan sebelumnya -</span>
 									</div>
 								</div>
 							</div>
@@ -355,7 +374,7 @@ onBeforeUnmount(() => {
 							<button
 								type="button"
 								@click="$emit('reject', data)"
-								:disabled="String(data?.status).toLowerCase() === 'ditolak'"
+								:disabled="String(data?.status).toLowerCase() === 'ditolak' || String(data?.status).toLowerCase() === 'disetujui'"
 								class="h-[42px] sm:h-[44px] min-w-[100px] sm:min-w-[120px] px-5 sm:px-6 rounded-[10px] bg-[#ef4444] font-poppins text-[13px] sm:text-[14px] font-bold text-white shadow-sm transition hover:bg-red-600 active:scale-98 focus:outline-none focus:ring-0 cursor-pointer select-none whitespace-nowrap outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 								style="outline: none !important; box-shadow: none !important;"
 							>

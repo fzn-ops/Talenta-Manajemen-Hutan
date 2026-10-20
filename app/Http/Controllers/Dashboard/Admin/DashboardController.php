@@ -14,7 +14,7 @@ class DashboardController extends Controller
     public function index()
     {
         // 1. Ambil 5 pengajuan aktivitas teratas
-        $pengajuanAktivitas = PengajuanAktivitas::with(['user', 'gambarPengajuanAktivitas', 'aktivitas'])
+        $pengajuanAktivitas = PengajuanAktivitas::with(['user', 'gambarPengajuanAktivitas'])
             ->orderBy('id', 'asc')
             ->take(5)
             ->get();

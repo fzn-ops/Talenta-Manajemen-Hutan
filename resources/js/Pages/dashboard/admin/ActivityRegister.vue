@@ -10,6 +10,8 @@ import RejectModal from '@/Components/dashboard/RejectModal.vue';
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
+import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 import ModalFormPendaftaranMahasiswa from '@/Components/dashboard/admin/ModalFormPendaftaranMahasiswa.vue';
 
@@ -135,14 +137,11 @@ const getImageSrc = (gambar) => {
     return gambar.url;
   }
   if (gambar && typeof gambar === 'string') {
-    if (gambar.startsWith('http://') || gambar.startsWith('https://')) return gambar;
-    if (gambar.startsWith('/')) return gambar;
+    if (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('blob:') || gambar.startsWith('data:')) return gambar;
+    if (gambar.startsWith('/storage/')) return gambar;
     if (gambar.startsWith('storage/')) return '/' + gambar;
-    if (gambar.startsWith('aktivitas/') || gambar.startsWith('berita/') || gambar.startsWith('karir/') || gambar.startsWith('roadmap_images/') || gambar.startsWith('bukti/')) {
-      return '/storage/' + gambar;
-    }
-    const cleanName = gambar.split('/').pop().replace(/\.[^/.]+$/, "");
-    return `https://picsum.photos/seed/${cleanName || 'dummy'}/800/600`;
+    if (gambar.startsWith('/')) return gambar;
+    return '/storage/' + gambar;
   }
   return `https://picsum.photos/seed/pendaftaran/800/600`;
 };
@@ -195,6 +194,35 @@ const handleReject = (reason) => {
       }
     });
   }
+};
+
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
+
+const confirmDelete = (item) => {
+  itemToDelete.value = item;
+  showDeleteModal.value = true;
+};
+
+const executeDelete = () => {
+  if (!itemToDelete.value) return;
+  const targetId = itemToDelete.value.id;
+  isLoading.value = true;
+
+  router.delete(`/admin/aktivitas/bukti-pendaftaran/${targetId}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showDeleteModal.value = false;
+      itemToDelete.value = null;
+      showToast('Data pendaftaran aktivitas berhasil dihapus!', 'success');
+    },
+    onError: () => {
+      showToast('Gagal menghapus pendaftaran aktivitas.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
 };
 </script>
 
@@ -280,7 +308,7 @@ const handleReject = (reason) => {
                   </th>
                   <th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti Registrasi</th>
                   <th class="w-[150px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Status</th>
-                  <th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+                  <th class="w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
@@ -317,10 +345,15 @@ const handleReject = (reason) => {
                     </div>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="flex items-center justify-center gap-2">
-                      <AcceptButton @click="handleApprove(item)" />
-                      <RejectButton @click="openReject(item)" />
+                    <div class="flex items-center justify-center gap-1.5 sm:gap-2">
+                      <AcceptButton :disabled="item.status === 'disetujui'" @click="handleApprove(item)" />
+                      <RejectButton :disabled="item.status === 'ditolak' || item.status === 'disetujui'" @click="openReject(item)" />
                       <PreviewButtonTable @click="openDetail(item)" />
+                      <DeleteButtonTable
+                        label="Hapus Pendaftaran"
+                        title="Hapus Pendaftaran"
+                        @click="confirmDelete(item)" 
+                      />
                     </div>
                   </td>
                 </tr>
@@ -404,6 +437,24 @@ const handleReject = (reason) => {
 
     <!-- MODAL REJECT -->
     <RejectModal :show="showRejectModal" @close="showRejectModal = false" @submit="handleReject"/>
+
+    <!-- MODAL DELETE -->
+    <DeleteModal
+      :show="showDeleteModal"
+      :is-loading="isLoading"
+      @close="showDeleteModal = false"
+      @confirm="executeDelete"
+    >
+      <template #title>
+        Hapus Pendaftaran?
+      </template>
+      <template #message>
+        Apakah Anda yakin ingin menghapus data pendaftaran tim <span class="font-bold text-[#17334F]">"{{ itemToDelete?.nama_tim }}"</span>? Tindakan ini tidak dapat dibatalkan.
+      </template>
+      <template #confirm-text>
+        Hapus Pendaftaran
+      </template>
+    </DeleteModal>
 
   </AdminLayout>
 </template>

@@ -13,6 +13,8 @@ import ModalFormHasilAktivitas from '@/Components/dashboard/admin/ModalFormHasil
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
+import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
   hasilData: Object,
@@ -167,14 +169,11 @@ const getImageSrc = (val) => {
   if (!val) return '';
   if (typeof val === 'object' && val.url) return val.url;
   if (typeof val === 'string') {
-    if (val.startsWith('http://') || val.startsWith('https://')) return val;
-    if (val.startsWith('/')) return val;
+    if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('blob:') || val.startsWith('data:')) return val;
+    if (val.startsWith('/storage/')) return val;
     if (val.startsWith('storage/')) return '/' + val;
-    if (val.startsWith('aktivitas/') || val.startsWith('berita/') || val.startsWith('karir/') || val.startsWith('roadmap_images/') || val.startsWith('bukti/')) {
-      return '/storage/' + val;
-    }
-    const cleanName = val.split('/').pop().replace(/\.[^/.]+$/, "");
-    return `https://picsum.photos/seed/${cleanName || 'hasil'}/800/600`;
+    if (val.startsWith('/')) return val;
+    return '/storage/' + val;
   }
   return `https://picsum.photos/seed/hasil/800/600`;
 };
@@ -252,6 +251,35 @@ const handleReject = (reason) => {
     preserveScroll: true,
     onError: () => {
       showToast('Gagal menolak hasil aktivitas.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
+};
+
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
+
+const confirmDelete = (item) => {
+  itemToDelete.value = item;
+  showDeleteModal.value = true;
+};
+
+const executeDelete = () => {
+  if (!itemToDelete.value) return;
+  const targetId = itemToDelete.value.id;
+  isLoading.value = true;
+
+  router.delete(`/admin/aktivitas/hasil/${targetId}`, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showDeleteModal.value = false;
+      itemToDelete.value = null;
+      showToast('Data hasil aktivitas berhasil dihapus!', 'success');
+    },
+    onError: () => {
+      showToast('Gagal menghapus hasil aktivitas.', 'error');
     },
     onFinish: () => {
       isLoading.value = false;
@@ -376,7 +404,7 @@ const handleReject = (reason) => {
                   </th>
 
                   <!-- Kolom Aksi -->
-                  <th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+                  <th class="w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
@@ -416,24 +444,29 @@ const handleReject = (reason) => {
                            'bg-green-50 text-green-600 border-green-200': String(item.status).toLowerCase() === 'disetujui',
                            'bg-red-50 text-red-600 border-red-200': String(item.status).toLowerCase() === 'ditolak'
                          }">
-                      <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="9" />
-                        <polyline points="12 7 12 12 15 15" />
-                      </svg>
-                      <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span class="capitalize">{{ item.status }}</span>
-                    </div>
+                        <svg v-if="String(item.status).toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="9" />
+                          <polyline points="12 7 12 12 15 15" />
+                        </svg>
+                        <svg v-if="String(item.status).toLowerCase() === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <svg v-if="String(item.status).toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="capitalize">{{ item.status }}</span>
+                      </div>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <div class="flex items-center justify-center gap-2">
-                      <AcceptButton @click="promptApprove(item)" />
-                      <RejectButton @click="openReject(item)" />
+                    <div class="flex items-center justify-center gap-1.5 sm:gap-2">
+                      <AcceptButton :disabled="String(item.status).toLowerCase() === 'disetujui'" @click="promptApprove(item)" />
+                      <RejectButton :disabled="String(item.status).toLowerCase() === 'ditolak' || String(item.status).toLowerCase() === 'disetujui'" @click="openReject(item)" />
                       <PreviewButtonTable @click="openDetail(item)" />
+                      <DeleteButtonTable
+                        label="Hapus Hasil Aktivitas"
+                        title="Hapus Hasil Aktivitas"
+                        @click="confirmDelete(item)" 
+                      />
                     </div>
                   </td>
                 </tr>
@@ -519,7 +552,7 @@ const handleReject = (reason) => {
     <ApproveModal
       :show="showConfirmApproveModal"
       title="Setujui Hasil Aktivitas?"
-      info="<strong>Info:</strong> Status hasil aktivitas mahasiswa ini akan diperbarui menjadi <strong>Disetujui</strong>."
+      info="Status hasil aktivitas mahasiswa ini akan diperbarui menjadi <strong>Disetujui</strong>."
       :is-loading="isLoading"
       @close="showConfirmApproveModal = false"
       @confirm="executeApprove"
@@ -529,13 +562,31 @@ const handleReject = (reason) => {
       </p>
     </ApproveModal>
 
-    <!-- Modal Penolakan (Dengan Warning Jika Sudah Disetujui) -->
+    <!-- Modal Penolakan -->
     <RejectModal 
       :show="showRejectModal" 
       :is-approved="String(selectedItem?.status).toLowerCase() === 'disetujui'"
       @close="showRejectModal = false" 
       @submit="handleReject"
     />
+
+    <!-- MODAL DELETE -->
+    <DeleteModal
+      :show="showDeleteModal"
+      :is-loading="isLoading"
+      @close="showDeleteModal = false"
+      @confirm="executeDelete"
+    >
+      <template #title>
+        Hapus Hasil Aktivitas?
+      </template>
+      <template #message>
+        Apakah Anda yakin ingin menghapus data hasil aktivitas mahasiswa <span class="font-bold text-[#17334F]">"{{ itemToDelete?.nama_mahasiswa }}"</span>? Tindakan ini tidak dapat dibatalkan.
+      </template>
+      <template #confirm-text>
+        Hapus Hasil
+      </template>
+    </DeleteModal>
 
   </AdminLayout>
 </template>

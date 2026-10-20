@@ -163,6 +163,12 @@ class PengajuanAktivitasSeeder extends Seeder
                     'updated_at' => Carbon::now(),
                 ]);
             }
+
+            if ($item['status'] === 'disetujui') {
+                $pengajuan->status = 'menunggu';
+                $pengajuan->save();
+                app(\App\Services\PersetujuanAktivitasService::class)->approve($pengajuan->id);
+            }
         }
     }
 }
