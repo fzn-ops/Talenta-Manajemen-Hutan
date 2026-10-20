@@ -17,23 +17,42 @@ class AktivitasService
         if (!is_null($status)) {
             $query->where('status', $status);
         }
-
+        
         return $query->get();
     }
+
+    public function getAktivitasById($id)
+    {
+        // Pakai findOrFail biar otomatis nampilin halaman 404 kalau ID-nya ngasal/gak ada
+        return Aktivitas::with('gambarAktivitas')->findOrFail($id);
+    }
+
     /**
      * Ambil semua aktivitas dengan fitur Search, Filter, dan Pagination.
      */
-    public function getPaginationAktivitas(array $filters = [], $perPage = 10)
+    public function getPaginationAktivitas(array $filters = [], $perPage = 10, $userId = null)
     {
         $query = Aktivitas::with('gambarAktivitas');
 
+        if ($userId) {
+            // 1. Cari semua ID Aktivitas yang mahasiswa ini ada di dalam timnya
+            $registeredActivityIds = \App\Models\PendaftaranAktivitas::whereHas('peserta', function($q) use ($userId) {
+                $q->where('users.id', $userId);
+            })->pluck('id_aktivitas')->toArray();
+
+            // 2. Kalau ada, filter keluar ID aktivitas tersebut dari katalog
+            if (!empty($registeredActivityIds)) {
+                $query->whereNotIn('id', $registeredActivityIds);
+            }
+        }
+
+        // --- (Kodingan filter lu sisanya tetep sama) ---
         if (!empty($filters['sort']) && !empty($filters['direction'])) {
             $allowedSorts = ['id', 'judul', 'deadline', 'created_at'];
             $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'id';
             $direction = strtolower($filters['direction']) === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortColumn, $direction);
         } else {
-            // Urutan default kalau baru buka halaman pertama kali
             $query->orderBy('id', 'asc'); 
         }
 
@@ -55,19 +74,20 @@ class AktivitasService
         if (isset($filters['status']) && $filters['status'] !== '') {
             $query->where('status', (bool) $filters['status']);
         }
-        // 4. Filter Kategori (Array JSON) - Logika "AND" (Harus punya semua kategori yang dicentang)
+        
+        // 4. Filter Kategori (Array JSON)
         if (!empty($filters['kategori'])) {
-            // Pecah string "Birokrat,Bisnis" menjadi array
             $kategoriArray = explode(',', $filters['kategori']);
             foreach ($kategoriArray as $kat) {
                 $query->whereJsonContains('kategori', trim($kat));
             }
         }
 
-        // 5. Filter Waktu / Deadline (Mencari tanggal spesifik: YYYY-MM-DD)
+        // 5. Filter Waktu / Deadline
         if (!empty($filters['waktu'])) {
             $query->whereDate('deadline', $filters['waktu']);
         }
+
         return $query->paginate($perPage)->withQueryString(); 
     }
 

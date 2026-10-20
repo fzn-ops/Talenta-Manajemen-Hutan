@@ -16,6 +16,7 @@ use App\Http\Controllers\Dashboard\Admin\PersetujuanAktivitasController as Admin
 use App\Http\Controllers\Dashboard\Admin\HasilAktivitasController as AdminHasilAktivitasController;
 use App\Http\Controllers\Dashboard\Mahasiswa\PengajuanAktivitasController as MahasiswaPengajuanAktivitas;
 use App\Http\Controllers\Dashboard\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Dashboard\Mahasiswa\ListAktivitas as MahasiswaListAktivitas;
 
 /* Route Landing dan Website Public*/
 
@@ -150,13 +151,12 @@ Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mah
     })->name('roadmap.detail');
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
-        Route::get('/list', function () {
-            return Inertia::render('dashboard/mahasiswa/ActivityList');
-        })->name('list');
-
-        Route::get('/pendaftaran', function () {
-            return Inertia::render('dashboard/mahasiswa/ActivityRegister');
-        })->name('pendaftaran');
+        // 1. Halaman List (Nampilin Tab Dibuka & Tab Diikuti sekaligus)
+        Route::get('/list', [MahasiswaListAktivitas::class, 'index'])->name('list');
+        Route::get('/pendaftaran/{id}', [MahasiswaListAktivitas::class, 'pendaftaran'])->name('pendaftaran');
+        Route::post('/pendaftaran/daftar', [MahasiswaListAktivitas::class, 'store'])->name('daftar');
+        Route::post('/pendaftaran/{id}/update', [MahasiswaListAktivitas::class, 'update'])->name('update');
+        Route::delete('/pendaftaran/{id}/batal', [MahasiswaListAktivitas::class, 'destroy'])->name('batal');
 
         Route::prefix('pengajuan')->name('pengajuan.')->group(function () {
             Route::get('/', [MahasiswaPengajuanAktivitas::class, 'index'])->name('index');
