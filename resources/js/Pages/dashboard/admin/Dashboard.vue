@@ -8,6 +8,8 @@ import ApproveModal from '@/Components/dashboard/ApproveModal.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
+import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 // Detail Modals
 import ModalFormPersetujuanAktivitas from '@/Components/dashboard/admin/ModalFormPersetujuanAktivitas.vue';
@@ -696,6 +698,61 @@ const handleReject = (reason) => {
 		});
 	}
 };
+
+// ==============================
+// 5. DELETE MODAL & ACTIONS
+// ==============================
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
+const deleteType = ref('pengajuan'); // 'pengajuan' | 'pendaftaran' | 'hasil'
+
+const confirmDeletePengajuan = (item) => {
+	itemToDelete.value = item;
+	deleteType.value = 'pengajuan';
+	showDeleteModal.value = true;
+};
+
+const confirmDeletePendaftaran = (item) => {
+	itemToDelete.value = item;
+	deleteType.value = 'pendaftaran';
+	showDeleteModal.value = true;
+};
+
+const confirmDeleteHasil = (item) => {
+	itemToDelete.value = item;
+	deleteType.value = 'hasil';
+	showDeleteModal.value = true;
+};
+
+const executeDelete = () => {
+	if (!itemToDelete.value) return;
+	const target = itemToDelete.value;
+	const type = deleteType.value;
+	isActionLoading.value = true;
+
+	let url = '';
+	if (type === 'pengajuan') {
+		url = `/admin/aktivitas/persetujuan/${target.id}`;
+	} else if (type === 'pendaftaran') {
+		url = `/admin/aktivitas/bukti-pendaftaran/${target.id}`;
+	} else if (type === 'hasil') {
+		url = `/admin/aktivitas/hasil/${target.id}`;
+	}
+
+	router.delete(url, {
+		preserveScroll: true,
+		onSuccess: () => {
+			showDeleteModal.value = false;
+			itemToDelete.value = null;
+		},
+		onError: () => {
+			showToast('error', 'Gagal', 'Terjadi kesalahan saat menghapus data.');
+		},
+		onFinish: () => {
+			isActionLoading.value = false;
+		},
+	});
+};
 </script>
 
 <template>
@@ -839,7 +896,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Judul -->
-								<th class="w-[250px] px-3 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="px-3 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('judul')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Judul">
 										<span>Judul</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -850,7 +907,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Kategori -->
-								<th class="w-[210px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('kategori')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Kategori">
 										<span>Kategori</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -886,7 +943,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Aksi -->
-								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+								<th class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
 							</tr>
 						</thead>
 						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable1Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
@@ -971,11 +1028,18 @@ const handleReject = (reason) => {
 										</span>
 									</div>
 								</td>
-								<td class="px-3 py-2.5 text-center">
-									<div class="flex items-center justify-center gap-2">
-										<AcceptButton @click="promptApprovePengajuan(item)" />
-										<RejectButton @click="openRejectPengajuan(item)" />
+								<td class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center">
+									<div class="flex items-center justify-center gap-1.5 sm:gap-2">
+										<AcceptButton
+											:disabled="String(item.status).toLowerCase() === 'disetujui'"
+											@click="promptApprovePengajuan(item)"
+										/>
+										<RejectButton
+											:disabled="String(item.status).toLowerCase() === 'ditolak' || String(item.status).toLowerCase() === 'disetujui'"
+											@click="openRejectPengajuan(item)"
+										/>
 										<PreviewButtonTable @click="openDetailPengajuan(item)" />
+										<DeleteButtonTable @click="confirmDeletePengajuan(item)" />
 									</div>
 								</td>
 							</tr>
@@ -1033,7 +1097,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Nama Peserta -->
-								<th class="w-[280px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable2Loading" @click="toggleSort2('peserta')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Peserta">
 										<span>Nama Peserta</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1044,10 +1108,10 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Bukti -->
-								<th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti Registrasi</th>
+								<th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti Registrasi</th>
 
 								<!-- Kolom Status -->
-								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable2Loading" @click="toggleSort2('status')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Status">
 										<span>Status</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1058,7 +1122,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Aksi -->
-								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+								<th class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
 							</tr>
 						</thead>
 						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable2Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
@@ -1097,11 +1161,18 @@ const handleReject = (reason) => {
 										<span class="capitalize">{{ item.status }}</span>
 									</div>
 								</td>
-								<td class="px-3 py-2.5 text-center">
-									<div class="flex items-center justify-center gap-2">
-										<AcceptButton @click="promptApprovePendaftaran(item)" />
-										<RejectButton @click="openRejectPendaftaran(item)" />
+								<td class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center">
+									<div class="flex items-center justify-center gap-1.5 sm:gap-2">
+										<AcceptButton
+											:disabled="String(item.status).toLowerCase() === 'disetujui'"
+											@click="promptApprovePendaftaran(item)"
+										/>
+										<RejectButton
+											:disabled="String(item.status).toLowerCase() === 'ditolak' || String(item.status).toLowerCase() === 'disetujui'"
+											@click="openRejectPendaftaran(item)"
+										/>
 										<PreviewButtonTable @click="openDetailPendaftaran(item)" />
+										<DeleteButtonTable @click="confirmDeletePendaftaran(item)" />
 									</div>
 								</td>
 							</tr>
@@ -1137,7 +1208,7 @@ const handleReject = (reason) => {
 						<thead class="bg-[#416f65]">
 							<tr class="h-[48px]">
 								<!-- Kolom No -->
-								<th class="w-[50px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
+								<th class="w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
 									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
 										<span>No</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1148,7 +1219,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Nama Mahasiswa -->
-								<th class="w-[200px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('nama_mahasiswa')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Mahasiswa">
 										<span>Nama Mahasiswa</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1159,7 +1230,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom NIM -->
-								<th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="w-[110px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('nim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan NIM">
 										<span>NIM</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1170,7 +1241,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Nama Kegiatan -->
-								<th class="w-[230px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('nama_kegiatan')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Kegiatan">
 										<span>Nama Kegiatan</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1181,7 +1252,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Jenis Roadmap -->
-								<th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
+								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
 									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('jenis_roadmap')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Jenis Roadmap">
 										<span>Jenis Roadmap</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1192,7 +1263,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Bukti -->
-								<th class="w-[120px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti</th>
+								<th class="w-[110px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti</th>
 
 								<!-- Kolom Status -->
 								<th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
@@ -1206,7 +1277,7 @@ const handleReject = (reason) => {
 								</th>
 
 								<!-- Kolom Aksi -->
-								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
+								<th class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
 							</tr>
 						</thead>
 						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable3Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
@@ -1256,11 +1327,18 @@ const handleReject = (reason) => {
 										<span class="capitalize">{{ item.status }}</span>
 									</div>
 								</td>
-								<td class="px-3 py-2.5 text-center">
-									<div class="flex items-center justify-center gap-2">
-										<AcceptButton @click="promptApproveHasil(item)" />
-										<RejectButton @click="openRejectHasil(item)" />
+								<td class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center">
+									<div class="flex items-center justify-center gap-1.5 sm:gap-2">
+										<AcceptButton
+											:disabled="String(item.status).toLowerCase() === 'disetujui'"
+											@click="promptApproveHasil(item)"
+										/>
+										<RejectButton
+											:disabled="String(item.status).toLowerCase() === 'ditolak' || String(item.status).toLowerCase() === 'disetujui'"
+											@click="openRejectHasil(item)"
+										/>
 										<PreviewButtonTable @click="openDetailHasil(item)" />
+										<DeleteButtonTable @click="confirmDeleteHasil(item)" />
 									</div>
 								</td>
 							</tr>
@@ -1325,6 +1403,32 @@ const handleReject = (reason) => {
 			@close="showRejectModal = false"
 			@submit="handleReject"
 		/>
+
+		<!-- Modal Konfirmasi Hapus -->
+		<DeleteModal
+			:show="showDeleteModal"
+			:is-loading="isActionLoading"
+			@close="showDeleteModal = false"
+			@confirm="executeDelete"
+		>
+			<template #title>
+				{{ deleteType === 'pengajuan' ? 'Hapus Pengajuan?' : (deleteType === 'pendaftaran' ? 'Hapus Pendaftaran?' : 'Hapus Hasil Aktivitas?') }}
+			</template>
+			<template #message>
+				<span v-if="deleteType === 'pengajuan'">
+					Apakah Anda yakin ingin menghapus pengajuan <span class="font-bold text-[#17334F]">"{{ itemToDelete?.judul }}"</span>? Tindakan ini tidak dapat dibatalkan.
+				</span>
+				<span v-else-if="deleteType === 'pendaftaran'">
+					Apakah Anda yakin ingin menghapus data pendaftaran tim <span class="font-bold text-[#17334F]">"{{ itemToDelete?.nama_tim || itemToDelete?.namaTim }}"</span>? Tindakan ini tidak dapat dibatalkan.
+				</span>
+				<span v-else>
+					Apakah Anda yakin ingin menghapus data hasil aktivitas mahasiswa <span class="font-bold text-[#17334F]">"{{ itemToDelete?.nama_mahasiswa || itemToDelete?.namaMahasiswa }}"</span>? Tindakan ini tidak dapat dibatalkan.
+				</span>
+			</template>
+			<template #confirm-text>
+				{{ deleteType === 'pengajuan' ? 'Hapus Pengajuan' : (deleteType === 'pendaftaran' ? 'Hapus Pendaftaran' : 'Hapus Hasil') }}
+			</template>
+		</DeleteModal>
 
 		<!-- Modal Gambar (Lightbox) -->
 		<Teleport to="body">
