@@ -99,6 +99,7 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
         Route::get('/persetujuan', [AdminPersetujuanAktivitasController::class, 'index'])->name('persetujuan');
         Route::post('/persetujuan/{id}/approve', [AdminPersetujuanAktivitasController::class, 'approve'])->name('persetujuan.approve');
         Route::post('/persetujuan/{id}/reject', [AdminPersetujuanAktivitasController::class, 'reject'])->name('persetujuan.reject');
+        Route::delete('/persetujuan/{id}', [AdminPersetujuanAktivitasController::class, 'destroy'])->name('persetujuan.destroy');
 
         Route::get('/bukti-pendaftaran', [AdminPendaftaranAktivitasController::class, 'index'])
             ->name('bukti');
@@ -109,9 +110,13 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
         Route::patch('/bukti-pendaftaran/{id}/reject', [AdminPendaftaranAktivitasController::class, 'reject'])
             ->name('bukti.reject');
 
+        Route::delete('/bukti-pendaftaran/{id}', [AdminPendaftaranAktivitasController::class, 'destroy'])
+            ->name('bukti.destroy');
+
         Route::get('/hasil', [AdminHasilAktivitasController::class, 'index'])->name('hasil');
         Route::post('/hasil/{id}/approve', [AdminHasilAktivitasController::class, 'approve'])->name('hasil.approve');
         Route::post('/hasil/{id}/reject', [AdminHasilAktivitasController::class, 'reject'])->name('hasil.reject');
+        Route::delete('/hasil/{id}', [AdminHasilAktivitasController::class, 'destroy'])->name('hasil.destroy');
 
         Route::get('/list', [AktivitasController::class, 'index'])->name('listAktivitasAdmin');
         Route::post('/store', [AktivitasController::class, 'store'])->name('storeAktivitasAdmin');

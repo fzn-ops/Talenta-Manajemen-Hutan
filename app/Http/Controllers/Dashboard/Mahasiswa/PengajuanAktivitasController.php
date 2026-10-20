@@ -27,7 +27,13 @@ class PengajuanAktivitasController extends Controller
         // Jangan lupa path Inertia-nya disesuain sama nama file/folder Vue lu ya!
         return Inertia::render('dashboard/mahasiswa/ActivitySubmission', [
             'pengajuanData' => $pengajuanData,
-            'filters' => $request->only(['search', 'status', 'per_page']),
+            'filters' => [
+                'search'    => $request->input('search', ''),
+                'status'    => $request->input('status', ''),
+                'per_page'  => (int) ($request->input('per_page', 10)),
+                'sort'      => $request->input('sort', $request->input('sort_by', 'updated_at')),
+                'direction' => $request->input('direction', $request->input('sort_direction', 'desc')),
+            ],
         ]);
     }
 

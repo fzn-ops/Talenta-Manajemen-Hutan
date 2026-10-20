@@ -23,18 +23,23 @@ public function getPaginatedData(Request $request)
         }
 
         if ($request->filled('status') && $request->status !== 'Semua') {
-            $query->where('status', $request->status);
+            $status = strtolower($request->status);
+            if ($status === 'disetujui' || $status === 'diterima') {
+                $query->whereIn('status', ['disetujui', 'diterima']);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
-        $sortBy = $request->get('sort_by', 'created_at'); 
-        $sortDirection = $request->get('sort_direction', 'desc');
+        $sortBy = $request->get('sort', $request->get('sort_by', 'updated_at')); 
+        $sortDirection = strtolower($request->get('direction', $request->get('sort_direction', 'desc'))) === 'asc' ? 'asc' : 'desc';
 
-        $allowedColumns = ['deadline', 'created_at', 'judul', 'status'];
+        $allowedColumns = ['id', 'deadline', 'created_at', 'updated_at', 'judul', 'status'];
         
         if (in_array($sortBy, $allowedColumns)) {
             $query->orderBy($sortBy, $sortDirection);
         } else {
-            $query->latest(); 
+            $query->orderBy('updated_at', 'desc'); 
         }
 
         $perPage = $request->get('per_page', 10);
@@ -86,6 +91,7 @@ public function getPaginatedData(Request $request)
             'deadline'   => $request->deadline,
             'status'     => 'menunggu',
         ]);
+        $pengajuan->touch();
 
         // Kalau ada file baru yang diupload
         if ($request->hasFile('gambar_baru')) {

@@ -25,8 +25,8 @@ const deletedImageIds = ref([]);
 const searchQuery = ref(props.filters?.search || '');
 const showFilter = ref(false);
 
-const sortColumn = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'asc');
+const sortColumn = ref(props.filters?.sort || 'updated_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
 
 const filterState = ref({
   // Jika dari backend dikirim string dipisah koma, kita jadikan array lagi
@@ -42,10 +42,6 @@ const totalPages = computed(() => props.aktivitasData?.last_page || 1);
 const rowsPerPage = ref(props.aktivitasData?.per_page || 10);
 
 const getRowNumber = (index) => {
-  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
-    const total = props.aktivitasData?.total || 0;
-    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
-  }
   return (props.aktivitasData?.from || 1) + index;
 };
 
@@ -174,19 +170,31 @@ const openTambah = () => {
 };
 
 
+const getImageSrc = (gambar) => {
+  if (!gambar) return '';
+  if (typeof gambar === 'object' && gambar.url) return gambar.url;
+  if (typeof gambar === 'object' && gambar.gambar) gambar = gambar.gambar;
+  if (typeof gambar === 'string') {
+    if (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('blob:') || gambar.startsWith('data:')) {
+      return gambar;
+    }
+    if (gambar.startsWith('/storage/')) return gambar;
+    if (gambar.startsWith('storage/')) return '/' + gambar;
+    if (gambar.startsWith('/')) return gambar;
+    return '/storage/' + gambar;
+  }
+  return '';
+};
+
 const openEdit = (item) => {
   isEditing.value = true;
   let existingImages = [];
   
   if (item.gambar_aktivitas && item.gambar_aktivitas.length > 0) {
     existingImages = item.gambar_aktivitas.map(g => {
-      let imgUrl = g.gambar;
-      if (imgUrl && !imgUrl.startsWith('http://') && !imgUrl.startsWith('https://')) {
-        imgUrl = imgUrl.startsWith('/') ? imgUrl : `/${imgUrl}`;
-      }
       return {
         id: g.id, 
-        url: imgUrl, 
+        url: getImageSrc(g.gambar), 
         isNew: false
       };
     });
@@ -202,15 +210,9 @@ const openEdit = (item) => {
 };
 
 const openImage = (gambar) => {
-  if (typeof gambar === 'object' && gambar.url) {
-    selectedImage.value = gambar.url;
-  } else if (typeof gambar === 'string' && (gambar.startsWith('http://') || gambar.startsWith('https://') || gambar.startsWith('/'))) {
-    selectedImage.value = gambar;
-  } else if (typeof gambar === 'string') {
-    selectedImage.value = `/${gambar}`;
-  } else {
-    selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
-  }
+  const src = getImageSrc(gambar);
+  if (!src) return;
+  selectedImage.value = src;
   showImageModal.value = true;
 };
 
@@ -301,8 +303,8 @@ const formatFilename = (path) => {
     // Ambil nama filenya aja dari path (bersihkan query string)
     const filename = path.split('?')[0].split('/').pop() || 'gambar.jpg';
     
-    // Batas maksimal huruf yang mau ditampilin (bisa lu ubah sesuka hati, misal 15)
-    const maxLength = 8;
+    // Batas maksimal huruf yang mau ditampilin (misal 16)
+    const maxLength = 16;
     
     if (filename.length <= maxLength) return filename;
 
@@ -318,7 +320,7 @@ const formatFilename = (path) => {
     const ext = filename.substring(lastDotIndex); 
 
     // Hitung sisa ruang buat nama file (Batas Maksimal - panjang ekstensi - 3 titik)
-    const keepLength = maxLength - ext.length - 3;
+    const keepLength = Math.max(1, maxLength - ext.length - 3);
     
     return name.substring(0, keepLength) + '...' + ext;
 };
@@ -536,13 +538,17 @@ const formatFilename = (path) => {
                  <td class="px-3 py-2.5 text-center">
                      <div class="flex items-center justify-center gap-1.5 flex-wrap">
                        <span v-for="(gbr, i) in item.gambar_aktivitas" :key="i" class="inline-flex items-center">
-                         <button @click="openImage(gbr.gambar)" class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer" :title="gbr.gambar.split('/').pop()">
-                           <!-- Panggil fungsinya di sini wok! -->
+                         <button
+                           type="button"
+                           @click="openImage(gbr.gambar)"
+                           class="inline-block max-w-[130px] truncate font-inter text-[13px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                           :title="gbr.gambar ? gbr.gambar.split('?')[0].split('/').pop() : ''"
+                         >
                            {{ formatFilename(gbr.gambar) }}
                          </button>
                          <span v-if="i < item.gambar_aktivitas.length - 1" class="text-gray-400 ml-1">,</span>
                        </span>
-                       <span v-if="!item.gambar_aktivitas || item.gambar_aktivitas.length === 0" class="font-inter text-[14px] text-gray-400">-</span>
+                       <span v-if="!item.gambar_aktivitas || item.gambar_aktivitas.length === 0" class="font-inter text-[13px] text-gray-400">-</span>
                      </div>
                  </td>
                   <td class="px-3 py-2.5 text-center">

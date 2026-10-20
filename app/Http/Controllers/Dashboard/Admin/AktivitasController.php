@@ -25,8 +25,8 @@ class AktivitasController extends Controller
             'kategori'=> $request->input('kategori'),
             'status'=> $request->input('status'),
             'waktu'     => $request->input('waktu'),
-            'sort'      => $request->input('sort'),
-            'direction' => $request->input('direction'),
+            'sort'      => $request->input('sort', 'updated_at'),
+            'direction' => $request->input('direction', 'desc'),
         ];
         
         $perPage = $request->input('per_page', 10);

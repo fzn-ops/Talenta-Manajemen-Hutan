@@ -15,17 +15,17 @@ class PersetujuanAktivitasService
      */
     public function getPaginatedPengajuan(array $filters = [], int $perPage = 10)
     {
-        $query = PengajuanAktivitas::with(['user', 'gambarPengajuanAktivitas', 'aktivitas']);
+        $query = PengajuanAktivitas::with(['user', 'gambarPengajuanAktivitas']);
 
         // 1. Sorting
-        if (!empty($filters['sort']) && !empty($filters['direction'])) {
-            $allowedSorts = ['id', 'judul', 'deadline', 'created_at', 'status'];
-            $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'id';
-            $direction = strtolower($filters['direction']) === 'desc' ? 'desc' : 'asc';
-            $query->orderBy($sortColumn, $direction);
-        } else {
-            $query->orderBy('id', 'asc');
+        $sortColumn = $filters['sort'] ?? 'updated_at';
+        $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $allowedSorts = ['id', 'judul', 'deadline', 'created_at', 'updated_at', 'status'];
+
+        if (!in_array($sortColumn, $allowedSorts)) {
+            $sortColumn = 'updated_at';
         }
+        $query->orderBy($sortColumn, $direction);
 
         // 2. Pencarian (Search)
         if (!empty($filters['search'])) {
@@ -40,7 +40,11 @@ class PersetujuanAktivitasService
         // 3. Filter Status
         if (!empty($filters['status'])) {
             $status = strtolower($filters['status']);
-            $query->where('status', $status);
+            if ($status === 'disetujui' || $status === 'diterima') {
+                $query->whereIn('status', ['disetujui', 'diterima']);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         return $query->paginate($perPage)->withQueryString();
@@ -58,9 +62,9 @@ class PersetujuanAktivitasService
         return DB::transaction(function () use ($id) {
             $pengajuan = PengajuanAktivitas::with('gambarPengajuanAktivitas')->findOrFail($id);
 
-            // Jika sebelumnya sudah disetujui dan id_aktivitas masih ada, jangan gandakan
-            if ($pengajuan->status === 'disetujui' && $pengajuan->id_aktivitas) {
-                $existing = Aktivitas::find($pengajuan->id_aktivitas);
+            // Jika sebelumnya sudah disetujui, jangan gandakan
+            if ($pengajuan->status === 'disetujui') {
+                $existing = Aktivitas::where('judul', $pengajuan->judul)->first();
                 if ($existing) {
                     return $existing;
                 }
@@ -85,10 +89,9 @@ class PersetujuanAktivitasService
                 'deadline'   => $pengajuan->deadline,
             ]);
 
-            // Update status pengajuan dan hubungkan ke aktivitas yang baru dibuat
+            // Update status pengajuan menjadi disetujui
             $pengajuan->update([
-                'status'       => 'disetujui',
-                'id_aktivitas' => $aktivitas->id,
+                'status' => 'disetujui',
             ]);
 
             // Pastikan direktori aktivitas di storage public tersedia
@@ -107,25 +110,31 @@ class PersetujuanAktivitasService
                     // A. Jika berupa URL eksternal (misal dari seeder Unsplash)
                     if (filter_var($gbr->gambar, FILTER_VALIDATE_URL)) {
                         try {
-                            $fileContents = @file_get_contents($gbr->gambar);
+                            $ctx = stream_context_create([
+                                'http' => ['timeout' => 3],
+                                'https' => ['timeout' => 3, 'verify_peer' => false, 'verify_peer_name' => false],
+                                'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+                            ]);
+                            $fileContents = @file_get_contents($gbr->gambar, false, $ctx);
                             if ($fileContents !== false) {
                                 $newFileName = time() . '_' . uniqid() . '.jpg';
                                 Storage::disk('public')->put('aktivitas/' . $newFileName, $fileContents);
                                 $targetPath = 'storage/aktivitas/' . $newFileName;
                             }
                         } catch (\Throwable $e) {
-                            // Jika unduh gagal, gunakan target URL langsung
                             $targetPath = $gbr->gambar;
                         }
                     } else {
                         // B. Jika berupa path file lokal di disk public
-                        $rawPath = str_replace('storage/', '', $gbr->gambar);
-                        if (Storage::disk('public')->exists($rawPath)) {
-                            $ext = pathinfo($rawPath, PATHINFO_EXTENSION) ?: 'jpg';
+                        $cleanPath = ltrim(preg_replace('#^/?storage/#', '', $gbr->gambar), '/');
+                        if (Storage::disk('public')->exists($cleanPath)) {
+                            $ext = pathinfo($cleanPath, PATHINFO_EXTENSION) ?: 'jpg';
                             $newFileName = time() . '_' . uniqid() . '.' . $ext;
                             $newRawPath = 'aktivitas/' . $newFileName;
-                            Storage::disk('public')->copy($rawPath, $newRawPath);
+                            Storage::disk('public')->copy($cleanPath, $newRawPath);
                             $targetPath = 'storage/' . $newRawPath;
+                        } else {
+                            $targetPath = str_starts_with($cleanPath, 'storage/') ? $cleanPath : 'storage/' . $cleanPath;
                         }
                     }
 
@@ -157,38 +166,47 @@ class PersetujuanAktivitasService
 
     /**
      * Tolak pengajuan aktivitas beserta catatan penolakan.
-     * Jika aktivitas ini sebelumnya sudah disetujui (dan masuk ke list aktivitas),
-     * aksi tolak ini akan otomatis mencabut/menghapus record aktivitas terkait dari list aktivitas
-     * sehingga jika admin salah menyetujui, hal tersebut TIDAK FATAL.
+     * Pengajuan yang sudah disetujui tidak dapat ditolak kembali.
      */
     public function reject(int $id, ?string $catatan = null)
     {
         return DB::transaction(function () use ($id, $catatan) {
             $pengajuan = PengajuanAktivitas::findOrFail($id);
 
-            // Jika sebelumnya sudah disetujui dan ada aktivitas terkait, hapus aktivitas tersebut
-            if ($pengajuan->id_aktivitas) {
-                $linkedAktivitas = Aktivitas::with('gambarAktivitas')->find($pengajuan->id_aktivitas);
-                if ($linkedAktivitas) {
-                    // Hapus file fisik gambar terkait jika ada di disk public
-                    foreach ($linkedAktivitas->gambarAktivitas as $gAktivitas) {
-                        $rawPath = str_replace('storage/', '', $gAktivitas->gambar);
-                        if (Storage::disk('public')->exists($rawPath)) {
-                            Storage::disk('public')->delete($rawPath);
-                        }
-                    }
-                    $linkedAktivitas->gambarAktivitas()->delete();
-                    $linkedAktivitas->delete();
-                }
+            if ($pengajuan->status === 'disetujui') {
+                abort(422, 'Pengajuan yang sudah disetujui tidak dapat ditolak.');
             }
 
             $pengajuan->update([
                 'status'            => 'ditolak',
                 'catatan_penolakan' => $catatan,
-                'id_aktivitas'      => null,
             ]);
 
             return $pengajuan;
+        });
+    }
+
+    /**
+     * Hapus data pengajuan aktivitas beserta file gambar fisiknya.
+     */
+    public function delete(int $id)
+    {
+        return DB::transaction(function () use ($id) {
+            $pengajuan = PengajuanAktivitas::with('gambarPengajuanAktivitas')->findOrFail($id);
+
+            foreach ($pengajuan->gambarPengajuanAktivitas as $gbr) {
+                if (!empty($gbr->gambar) && !str_starts_with($gbr->gambar, 'http')) {
+                    $clean = ltrim(preg_replace('#^/?storage/#', '', $gbr->gambar), '/');
+                    if (Storage::disk('public')->exists($clean)) {
+                        Storage::disk('public')->delete($clean);
+                    }
+                }
+            }
+
+            $pengajuan->gambarPengajuanAktivitas()->delete();
+            $pengajuan->delete();
+
+            return true;
         });
     }
 }

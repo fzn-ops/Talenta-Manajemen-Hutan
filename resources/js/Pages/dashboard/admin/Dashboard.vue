@@ -584,12 +584,12 @@ const approveModalMessage = computed(() => {
 
 const approveModalInfo = computed(() => {
 	if (approveType.value === 'pengajuan') {
-		return '<strong>Info:</strong> Aktivitas ini akan langsung otomatis dibuat dan <strong>diterbitkan ke List Aktivitas</strong>.';
+		return 'Aktivitas ini akan langsung otomatis dibuat dan <strong>diterbitkan ke List Aktivitas</strong>.';
 	}
 	if (approveType.value === 'pendaftaran') {
-		return '<strong>Info:</strong> Tim mahasiswa ini akan berstatus <strong>Disetujui</strong> untuk mengikuti aktivitas.';
+		return 'Tim mahasiswa ini akan berstatus <strong>Disetujui</strong> untuk mengikuti aktivitas.';
 	}
-	return '<strong>Info:</strong> Status hasil aktivitas mahasiswa ini akan diperbarui menjadi <strong>Disetujui</strong>.';
+	return 'Status hasil aktivitas mahasiswa ini akan diperbarui menjadi <strong>Disetujui</strong>.';
 });
 
 // Execute Approval

@@ -114,4 +114,30 @@ class HasilAktivitasService
             return $hasil;
         });
     }
+
+    /**
+     * Hapus data hasil aktivitas mahasiswa.
+     */
+    public function delete(int $id)
+    {
+        return DB::transaction(function () use ($id) {
+            $hasil = HasilAktivitas::findOrFail($id);
+
+            if (!empty($hasil->media)) {
+                $medias = is_array($hasil->media) ? $hasil->media : [$hasil->media];
+                foreach ($medias as $file) {
+                    if (is_string($file) && !str_starts_with($file, 'http')) {
+                        $clean = ltrim(preg_replace('#^/?storage/#', '', $file), '/');
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($clean)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($clean);
+                        }
+                    }
+                }
+            }
+
+            $hasil->delete();
+
+            return true;
+        });
+    }
 }

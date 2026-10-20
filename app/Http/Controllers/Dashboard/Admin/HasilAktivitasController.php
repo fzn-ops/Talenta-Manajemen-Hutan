@@ -61,4 +61,14 @@ class HasilAktivitasController extends Controller
 
         return redirect()->back()->with('success', 'Hasil aktivitas mahasiswa berhasil ditolak.');
     }
+
+    /**
+     * Hapus hasil aktivitas mahasiswa.
+     */
+    public function destroy($id)
+    {
+        $this->hasilService->delete($id);
+
+        return redirect()->back()->with('success', 'Hasil aktivitas mahasiswa berhasil dihapus!');
+    }
 }

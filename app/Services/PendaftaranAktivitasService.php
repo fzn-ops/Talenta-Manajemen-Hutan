@@ -62,4 +62,23 @@ class PendaftaranAktivitasService {
 
         return $pendaftaran;
     }
+
+    // 4. Fungsi pas Admin klik tombol "Hapus"
+    public function delete($id)
+    {
+        $pendaftaran = PendaftaranAktivitas::findOrFail($id);
+
+        if (!empty($pendaftaran->bukti_pendaftaran) && !str_starts_with($pendaftaran->bukti_pendaftaran, 'http')) {
+            $cleanPath = ltrim(preg_replace('#^/?storage/#', '', $pendaftaran->bukti_pendaftaran), '/');
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($cleanPath);
+            }
+        }
+
+        // Hapus relasi pivot peserta jika ada
+        $pendaftaran->peserta()->detach();
+        $pendaftaran->delete();
+
+        return true;
+    }
 }

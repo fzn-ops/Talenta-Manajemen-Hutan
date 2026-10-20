@@ -35,9 +35,4 @@ class PengajuanAktivitas extends Model
     {
         return $this->hasMany(GambarPengajuanAktivitas::class, 'id_pengajuan_aktivitas', 'id');
     }
-
-    public function aktivitas()
-    {
-        return $this->belongsTo(Aktivitas::class, 'id_aktivitas', 'id');
-    }
 }
