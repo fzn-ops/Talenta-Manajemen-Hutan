@@ -45,7 +45,7 @@ class HandleInertiaRequests extends Middleware
 
             $isEmailEmpty = empty($user->email) || $user->email === '-';
             $isPhoneEmpty = empty($user->no_handphone) || $user->no_handphone === '-';
-            $isLocked = $isDefaultPassword || $isEmailEmpty || $isPhoneEmpty;
+            $isLocked = $isDefaultPassword || $isEmailEmpty;
         }
 
         return [

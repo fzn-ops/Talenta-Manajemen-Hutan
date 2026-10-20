@@ -72,7 +72,7 @@ const currentUser = computed(() => props.userData || page.props.auth?.user || {}
 const isDefaultPass = computed(() => props.isDefaultPassword ?? page.props.auth?.user?.is_default_password ?? false);
 const isEmailEmp = computed(() => props.isEmailEmpty ?? page.props.auth?.user?.is_email_empty ?? false);
 const isPhoneEmp = computed(() => props.isPhoneEmpty ?? page.props.auth?.user?.is_phone_empty ?? false);
-const isLockedAccount = computed(() => props.isLocked ?? page.props.auth?.user?.is_locked ?? (isDefaultPass.value || isEmailEmp.value || isPhoneEmp.value));
+const isLockedAccount = computed(() => props.isLocked ?? page.props.auth?.user?.is_locked ?? (isDefaultPass.value || isEmailEmp.value));
 
 const isLoading = ref(true);
 onMounted(() => {
@@ -348,20 +348,16 @@ const saveAccountData = () => {
 		accountErrors.value.email = 'Format email tidak valid (contoh: nama@email.com).';
 		return;
 	}
-	if (!phoneVal) {
-		accountErrors.value.phone = 'Nomor handphone wajib diisi.';
-		return;
-	}
 
 	isSavingAccount.value = true;
 	router.post('/mahasiswa/profile/account', {
 		email: emailVal,
-		no_handphone: phoneVal,
+		no_handphone: phoneVal || null,
 	}, {
 		preserveScroll: true,
 		onSuccess: () => {
 			savedAccountData.value.email = emailVal;
-			savedAccountData.value.phone = (formAccount.value.phone || '').trim();
+			savedAccountData.value.phone = phoneVal;
 			isEditingEmail.value = false;
 			isEditingPhone.value = false;
 			isSavingAccount.value = false;
@@ -457,7 +453,7 @@ const savePassword = () => {
 						</h3>
 						<p class="font-inter text-[13px] leading-relaxed text-amber-800">
 							Demi keamanan akun, akses menu <strong>Dashboard</strong> dan <strong>Aktivitas</strong> masih terkunci.
-							Harap lengkapi <span v-if="isEmailEmp"><strong>Email aktif</strong></span><span v-if="isEmailEmp && isPhoneEmp">, </span><span v-if="isPhoneEmp"><strong>Nomor Handphone</strong></span><span v-if="(isEmailEmp || isPhoneEmp) && isDefaultPass"> serta </span><span v-if="isDefaultPass">perbarui <strong>Password baru</strong></span> pada formulir di bawah ini agar seluruh menu terbuka penuh.
+							Harap lengkapi <span v-if="isEmailEmp"><strong>Email aktif</strong></span><span v-if="isEmailEmp && isDefaultPass"> serta </span><span v-if="isDefaultPass">perbarui <strong>Password baru</strong></span> pada formulir di bawah ini agar seluruh menu terbuka penuh.
 						</p>
 					</div>
 				</div>

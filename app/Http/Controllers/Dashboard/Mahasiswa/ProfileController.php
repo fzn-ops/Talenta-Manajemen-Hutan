@@ -29,7 +29,7 @@ class ProfileController extends Controller
 
         $isEmailEmpty = empty($user->email) || $user->email === '-';
         $isPhoneEmpty = empty($user->no_handphone) || $user->no_handphone === '-';
-        $isLocked = $isDefaultPassword || $isEmailEmpty || $isPhoneEmpty;
+        $isLocked = $isDefaultPassword || $isEmailEmpty;
 
         return Inertia::render('dashboard/mahasiswa/Profile', [
             'userData' => $user,
@@ -54,17 +54,16 @@ class ProfileController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'no_handphone' => ['required', 'string', 'max:20'],
+            'no_handphone' => ['nullable', 'string', 'max:20'],
         ], [
             'email.required' => 'Email wajib diisi.',
             'email.email' => 'Format email tidak valid (contoh: nama@email.com).',
             'email.unique' => 'Email ini sudah digunakan oleh akun lain.',
-            'no_handphone.required' => 'Nomor handphone wajib diisi.',
         ]);
 
         $user->update([
             'email' => $validated['email'],
-            'no_handphone' => $validated['no_handphone'],
+            'no_handphone' => $validated['no_handphone'] ?? null,
         ]);
 
         return back()->with('success', 'Data akun berhasil diperbarui.');

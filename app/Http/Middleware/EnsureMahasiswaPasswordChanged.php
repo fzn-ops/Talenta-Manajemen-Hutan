@@ -28,7 +28,7 @@ class EnsureMahasiswaPasswordChanged
 
             $isEmailEmpty = empty($user->email) || $user->email === '-';
             $isPhoneEmpty = empty($user->no_handphone) || $user->no_handphone === '-';
-            $isLocked = $isDefaultPassword || $isEmailEmpty || $isPhoneEmpty;
+            $isLocked = $isDefaultPassword || $isEmailEmpty;
 
             if ($isLocked) {
                 // Rute yang tetap boleh diakses saat akun belum lengkap/terkunci
@@ -48,10 +48,9 @@ class EnsureMahasiswaPasswordChanged
                 if (!in_array($currentRouteName, $allowedRouteNames)) {
                     $missing = [];
                     if ($isEmailEmpty) $missing[] = 'email aktif';
-                    if ($isPhoneEmpty) $missing[] = 'nomor handphone';
                     if ($isDefaultPassword) $missing[] = 'ubah password default (NIM)';
 
-                    $msg = 'Akun Anda belum lengkap. Silakan lengkapi ' . implode(', ', $missing) . ' Anda terlebih dahulu untuk membuka akses Dashboard dan Aktivitas.';
+                    $msg = 'Akun Anda belum lengkap. Silakan lengkapi ' . implode(' dan ', $missing) . ' Anda terlebih dahulu untuk membuka akses Dashboard dan Aktivitas.';
 
                     return redirect()->route('mahasiswa.profile')->with('warning', $msg);
                 }
