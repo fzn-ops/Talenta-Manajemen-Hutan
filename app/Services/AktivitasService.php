@@ -53,7 +53,7 @@ class AktivitasService
             $direction = strtolower($filters['direction']) === 'asc' ? 'asc' : 'desc';
             $query->orderBy($sortColumn, $direction);
         } else {
-            $query->orderBy('id', 'asc'); 
+             $query->orderBy('updated_at', 'desc');  
         }
 
         // 1. Fitur Search

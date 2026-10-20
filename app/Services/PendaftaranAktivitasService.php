@@ -189,31 +189,21 @@ public function getDataPaginationMahasiswa($userId, array $filters = [], $perPag
     }
 
     // 6. Fungsi Buat Ngapus Data (Delete)
-    public function deleteData($id)
+    public function delete($id)
     {
-        try {
-            return DB::transaction(function () use ($id) {
-                $pendaftaran = PendaftaranAktivitas::findOrFail($id);
+        $pendaftaran = PendaftaranAktivitas::findOrFail($id);
 
-                // 1. Lepasin semua peserta dari tabel pivot
-                $pendaftaran->peserta()->detach();
-
-                // 2. Hapus relasi hasil aktivitas
-                $pendaftaran->hasilAktivitas()->delete();
-
-                // 3. Hapus file fisik gambar bukti pendaftaran
-                if ($pendaftaran->bukti_pendaftaran) {
-                    Storage::disk('public')->delete($pendaftaran->bukti_pendaftaran);
-                }
-
-                // 4. Hapus data dari tabel
-                $pendaftaran->delete();
-
-                return true;
-            });
-        } catch (Exception $e) {
-            Log::error('Gagal Delete Pendaftaran ID ' . $id . ': ' . $e->getMessage());
-            throw $e;
+        if (!empty($pendaftaran->bukti_pendaftaran) && !str_starts_with($pendaftaran->bukti_pendaftaran, 'http')) {
+            $cleanPath = ltrim(preg_replace('#^/?storage/#', '', $pendaftaran->bukti_pendaftaran), '/');
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($cleanPath);
+            }
         }
+
+        // Hapus relasi pivot peserta jika ada
+        $pendaftaran->peserta()->detach();
+        $pendaftaran->delete();
+
+        return true;
     }
 }
