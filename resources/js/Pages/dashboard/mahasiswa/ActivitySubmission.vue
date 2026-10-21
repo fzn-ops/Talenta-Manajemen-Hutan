@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 
 import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
@@ -290,6 +290,26 @@ const openImage = (item) => {
   selectedImage.value = getImageSrc(first);
   showImageModal.value = true;
 };
+
+// Keyboard navigation (Esc to close)
+const handleModalKeyDown = (e) => {
+  if (!showImageModal.value) return;
+  if (e.key === 'Escape') {
+    showImageModal.value = false;
+  }
+};
+
+watch(showImageModal, (isOpen) => {
+  if (isOpen) {
+    window.addEventListener('keydown', handleModalKeyDown);
+  } else {
+    window.removeEventListener('keydown', handleModalKeyDown);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleModalKeyDown);
+});
 </script>
 
 <template>

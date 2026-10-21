@@ -6,6 +6,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  availableRoadmaps: {
+    type: Array,
+    default: () => []
+  },
   selectedData: {
     type: Object,
     default: null
@@ -14,14 +18,18 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit', 'update:show']);
 
-// Dummy Data
-const roadmaps = ref([
-  { id: 1, judul: 'Lorem Ipsum Dolor sit amet...', kategori: 'Birokrat', totalTask: 45, partisipan: 100 },
-  { id: 2, judul: 'Lorem Ipsum Dolor sit amet...', kategori: 'Birokrat', totalTask: 45, partisipan: 100 },
-  { id: 3, judul: 'Lorem Ipsum Dolor sit amet...', kategori: 'Profesional', totalTask: 32, partisipan: 85 },
-  { id: 4, judul: 'Lorem Ipsum Dolor sit amet...', kategori: 'Bisnis', totalTask: 28, partisipan: 150 },
-  { id: 5, judul: 'Lorem Ipsum Dolor sit amet...', kategori: 'Akademisi', totalTask: 50, partisipan: 200 },
-]);
+// Roadmaps list (ambil dari props jika ada, fallback dummy)
+const roadmaps = computed(() => {
+  if (props.availableRoadmaps && props.availableRoadmaps.length > 0) {
+    return props.availableRoadmaps;
+  }
+  return [
+    { id: 1, judul: 'Persiapan Karir Software Engineer', kategori: 'Profesional', totalTask: 40, partisipan: 48, is_enrolled: false },
+    { id: 2, judul: 'Inkubasi Bisnis Hasil Hutan', kategori: 'Bisnis', totalTask: 40, partisipan: 35, is_enrolled: false },
+    { id: 3, judul: 'Jalur Masuk ASN Kehutanan', kategori: 'Birokrasi', totalTask: 40, partisipan: 24, is_enrolled: false },
+    { id: 4, judul: 'Persiapan Studi Lanjut & Publikasi', kategori: 'Akademisi', totalTask: 30, partisipan: 18, is_enrolled: false },
+  ];
+});
 
 // State untuk checkbox yang dipilih
 const selectedIds = ref([]);
@@ -33,14 +41,19 @@ watch(() => props.show, (newVal) => {
   }
 });
 
+// Daftar ID roadmap yang belum di-enroll dan bisa dipilih
+const selectableRoadmaps = computed(() => {
+  return roadmaps.value.filter(item => !item.is_enrolled);
+});
+
 // Logic untuk "Select All" checkbox
 const selectAll = computed({
   get() {
-    return roadmaps.value.length > 0 && selectedIds.value.length === roadmaps.value.length;
+    return selectableRoadmaps.value.length > 0 && selectedIds.value.length === selectableRoadmaps.value.length;
   },
   set(value) {
     if (value) {
-      selectedIds.value = roadmaps.value.map(item => item.id);
+      selectedIds.value = selectableRoadmaps.value.map(item => item.id);
     } else {
       selectedIds.value = [];
     }
@@ -48,9 +61,7 @@ const selectAll = computed({
 });
 
 const handleSubmit = () => {
-  // Mengirimkan array ID yang dipilih ke parent component
   emit('submit', selectedIds.value);
-  
 };
 </script>
 
@@ -116,7 +127,11 @@ const handleSubmit = () => {
                     class="transition-colors hover:bg-gray-50/80 group"
                   >
                     <td class="px-5 py-3 text-center border-b border-gray-100 group-last:border-none">
+                      <span v-if="item.is_enrolled" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Diikuti
+                      </span>
                       <input 
+                        v-else
                         type="checkbox" 
                         :value="item.id" 
                         v-model="selectedIds"

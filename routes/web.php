@@ -17,6 +17,7 @@ use App\Http\Controllers\Dashboard\Admin\HasilAktivitasController as AdminHasilA
 use App\Http\Controllers\Dashboard\Mahasiswa\PengajuanAktivitasController as MahasiswaPengajuanAktivitas;
 use App\Http\Controllers\Dashboard\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Dashboard\Mahasiswa\ListAktivitas as MahasiswaListAktivitas;
+use App\Http\Controllers\Dashboard\Mahasiswa\RoadmapController as MahasiswaRoadmapController;
 
 /* Route Landing dan Website Public*/
 
@@ -145,15 +146,12 @@ Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mah
         return Inertia::render('dashboard/mahasiswa/Dashboard');
     })->name('dashboard');
 
-    Route::get('/roadmap', function () {
-        return Inertia::render('dashboard/mahasiswa/Roadmap');
-    })->name('roadmap');
-
-    Route::get('/roadmap/{id}', function ($id = 1) {
-        return Inertia::render('dashboard/mahasiswa/RoadmapDetail', [
-            'roadmapId' => $id,
-        ]);
-    })->name('roadmap.detail');
+    Route::get('/roadmap', [MahasiswaRoadmapController::class, 'index'])->name('roadmap');
+    Route::post('/roadmap/enroll', [MahasiswaRoadmapController::class, 'enroll'])->name('roadmap.enroll');
+    Route::get('/roadmap/{id}', [MahasiswaRoadmapController::class, 'show'])->name('roadmap.detail');
+    Route::post('/roadmap/materi/{materiId}/toggle', [MahasiswaRoadmapController::class, 'toggleMateri'])->name('roadmap.materi.toggle');
+    Route::post('/roadmap/materi/{materiId}/hasil', [MahasiswaRoadmapController::class, 'storeHasilAktivitas'])->name('roadmap.materi.hasil');
+    Route::delete('/roadmap/hasil/{hasilId}', [MahasiswaRoadmapController::class, 'destroyHasilAktivitas'])->name('roadmap.hasil.destroy');
 
     Route::prefix('aktivitas')->name('aktivitas.')->group(function () {
         // 1. Halaman List (Nampilin Tab Dibuka & Tab Diikuti sekaligus)

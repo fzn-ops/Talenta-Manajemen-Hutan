@@ -94,6 +94,14 @@ class HasilAktivitasService
                 'status' => 'disetujui',
             ]);
 
+            // Sinkronkan ke tabel Pencapaian jika tugas ini terhubung ke materi roadmap
+            if ($hasil->id_user && $hasil->id_materi_roadmap) {
+                \App\Models\Pencapaian::firstOrCreate([
+                    'id_user'           => $hasil->id_user,
+                    'id_materi_roadmap' => $hasil->id_materi_roadmap,
+                ]);
+            }
+
             return $hasil;
         });
     }
@@ -110,6 +118,21 @@ class HasilAktivitasService
                 'status'            => 'ditolak',
                 'catatan_penolakan' => $catatan,
             ]);
+
+            // Jika ditolak, cek apakah masih ada submission lain yang disetujui untuk materi ini
+            if ($hasil->id_user && $hasil->id_materi_roadmap) {
+                $hasOtherApproved = HasilAktivitas::where('id_user', $hasil->id_user)
+                    ->where('id_materi_roadmap', $hasil->id_materi_roadmap)
+                    ->where('id', '!=', $id)
+                    ->where('status', 'disetujui')
+                    ->exists();
+
+                if (!$hasOtherApproved) {
+                    \App\Models\Pencapaian::where('id_user', $hasil->id_user)
+                        ->where('id_materi_roadmap', $hasil->id_materi_roadmap)
+                        ->delete();
+                }
+            }
 
             return $hasil;
         });
@@ -135,7 +158,23 @@ class HasilAktivitasService
                 }
             }
 
+            $userId = $hasil->id_user;
+            $materiId = $hasil->id_materi_roadmap;
+
             $hasil->delete();
+
+            if ($userId && $materiId) {
+                $hasOtherApproved = HasilAktivitas::where('id_user', $userId)
+                    ->where('id_materi_roadmap', $materiId)
+                    ->where('status', 'disetujui')
+                    ->exists();
+
+                if (!$hasOtherApproved) {
+                    \App\Models\Pencapaian::where('id_user', $userId)
+                        ->where('id_materi_roadmap', $materiId)
+                        ->delete();
+                }
+            }
 
             return true;
         });

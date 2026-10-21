@@ -270,35 +270,27 @@ const getCategories = (kategori) => {
 	return String(kategori).split(',').map((s) => s.trim()).filter(Boolean);
 };
 
-const getGambarName = (item) => {
+const getImages = (item) => {
+	if (!item) return [];
 	const images = item.gambar_pengajuan_aktivitas || (item.gambar ? [item.gambar] : []);
-	if (!images || images.length === 0) return item.file || '-';
-	const first = images[0];
-	const rawPath = typeof first === 'object' && first.gambar ? first.gambar : (typeof first === 'string' ? first : (first.name || 'gambar.jpg'));
-	const cleanPath = String(rawPath).split('?')[0];
-	const fileName = cleanPath.split('/').pop() || 'gambar.jpg';
-	return images.length > 1 ? `${fileName} (+${images.length - 1})` : fileName;
+	if (!Array.isArray(images)) return [images].filter(Boolean);
+	return images.filter(Boolean);
 };
 
-const getBuktiPendaftaranName = (item) => {
-	const bukti = item.bukti_pendaftaran || item.file;
-	if (!bukti) return '-';
-	if (typeof bukti === 'object' && bukti.name) return bukti.name;
-	if (typeof bukti === 'string') {
-		const clean = bukti.split('?')[0];
-		return clean.split('/').pop() || 'bukti.jpg';
-	}
-	return 'bukti.jpg';
+const getBuktiPendaftaranList = (item) => {
+	if (!item) return [];
+	const bukti = item.bukti_pendaftaran || item.gambar || item.file;
+	if (!bukti) return [];
+	if (Array.isArray(bukti)) return bukti.filter(Boolean);
+	return [bukti];
 };
 
-const getMediaName = (val) => {
-	if (!val) return '-';
-	if (typeof val === 'object' && val.name) return val.name;
-	if (typeof val === 'string') {
-		const clean = val.split('?')[0];
-		return clean.split('/').pop() || 'media.jpg';
-	}
-	return 'media.jpg';
+const getHasilBuktiList = (item) => {
+	if (!item) return [];
+	const bukti = item.bukti || item.gambar || item.media || item.file;
+	if (!bukti) return [];
+	if (Array.isArray(bukti)) return bukti.filter(Boolean);
+	return [bukti];
 };
 
 const getImageSrc = (val) => {
@@ -318,27 +310,103 @@ const getImageSrc = (val) => {
 
 const showImageModal = ref(false);
 const selectedImage = ref('');
+const activeImageList = ref([]);
+const activeImageIndex = ref(0);
+const activeImageType = ref('Gambar');
 
-const openImage = (itemOrVal) => {
-	if (!itemOrVal) return;
-	if (typeof itemOrVal === 'object' && itemOrVal.gambar_pengajuan_aktivitas) {
-		const images = itemOrVal.gambar_pengajuan_aktivitas;
-		if (images.length === 0) return;
-		selectedImage.value = getImageSrc(images[0]);
-	} else if (typeof itemOrVal === 'object' && itemOrVal.bukti_pendaftaran) {
-		selectedImage.value = getImageSrc(itemOrVal.bukti_pendaftaran);
-	} else if (typeof itemOrVal === 'object' && (itemOrVal.gambar || itemOrVal.media)) {
-		selectedImage.value = getImageSrc(itemOrVal.gambar || itemOrVal.media);
+const openImage = (target, type = 'Gambar', index = 0) => {
+	if (!target) return;
+	activeImageType.value = type === 'BuktiRegistrasi' || type === 'Hasil' ? 'Bukti' : 'Gambar';
+	let list = [];
+	if (type === 'Gambar') {
+		list = getImages(target);
+	} else if (type === 'BuktiRegistrasi') {
+		list = getBuktiPendaftaranList(target);
+	} else if (type === 'Hasil') {
+		list = getHasilBuktiList(target);
 	} else {
-		selectedImage.value = getImageSrc(itemOrVal);
+		list = getImages(target);
 	}
+
+	if (list.length > 0) {
+		activeImageList.value = list;
+		activeImageIndex.value = index >= 0 && index < list.length ? index : 0;
+		selectedImage.value = getImageSrc(list[activeImageIndex.value]);
+		showImageModal.value = true;
+		return;
+	}
+	selectedImage.value = getImageSrc(target);
+	activeImageList.value = [target];
+	activeImageIndex.value = 0;
 	showImageModal.value = true;
+};
+
+const prevImage = () => {
+	if (activeImageList.value.length <= 1) return;
+	activeImageIndex.value = (activeImageIndex.value - 1 + activeImageList.value.length) % activeImageList.value.length;
+	selectedImage.value = getImageSrc(activeImageList.value[activeImageIndex.value]);
+};
+
+const nextImage = () => {
+	if (activeImageList.value.length <= 1) return;
+	activeImageIndex.value = (activeImageIndex.value + 1) % activeImageList.value.length;
+	selectedImage.value = getImageSrc(activeImageList.value[activeImageIndex.value]);
+};
+
+// Touch swipe support on modal (mobile)
+const modalTouchStartX = ref(0);
+const modalTouchEndX = ref(0);
+
+const handleModalTouchStart = (e) => {
+	if (!e.changedTouches || e.changedTouches.length === 0) return;
+	modalTouchStartX.value = e.changedTouches[0].clientX;
+};
+
+const handleModalTouchEnd = (e) => {
+	if (!e.changedTouches || e.changedTouches.length === 0) return;
+	modalTouchEndX.value = e.changedTouches[0].clientX;
+	const diff = modalTouchEndX.value - modalTouchStartX.value;
+	if (Math.abs(diff) > 40 && activeImageList.value.length > 1) {
+		if (diff > 0) {
+			prevImage();
+		} else {
+			nextImage();
+		}
+	}
 };
 
 const onImageError = (e) => {
 	const seed = String(selectedImage.value || 'talenta').replace(/[^a-zA-Z0-9]/g, '');
 	e.target.src = `https://picsum.photos/seed/${seed || 'talenta'}/800/600`;
 };
+
+// Hover state for navigation arrows & indicator on desktop
+const isHoveringNav = ref(false);
+
+// Keyboard navigation (Esc to close, Arrow keys to slide)
+const handleModalKeyDown = (e) => {
+	if (!showImageModal.value) return;
+	if (e.key === 'Escape') {
+		showImageModal.value = false;
+	} else if (e.key === 'ArrowLeft') {
+		prevImage();
+	} else if (e.key === 'ArrowRight') {
+		nextImage();
+	}
+};
+
+watch(showImageModal, (isOpen) => {
+	if (isOpen) {
+		window.addEventListener('keydown', handleModalKeyDown);
+	} else {
+		window.removeEventListener('keydown', handleModalKeyDown);
+		isHoveringNav.value = false;
+	}
+});
+
+onUnmounted(() => {
+	window.removeEventListener('keydown', handleModalKeyDown);
+});
 
 // ==============================
 // ==============================
@@ -351,6 +419,34 @@ const isLoadingTable3 = ref(false);
 const isTable1Loading = computed(() => isLoadingTable1.value || (isActionLoading.value && approveType.value === 'pengajuan') || (isActionLoading.value && rejectType.value === 'pengajuan'));
 const isTable2Loading = computed(() => isLoadingTable2.value || (isActionLoading.value && approveType.value === 'pendaftaran') || (isActionLoading.value && rejectType.value === 'pendaftaran'));
 const isTable3Loading = computed(() => isLoadingTable3.value || (isActionLoading.value && approveType.value === 'hasil') || (isActionLoading.value && rejectType.value === 'hasil'));
+
+// Table Columns Definitions
+const columnsPengajuan = [
+	{ key: 'judul', label: 'Judul', sortable: true, width: 'w-[28%] min-w-[220px]' },
+	{ key: 'kategori', label: 'Kategori', sortable: false, width: 'w-[24%] min-w-[210px]' },
+	{ key: 'deadline', label: 'Deadline', sortable: true, width: 'w-[16%] min-w-[140px]' },
+	{ key: 'gambar', label: 'Gambar', sortable: false, width: 'w-[14%] min-w-[120px]' },
+	{ key: 'status', label: 'Status', sortable: false, width: 'w-[18%] min-w-[130px]' },
+	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[170px] min-w-[170px] max-w-[170px]' },
+];
+
+const columnsPendaftaran = [
+	{ key: 'nama_tim', label: 'Nama Tim', sortable: true, width: 'w-[24%] min-w-[180px]' },
+	{ key: 'peserta', label: 'Nama Peserta', sortable: true, width: 'w-[36%] min-w-[240px]' },
+	{ key: 'bukti', label: 'Bukti Registrasi', sortable: false, width: 'w-[21%] min-w-[160px]' },
+	{ key: 'status', label: 'Status', sortable: false, width: 'w-[19%] min-w-[130px]' },
+	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[170px] min-w-[170px] max-w-[170px]' },
+];
+
+const columnsHasil = [
+	{ key: 'nama_mahasiswa', label: 'Nama Mahasiswa', sortable: true, width: 'w-[21%] min-w-[170px]' },
+	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[13%] min-w-[110px]' },
+	{ key: 'nama_kegiatan', label: 'Nama Kegiatan', sortable: true, width: 'w-[25%] min-w-[200px]' },
+	{ key: 'jenis_roadmap', label: 'Jenis Roadmap', sortable: false, width: 'w-[16%] min-w-[140px]' },
+	{ key: 'bukti', label: 'Bukti', sortable: false, width: 'w-[12%] min-w-[110px]' },
+	{ key: 'status', label: 'Status', sortable: false, width: 'w-[13%] min-w-[120px]' },
+	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[170px] min-w-[170px] max-w-[170px]' },
+];
 
 // Tabel 1: Pengajuan Aktivitas
 const sortKey1 = ref('id');
@@ -885,7 +981,7 @@ const executeDelete = () => {
 						<thead class="bg-[#416f65]">
 							<tr class="h-[48px]">
 								<!-- Kolom No -->
-								<th class="w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
+								<th class="w-[60px] min-w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
 									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
 										<span>No</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -895,55 +991,44 @@ const executeDelete = () => {
 									</button>
 								</th>
 
-								<!-- Kolom Judul -->
-								<th class="px-3 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('judul')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Judul">
-										<span>Judul</span>
+								<th
+									v-for="col in columnsPengajuan"
+									:key="col.key"
+									:class="[
+										col.width,
+										'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 last:border-r-0 lg:border-r-0 last:rounded-tr-[12px]'
+									]"
+								>
+									<button
+										v-if="col.sortable"
+										type="button"
+										:disabled="isTable1Loading"
+										@click="toggleSort1(col.key)"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85"
+										:title="`Urutkan ${col.label}`"
+									>
+										<span>{{ col.label }}</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey1 === 'judul'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection1 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+											<svg
+												v-if="sortKey1 === col.key"
+												:class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection1 === 'desc' ? 'rotate-180' : '']"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+											</svg>
+											<svg
+												v-else
+												class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+											</svg>
 										</span>
 									</button>
+									<span v-else class="whitespace-nowrap">{{ col.label }}</span>
 								</th>
-
-								<!-- Kolom Kategori -->
-								<th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('kategori')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Kategori">
-										<span>Kategori</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey1 === 'kategori'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection1 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Deadline -->
-								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('deadline')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Deadline">
-										<span>Deadline</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey1 === 'deadline'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection1 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Gambar -->
-								<th class="w-[120px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Gambar</th>
-
-								<!-- Kolom Status -->
-								<th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable1Loading" @click="toggleSort1('status')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Status">
-										<span>Status</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey1 === 'status'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection1 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Aksi -->
-								<th class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
 							</tr>
 						</thead>
 						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable1Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
@@ -994,16 +1079,17 @@ const executeDelete = () => {
 								</td>
 								<td class="whitespace-nowrap px-3 py-2.5 text-center">{{ formatDate(item.deadline) }}</td>
 								<td class="px-3 py-2.5 text-center">
+									<span v-if="getImages(item).length === 0" class="text-gray-400 text-xs italic">-</span>
 									<button
-										v-if="item.gambar_pengajuan_aktivitas?.length || item.gambar || item.file"
+										v-else
 										type="button"
-										class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle"
-										:title="getGambarName(item)"
-										@click="openImage(item)"
+										class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer inline-flex items-center justify-center gap-1 align-middle whitespace-nowrap"
+										:title="getImages(item).length > 1 ? `Lihat ${getImages(item).length} Gambar` : 'Lihat Gambar'"
+										@click="openImage(item, 'Gambar')"
 									>
-										{{ getGambarName(item) }}
+										<span>Gambar</span>
+										<span v-if="getImages(item).length > 1" class="text-xs font-semibold text-[#3b82f6]">({{ getImages(item).length }})</span>
 									</button>
-									<span v-else class="text-gray-400">-</span>
 								</td>
 								<td class="px-3 py-2.5 text-center">
 									<div class="flex flex-col items-center justify-center gap-1">
@@ -1075,7 +1161,7 @@ const executeDelete = () => {
 						<thead class="bg-[#416f65]">
 							<tr class="h-[48px]">
 								<!-- Kolom No -->
-								<th class="w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
+								<th class="w-[60px] min-w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
 									<button type="button" :disabled="isTable2Loading" @click="toggleSort2('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
 										<span>No</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1085,44 +1171,44 @@ const executeDelete = () => {
 									</button>
 								</th>
 
-								<!-- Kolom Nama Tim -->
-								<th class="w-[220px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable2Loading" @click="toggleSort2('nama_tim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Tim">
-										<span>Nama Tim</span>
+								<th
+									v-for="col in columnsPendaftaran"
+									:key="col.key"
+									:class="[
+										col.width,
+										'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 last:border-r-0 lg:border-r-0 last:rounded-tr-[12px]'
+									]"
+								>
+									<button
+										v-if="col.sortable"
+										type="button"
+										:disabled="isTable2Loading"
+										@click="toggleSort2(col.key)"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85"
+										:title="`Urutkan ${col.label}`"
+									>
+										<span>{{ col.label }}</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey2 === 'nama_tim'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection2 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+											<svg
+												v-if="sortKey2 === col.key"
+												:class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection2 === 'desc' ? 'rotate-180' : '']"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+											</svg>
+											<svg
+												v-else
+												class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+											</svg>
 										</span>
 									</button>
+									<span v-else class="whitespace-nowrap">{{ col.label }}</span>
 								</th>
-
-								<!-- Kolom Nama Peserta -->
-								<th class="px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable2Loading" @click="toggleSort2('peserta')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Peserta">
-										<span>Nama Peserta</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey2 === 'peserta'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection2 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Bukti -->
-								<th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti Registrasi</th>
-
-								<!-- Kolom Status -->
-								<th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable2Loading" @click="toggleSort2('status')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Status">
-										<span>Status</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey2 === 'status'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection2 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Aksi -->
-								<th class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
 							</tr>
 						</thead>
 						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable2Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
@@ -1137,16 +1223,17 @@ const executeDelete = () => {
 									{{ Array.isArray(item.peserta) ? item.peserta.map(p => p.nama).join(', ') : (item.namaPeserta || '-') }}
 								</td>
 								<td class="px-3 py-2.5 text-center">
+									<span v-if="getBuktiPendaftaranList(item).length === 0" class="text-gray-400 text-xs italic">-</span>
 									<button
-										v-if="item.bukti_pendaftaran || item.file"
+										v-else
 										type="button"
-										class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle"
-										:title="getBuktiPendaftaranName(item)"
-										@click="openImage(item)"
+										class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer inline-flex items-center justify-center gap-1 align-middle whitespace-nowrap"
+										:title="getBuktiPendaftaranList(item).length > 1 ? `Lihat ${getBuktiPendaftaranList(item).length} Bukti` : 'Lihat Bukti'"
+										@click="openImage(item, 'BuktiRegistrasi')"
 									>
-										{{ getBuktiPendaftaranName(item) }}
+										<span>Bukti</span>
+										<span v-if="getBuktiPendaftaranList(item).length > 1" class="text-xs font-semibold text-[#3b82f6]">({{ getBuktiPendaftaranList(item).length }})</span>
 									</button>
-									<span v-else class="text-gray-400">-</span>
 								</td>
 								<td class="px-3 py-2.5 text-center">
 									<div class="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
@@ -1208,7 +1295,7 @@ const executeDelete = () => {
 						<thead class="bg-[#416f65]">
 							<tr class="h-[48px]">
 								<!-- Kolom No -->
-								<th class="w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
+								<th class="w-[60px] min-w-[60px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0 rounded-tl-[12px]">
 									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('id')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan No">
 										<span>No</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
@@ -1218,66 +1305,44 @@ const executeDelete = () => {
 									</button>
 								</th>
 
-								<!-- Kolom Nama Mahasiswa -->
-								<th class="w-[180px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('nama_mahasiswa')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Mahasiswa">
-										<span>Nama Mahasiswa</span>
+								<th
+									v-for="col in columnsHasil"
+									:key="col.key"
+									:class="[
+										col.width,
+										'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 last:border-r-0 lg:border-r-0 last:rounded-tr-[12px]'
+									]"
+								>
+									<button
+										v-if="col.sortable"
+										type="button"
+										:disabled="isTable3Loading"
+										@click="toggleSort3(col.key)"
+										class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85"
+										:title="`Urutkan ${col.label}`"
+									>
+										<span>{{ col.label }}</span>
 										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey3 === 'nama_mahasiswa'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+											<svg
+												v-if="sortKey3 === col.key"
+												:class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+											</svg>
+											<svg
+												v-else
+												class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+											</svg>
 										</span>
 									</button>
+									<span v-else class="whitespace-nowrap">{{ col.label }}</span>
 								</th>
-
-								<!-- Kolom NIM -->
-								<th class="w-[110px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('nim')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan NIM">
-										<span>NIM</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey3 === 'nim'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Nama Kegiatan -->
-								<th class="px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('nama_kegiatan')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Nama Kegiatan">
-										<span>Nama Kegiatan</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey3 === 'nama_kegiatan'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Jenis Roadmap -->
-								<th class="w-[140px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('jenis_roadmap')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Jenis Roadmap">
-										<span>Jenis Roadmap</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey3 === 'jenis_roadmap'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Bukti -->
-								<th class="w-[110px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Bukti</th>
-
-								<!-- Kolom Status -->
-								<th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-									<button type="button" :disabled="isTable3Loading" @click="toggleSort3('status')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Status">
-										<span>Status</span>
-										<span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-											<svg v-if="sortKey3 === 'status'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection3 === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-											<svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-										</span>
-									</button>
-								</th>
-
-								<!-- Kolom Aksi -->
-								<th class="w-[170px] min-w-[170px] max-w-[170px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
 							</tr>
 						</thead>
 						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable3Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
@@ -1303,16 +1368,17 @@ const executeDelete = () => {
 									</span>
 								</td>
 								<td class="px-3 py-2.5 text-center">
+									<span v-if="getHasilBuktiList(item).length === 0" class="text-gray-400 text-xs italic">-</span>
 									<button
-										v-if="item.gambar || item.media || item.file"
+										v-else
 										type="button"
-										class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[100px] inline-block align-middle"
-										:title="getMediaName(item.gambar || item.media || item.file)"
-										@click="openImage(item)"
+										class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer inline-flex items-center justify-center gap-1 align-middle whitespace-nowrap"
+										:title="getHasilBuktiList(item).length > 1 ? `Lihat ${getHasilBuktiList(item).length} Bukti` : 'Lihat Bukti'"
+										@click="openImage(item, 'Hasil')"
 									>
-										{{ getMediaName(item.gambar || item.media || item.file) }}
+										<span>Bukti</span>
+										<span v-if="getHasilBuktiList(item).length > 1" class="text-xs font-semibold text-[#3b82f6]">({{ getHasilBuktiList(item).length }})</span>
 									</button>
-									<span v-else class="text-gray-400">-</span>
 								</td>
 								<td class="px-3 py-2.5 text-center">
 									<div class="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border"
@@ -1455,13 +1521,18 @@ const executeDelete = () => {
 					>
 						<div
 							v-if="showImageModal"
-							class="relative flex items-center justify-center bg-transparent"
+							class="relative flex flex-col items-center justify-center bg-transparent max-w-full max-h-full touch-pan-y select-none"
 							@click.stop
+							@touchstart="handleModalTouchStart"
+							@touchend="handleModalTouchEnd"
+							@mouseenter="isHoveringNav = true"
+							@mouseleave="isHoveringNav = false"
 						>
+							<!-- Close button -->
 							<button
 								type="button"
 								@click="showImageModal = false"
-								class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
+								class="absolute top-3.5 right-3.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
 								title="Tutup Preview"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -1469,12 +1540,67 @@ const executeDelete = () => {
 								</svg>
 							</button>
 
+							<!-- Prev button (slide in from left on image hover) -->
+							<button
+								v-if="activeImageList.length > 1"
+								type="button"
+								@click="prevImage"
+								:class="[
+									'absolute left-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
+									isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-6 pointer-events-none'
+								]"
+								:title="activeImageType + ' Sebelumnya'"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+								</svg>
+							</button>
+
+							<!-- Next button (slide in from right on image hover) -->
+							<button
+								v-if="activeImageList.length > 1"
+								type="button"
+								@click="nextImage"
+								:class="[
+									'absolute right-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
+									isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-6 pointer-events-none'
+								]"
+								:title="activeImageType + ' Berikutnya'"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+								</svg>
+							</button>
+
+							<!-- Image -->
 							<img
 								:src="selectedImage"
 								alt="Zoomed Preview"
 								@error="onImageError"
 								class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
 							/>
+
+							<!-- Bottom Indicator (slide in from bottom on image hover on PC; always visible on mobile) -->
+							<div
+								v-if="activeImageList.length > 1"
+								:class="[
+									'absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-3.5 py-1.5 backdrop-blur-sm text-xs font-medium text-white shadow-lg transition-all duration-300 ease-out',
+									isHoveringNav ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-100 sm:opacity-0 sm:translate-y-6 sm:pointer-events-none'
+								]"
+							>
+								<span>{{ activeImageType }} {{ activeImageIndex + 1 }} dari {{ activeImageList.length }}</span>
+								<div class="flex items-center gap-1.5 ml-1">
+									<button
+										v-for="(_, dotIdx) in activeImageList"
+										:key="dotIdx"
+										type="button"
+										@click="activeImageIndex = dotIdx; selectedImage = getImageSrc(activeImageList[dotIdx])"
+										class="h-2 rounded-full transition-all cursor-pointer"
+										:class="activeImageIndex === dotIdx ? 'w-4 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'"
+										:title="'Buka ' + activeImageType + ' ' + (dotIdx + 1)"
+									/>
+								</div>
+							</div>
 						</div>
 					</Transition>
 				</div>

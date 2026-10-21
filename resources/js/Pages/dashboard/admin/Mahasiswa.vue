@@ -291,9 +291,9 @@ const columns = [
 	{ key: 'nim', label: 'NIM', sortable: true, width: 'w-[130px]' },
 	{ key: 'name', label: 'Nama Mahasiswa', sortable: true, width: 'w-[190px]' },
 	{ key: 'angkatan', label: 'Angkatan', sortable: true, width: 'w-[100px]' },
-	{ key: 'talent_mapping', label: 'Talent Mapping', sortable: true, width: 'w-[150px]' },
-	{ key: 'email', label: 'Email', sortable: true, width: 'w-[180px]' },
-	{ key: 'phone', label: 'Nomor Handphone', sortable: true, width: 'w-[150px]' },
+	{ key: 'talent_mapping', label: 'Talent Mapping', sortable: false, width: 'w-[150px]' },
+	{ key: 'email', label: 'Email', sortable: false, width: 'w-[180px]' },
+	{ key: 'phone', label: 'Nomor Handphone', sortable: false, width: 'w-[150px]' },
 	{ key: 'action', label: 'Aksi', sortable: false, width: 'w-[90px]' },
 ];
 

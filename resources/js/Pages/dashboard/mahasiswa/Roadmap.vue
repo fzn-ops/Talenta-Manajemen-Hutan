@@ -10,68 +10,11 @@ import AddActivityModal from '@/Components/dashboard/mahasiswa/AddActivityModal.
 const props = defineProps({
 	roadmaps: {
 		type: Array,
-		default: () => [
-			{
-				id: 1,
-				title: 'Persiapan Karir Software Engineer & Fullstack Developer',
-				category: 'Profesional',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-				updated_at: '19/10/2026',
-			},
-			{
-				id: 2,
-				title: 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
-				category: 'Bisnis',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-				updated_at: '18/10/2026',
-			},
-			{
-				id: 3,
-				title: 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
-				category: 'Birokrasi',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-				updated_at: '15/10/2026',
-			},
-			{
-				id: 4,
-				title: 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
-				category: 'Akademisi',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
-				task_count: 30,
-				completed_tasks: 15,
-				thumbnail: '',
-				updated_at: '12/10/2026',
-			},
-			{
-				id: 5,
-				title: 'Sertifikasi Konsultan Lingkungan & AMDAL Profesional',
-				category: 'Profesional',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
-				task_count: 24,
-				completed_tasks: 8,
-				thumbnail: '',
-				updated_at: '10/10/2026',
-			},
-			{
-				id: 6,
-				title: 'Pengembangan Usaha Ekowisata & Agroforestry Berkelanjutan',
-				category: 'Bisnis',
-				categories_label: 'Profesional | Bisnis | Birokrat | Akademisi',
-				task_count: 35,
-				completed_tasks: 20,
-				thumbnail: '',
-				updated_at: '08/10/2026',
-			},
-		],
+		default: () => [],
+	},
+	availableRoadmaps: {
+		type: Array,
+		default: () => [],
 	},
 });
 
@@ -122,12 +65,34 @@ const initRoadmapsData = () => {
 		title: item.title || item.namaRoadmap || item.name || '',
 		category: item.category || item.kategori || 'Profesional',
 		categories_label: item.categories_label || 'Profesional | Bisnis | Birokrat | Akademisi',
-		task_count: item.task_count || item.taskCount || item.tasks || 40,
-		completed_tasks: item.completed_tasks ?? item.completedCount ?? 10,
+		task_count: item.task_count || item.taskCount || item.tasks || 1,
+		completed_tasks: item.completed_tasks ?? item.completedCount ?? 0,
 		thumbnail: item.thumbnail || item.gambar || '',
 		updated_at: item.updated_at || item.diperbarui || '19/10/2026',
 	}));
 };
+
+onMounted(() => {
+	// Auto-reload data when mounting (e.g. returning from RoadmapDetail)
+	router.reload({ only: ['roadmaps', 'availableRoadmaps'] });
+
+	const handleWindowRestore = (event) => {
+		if (event.persisted) {
+			router.reload({ only: ['roadmaps', 'availableRoadmaps'] });
+		}
+	};
+	const handlePopState = () => {
+		router.reload({ only: ['roadmaps', 'availableRoadmaps'] });
+	};
+
+	window.addEventListener('pageshow', handleWindowRestore);
+	window.addEventListener('popstate', handlePopState);
+
+	onBeforeUnmount(() => {
+		window.removeEventListener('pageshow', handleWindowRestore);
+		window.removeEventListener('popstate', handlePopState);
+	});
+});
 
 watch(
 	() => props.roadmaps,
@@ -351,23 +316,20 @@ const openTambah = () => {
 
 
 const handleModalSubmit = (selectedIds) => {
-/* 	console.log('Selected Roadmap IDs:', selectedIds);
-	isModalOpen.value = false;
-	console.log('Data yang mau ditambah:', dataDariModal); */
+	if (!selectedIds || selectedIds.length === 0) return;
 
-    // 2. TUTUP MODALNYA
-    isModalOpen.value = false;
-    
-	toast.value = {
-        show: true,
-        type: 'success',
-        title: 'Roadmap berhasil ditambahkan',
-        message: 'Roadmap berhasil ditambahkan ke daftar Anda.',
-    };
-
-	setTimeout(() => {
-        toast.value.show = false;
-    }, 3000);
+	router.post('/mahasiswa/roadmap/enroll', {
+		roadmap_ids: selectedIds,
+	}, {
+		preserveScroll: true,
+		onSuccess: () => {
+			isModalOpen.value = false;
+			showToast('success', 'Berhasil', 'Roadmap berhasil ditambahkan ke daftar Anda.');
+		},
+		onError: (err) => {
+			showToast('error', 'Gagal', 'Terjadi kesalahan saat menambahkan roadmap.');
+		}
+	});
 };
 
 </script>
@@ -501,8 +463,9 @@ const handleModalSubmit = (selectedIds) => {
 								<div class="h-[175px] sm:h-[190px] w-full rounded-[10px] bg-slate-200"></div>
 								<!-- Progress Bar Skeleton -->
 								<div class="mt-4 flex items-center justify-between gap-3">
-									<div class="h-4 w-20 rounded bg-slate-200"></div>
+									<div class="h-4 w-16 rounded bg-slate-200"></div>
 									<div class="h-2 flex-1 rounded-full bg-slate-200"></div>
+									<div class="h-4 w-8 rounded bg-slate-200"></div>
 								</div>
 								<!-- Title Skeleton -->
 								<div class="mt-3 space-y-2">
@@ -569,19 +532,22 @@ const handleModalSubmit = (selectedIds) => {
 									</div>
 								</div>
 
-								<!-- Progress Bar Row (As in Mockup) -->
+								<!-- Progress Bar Row (As in Detail Roadmap) -->
 								<div class="mt-4 flex items-center justify-between gap-3">
 									<span class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#475569] shrink-0">
-										{{ item.completed_tasks ?? 0 }}/{{ item.task_count || 40 }} Task
+										{{ item.completed_tasks ?? 0 }}/{{ item.task_count || 1 }} Task
 									</span>
 									<div class="h-2 flex-1 rounded-full bg-[#e2e8f0] overflow-hidden">
 										<div
-											class="h-full rounded-full bg-[#183669] transition-all duration-300"
+											class="h-full rounded-full bg-[#416f65] transition-all duration-300"
 											:style="{
-												width: `${Math.min(100, Math.round(((item.completed_tasks ?? 0) / (item.task_count || 40)) * 100))}%`
+												width: `${Math.min(100, Math.round(((item.completed_tasks ?? 0) / (item.task_count || 1)) * 100))}%`
 											}"
 										></div>
 									</div>
+									<span class="font-inter text-[12px] sm:text-[13px] font-bold text-[#183669] shrink-0">
+										{{ Math.min(100, Math.round(((item.completed_tasks ?? 0) / (item.task_count || 1)) * 100)) }}%
+									</span>
 								</div>
 
 								<!-- Roadmap Title -->
@@ -656,6 +622,7 @@ const handleModalSubmit = (selectedIds) => {
 		<!-- Add Activity Modal -->
 		<AddActivityModal
 			v-model:show="isModalOpen"
+			:available-roadmaps="props.availableRoadmaps"
 			:selected-data="selectedData"
 			@close="isModalOpen = false"
 			@submit="handleModalSubmit"

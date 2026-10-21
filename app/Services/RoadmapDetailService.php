@@ -5,6 +5,10 @@ namespace App\Services;
 use App\Models\Roadmap;
 use App\Models\BulanRoadmap;
 use App\Models\MateriRoadmap;
+use App\Models\Pencapaian;
+use App\Models\HasilAktivitas;
+use App\Models\PendaftaranAktivitas;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -332,5 +336,326 @@ class RoadmapDetailService
         }
 
         $materi->delete();
+    }
+
+    // =========================================================================
+    // MAHASISWA SERVICES: DETAIL, PENCAPAIAN, HASIL AKTIVITAS, & FILTER KEGIATAN
+    // =========================================================================
+
+    /**
+     * Ambil detail roadmap untuk mahasiswa beserta status penyelesaian materi,
+     * submission tugas, progress counter, dan daftar aktivitas yang eligible untuk tugas.
+     */
+    public function getMahasiswaRoadmapDetail(int $roadmapId, int $userId): array
+    {
+        $roadmap = Roadmap::with([
+            'bulanRoadmap' => function ($query) {
+                $query->orderBy('bulan_ke', 'asc');
+            },
+            'bulanRoadmap.materiRoadmap' => function ($query) {
+                $query->orderBy('id', 'asc');
+            }
+        ])->findOrFail($roadmapId);
+
+        // Kumpulkan semua ID materi dari seluruh bulan pada roadmap ini
+        $allMateriIds = $roadmap->bulanRoadmap->flatMap(function ($bulan) {
+            return $bulan->materiRoadmap->pluck('id');
+        })->all();
+
+        // 1. Auto-sinkron tugas yang telah disetujui (HasilAktivitas status = disetujui) ke tabel Pencapaian
+        $approvedTaskIds = HasilAktivitas::where('id_user', $userId)
+            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->where(DB::raw('LOWER(status)'), 'disetujui')
+            ->pluck('id_materi_roadmap')
+            ->unique()
+            ->all();
+
+        foreach ($approvedTaskIds as $tId) {
+            Pencapaian::firstOrCreate([
+                'id_user'           => $userId,
+                'id_materi_roadmap' => $tId,
+            ]);
+        }
+
+        // 2. Ambil semua ID materi yang telah diselesaikan user (Pencapaian)
+        $completedMateriIds = Pencapaian::where('id_user', $userId)
+            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->pluck('id_materi_roadmap')
+            ->toArray();
+        $completedSet = array_flip($completedMateriIds);
+
+        // 3. Ambil semua submission hasil aktivitas user untuk materi-materi tugas pada roadmap ini
+        $userHasilList = HasilAktivitas::where('id_user', $userId)
+            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->with(['pendaftaranAktivitas.activity.gambarAktivitas'])
+            ->orderBy('id', 'desc')
+            ->get()
+            ->groupBy('id_materi_roadmap');
+
+        $formattedRoadmap = [
+            'id'           => $roadmap->id,
+            'category'     => ucfirst($roadmap->kategori ?? 'Umum'),
+            'kategori'     => $roadmap->kategori,
+            'title'        => $roadmap->nama_roadmap,
+            'nama_roadmap' => $roadmap->nama_roadmap,
+            'subTitle'     => 'Yuk Pelajari Roadmap Yang Telah Kamu Ikuti!',
+            'partisipan'   => $roadmap->partisipan ?? 0,
+            'gambar'       => $roadmap->gambar ? (str_starts_with($roadmap->gambar, 'http') ? $roadmap->gambar : '/storage/' . ltrim($roadmap->gambar, '/')) : '',
+        ];
+
+        $formattedMonths = $roadmap->bulanRoadmap->values()->map(function ($bulan, $idx) use ($completedSet, $userHasilList) {
+            return [
+                'id'       => $bulan->id,
+                'name'     => 'Bulan ' . ($idx + 1),
+                'bulan_ke' => $bulan->bulan_ke,
+                'items'    => $bulan->materiRoadmap->values()->map(function ($materi) use ($completedSet, $userHasilList) {
+                    $isCompleted = isset($completedSet[$materi->id]);
+                    $isTask = !$materi->tipe; // 0 = Tugas, 1 = Materi
+
+                    // Format submission activities untuk Tugas
+                    $activities = [];
+                    $taskStatus = 'belum';
+
+                    if ($isTask) {
+                        $materiHasil = $userHasilList->get($materi->id, collect());
+
+                        // Cek status keseluruhan tugas dari submission yang ada
+                        $hasApproved = $materiHasil->contains(fn($h) => strtolower($h->status) === 'disetujui');
+                        $hasPending  = $materiHasil->contains(fn($h) => strtolower($h->status) === 'menunggu');
+                        $hasRejected = $materiHasil->contains(fn($h) => strtolower($h->status) === 'ditolak');
+
+                        if ($hasApproved || $isCompleted) {
+                            $taskStatus = 'diterima';
+                        } elseif ($hasPending) {
+                            $taskStatus = 'menunggu';
+                        } elseif ($hasRejected) {
+                            $taskStatus = 'ditolak';
+                        }
+
+                        $activities = $materiHasil->map(function ($h) {
+                            $activityTitle = $h->pendaftaranAktivitas?->activity?->judul ?? 'Aktivitas yang Diikuti';
+                            $mediaUrl = $h->media ? (str_starts_with($h->media, 'http') ? $h->media : '/storage/' . ltrim($h->media, '/')) : '';
+                            $fileName = $h->media ? basename($h->media) : '';
+
+                            return [
+                                'id'                       => $h->id,
+                                'id_hasil'                 => $h->id,
+                                'id_pendaftaran_aktivitas' => $h->id_pendaftaran_aktivitas,
+                                'judul_kegiatan'           => $activityTitle,
+                                'notes'                    => $h->deskripsi ?? '',
+                                'fileName'                 => $fileName,
+                                'mediaUrl'                 => $mediaUrl,
+                                'status'                   => strtolower($h->status),
+                                'catatan_penolakan'        => $h->catatan_penolakan ?? '',
+                                'isSubmitted'              => true,
+                                'expanded'                 => true,
+                            ];
+                        })->values()->all();
+                    }
+
+                    return [
+                        'id'             => $materi->id,
+                        'type'           => $materi->tipe ? 'Materi' : 'Tugas',
+                        'topik'          => $materi->topik,
+                        'judul'          => $materi->judul,
+                        'title'          => $materi->topik,
+                        'topic'          => $materi->judul,
+                        'description'    => $materi->deskripsi ?? '',
+                        'cards'          => $materi->kartu_konten ?? [],
+                        'maksimal_tugas' => $materi->maksimal_tugas ?? 0,
+                        'isCompleted'    => $isCompleted,
+                        'status'         => $taskStatus,
+                        'activities'     => $activities,
+                    ];
+                })->all(),
+            ];
+        })->all();
+
+        // 3. Ambil daftar aktivitas yang telah diikuti mahasiswa yang lolos filter tag kategori roadmap
+        $eligibleActivities = $this->getEligibleActivitiesForRoadmap($userId, $roadmap->kategori);
+
+        $totalTasks = count($allMateriIds);
+        $completedTasks = count($completedMateriIds);
+
+        return [
+            'roadmap'            => $formattedRoadmap,
+            'months'             => $formattedMonths,
+            'completedTasks'     => $completedTasks,
+            'totalTasks'         => $totalTasks > 0 ? $totalTasks : 1,
+            'eligibleActivities' => $eligibleActivities,
+        ];
+    }
+
+    /**
+     * Dapatkan daftar kegiatan yang pernah diikuti mahasiswa dan memiliki tag kategori
+     * yang cocok dengan kategori roadmap saat ini.
+     */
+    public function getEligibleActivitiesForRoadmap(int $userId, ?string $roadmapCategory): array
+    {
+        $pendaftaranList = PendaftaranAktivitas::with(['activity.gambarAktivitas'])
+            ->whereHas('peserta', function ($q) use ($userId) {
+                $q->where('users.id', $userId);
+            })
+            ->where(DB::raw('LOWER(status)'), 'disetujui')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $eligible = [];
+        $roadmapCat = $roadmapCategory ?? '';
+
+        foreach ($pendaftaranList as $pendaftaran) {
+            $activity = $pendaftaran->activity;
+            if (!$activity) continue;
+
+            // Periksa apakah tag kategori aktivitas memiliki salah satu yang cocok dengan roadmap
+            if ($this->isCategoryMatched($roadmapCat, $activity->kategori)) {
+                $firstGambar = $activity->gambarAktivitas->first()?->gambar;
+                $gambarUrl = $firstGambar ? (str_starts_with($firstGambar, 'http') ? $firstGambar : '/storage/' . ltrim($firstGambar, '/')) : '';
+
+                $eligible[] = [
+                    'id'                       => $pendaftaran->id,
+                    'id_pendaftaran_aktivitas' => $pendaftaran->id,
+                    'id_aktivitas'             => $activity->id,
+                    'judul'                    => $activity->judul,
+                    'kategori'                 => is_array($activity->kategori) ? $activity->kategori : [$activity->kategori],
+                    'nama_tim'                 => $pendaftaran->nama_tim,
+                    'deadline'                 => $activity->deadline ? date('d/m/Y', strtotime($activity->deadline)) : '-',
+                    'status_pendaftaran'       => $pendaftaran->status,
+                    'gambar'                   => $gambarUrl,
+                ];
+            }
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * Helper untuk memeriksa apakah salah satu kategori aktivitas cocok dengan kategori roadmap.
+     * Mendukung alias seperti Birokrasi <-> Birokrat, Profesional <-> Professional (case-insensitive).
+     */
+    public function isCategoryMatched(string $roadmapCategory, $activityCategories): bool
+    {
+        $normalize = function (string $cat) {
+            $c = strtolower(trim($cat));
+            if ($c === 'birokrat') $c = 'birokrasi';
+            if ($c === 'professional') $c = 'profesional';
+            return $c;
+        };
+
+        $target = $normalize($roadmapCategory);
+
+        if (is_string($activityCategories)) {
+            $decoded = json_decode($activityCategories, true);
+            if (is_array($decoded)) {
+                $activityCategories = $decoded;
+            } else {
+                $activityCategories = array_map('trim', explode(',', $activityCategories));
+            }
+        }
+
+        if (!is_array($activityCategories)) {
+            return false;
+        }
+
+        foreach ($activityCategories as $cat) {
+            if ($normalize((string)$cat) === $target) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Toggle status pencapaian untuk materi (tipe = 1)
+     */
+    public function togglePencapaian(int $userId, int $materiId): array
+    {
+        $materi = MateriRoadmap::findOrFail($materiId);
+
+        $existing = Pencapaian::where('id_user', $userId)
+            ->where('id_materi_roadmap', $materiId)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            $isCompleted = false;
+        } else {
+            Pencapaian::create([
+                'id_user'           => $userId,
+                'id_materi_roadmap' => $materiId,
+            ]);
+            $isCompleted = true;
+        }
+
+        return [
+            'isCompleted' => $isCompleted,
+            'materiId'    => $materiId,
+        ];
+    }
+
+    /**
+     * Submit bukti hasil aktivitas untuk tugas (tipe = 0)
+     */
+    public function submitHasilAktivitas(int $userId, int $materiId, array $data, $file = null): HasilAktivitas
+    {
+        $materi = MateriRoadmap::findOrFail($materiId);
+
+        return DB::transaction(function () use ($userId, $materi, $data, $file) {
+            $pathMedia = null;
+
+            if ($file && $file instanceof \Illuminate\Http\UploadedFile) {
+                $pathMedia = $file->store('hasil_aktivitas', 'public');
+            }
+
+            $hasil = HasilAktivitas::create([
+                'id_user'                  => $userId,
+                'id_materi_roadmap'        => $materi->id,
+                'id_pendaftaran_aktivitas' => $data['id_pendaftaran_aktivitas'] ?? null,
+                'deskripsi'                => $data['notes'] ?? $data['deskripsi'] ?? '',
+                'media'                    => $pathMedia,
+                'status'                   => 'menunggu',
+            ]);
+
+            return $hasil;
+        });
+    }
+
+    /**
+     * Hapus submission hasil aktivitas milik mahasiswa
+     */
+    public function deleteHasilAktivitas(int $userId, int $hasilId): bool
+    {
+        return DB::transaction(function () use ($userId, $hasilId) {
+            $hasil = HasilAktivitas::where('id', $hasilId)
+                ->where('id_user', $userId)
+                ->firstOrFail();
+
+            if (!empty($hasil->media)) {
+                $clean = ltrim(preg_replace('#^/?storage/#', '', $hasil->media), '/');
+                if (Storage::disk('public')->exists($clean)) {
+                    Storage::disk('public')->delete($clean);
+                }
+            }
+
+            $materiId = $hasil->id_materi_roadmap;
+            $hasil->delete();
+
+            // Cek apakah masih ada hasil aktivitas lain yang disetujui untuk materi ini
+            if ($materiId) {
+                $hasOtherApproved = HasilAktivitas::where('id_user', $userId)
+                    ->where('id_materi_roadmap', $materiId)
+                    ->where('status', 'disetujui')
+                    ->exists();
+
+                if (!$hasOtherApproved) {
+                    Pencapaian::where('id_user', $userId)
+                        ->where('id_materi_roadmap', $materiId)
+                        ->delete();
+                }
+            }
+
+            return true;
+        });
     }
 }

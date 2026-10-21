@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
@@ -166,6 +166,15 @@ const resetFilters = () => {
   fetchBerita(1);
 };
 
+// Table Columns definition
+const columns = [
+  { key: 'created_at', label: 'Tanggal', sortable: true, width: 'w-[160px]' },
+  { key: 'judul', label: 'Judul Berita', sortable: true, width: 'w-[280px]' },
+  { key: 'deskripsi', label: 'Isi Berita', sortable: false, width: 'w-[320px]' },
+  { key: 'gambar', label: 'Gambar', sortable: false, width: 'w-[130px]' },
+  { key: 'action', label: 'Aksi', sortable: false, width: 'w-[110px]' },
+];
+
 const handleSort = (column) => {
   if (isLoading.value) return;
   if (sortColumn.value === column) {
@@ -239,6 +248,26 @@ const openImage = (gambar) => {
   }
   showImageModal.value = true;
 };
+
+// Keyboard navigation (Esc to close)
+const handleModalKeyDown = (e) => {
+  if (!showImageModal.value) return;
+  if (e.key === 'Escape') {
+    showImageModal.value = false;
+  }
+};
+
+watch(showImageModal, (isOpen) => {
+  if (isOpen) {
+    window.addEventListener('keydown', handleModalKeyDown);
+  } else {
+    window.removeEventListener('keydown', handleModalKeyDown);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleModalKeyDown);
+});
 
 // ==========================================
 // 5. LOGIC MODAL FORM BERITA
@@ -422,27 +451,44 @@ const handleModalSubmit = (formData) => {
                       </span>
                     </button>
                   </th>
-                  <th class="w-[160px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" :disabled="isLoading" @click="handleSort('created_at')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Tanggal">
-                      <span>Tanggal</span>
+                  <th
+                    v-for="col in columns"
+                    :key="col.key"
+                    :class="[
+                      col.width,
+                      'px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 last:border-r-0 lg:border-r-0 last:rounded-tr-[12px]'
+                    ]"
+                  >
+                    <button
+                      v-if="col.sortable"
+                      type="button"
+                      :disabled="isLoading"
+                      @click="handleSort(col.key)"
+                      class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85"
+                      :title="`Urutkan ${col.label}`"
+                    >
+                      <span>{{ col.label }}</span>
                       <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'created_at'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+                        <svg
+                          v-if="sortColumn === col.key"
+                          :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+                        </svg>
+                        <svg
+                          v-else
+                          class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+                        </svg>
                       </span>
                     </button>
+                    <span v-else class="whitespace-nowrap">{{ col.label }}</span>
                   </th>
-                  <th class="w-[280px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">
-                    <button type="button" :disabled="isLoading" @click="handleSort('judul')" class="group relative inline-flex items-center justify-center mx-auto transition-colors hover:text-white/80 focus:outline-none whitespace-nowrap cursor-pointer disabled:cursor-wait disabled:opacity-85" title="Urutkan Judul Berita">
-                      <span>Judul Berita</span>
-                      <span class="absolute left-full ml-1 top-1/2 -translate-y-1/2 inline-flex shrink-0 items-center text-white/70 group-hover:text-white">
-                        <svg v-if="sortColumn === 'judul'" :class="['h-3.5 w-3.5 text-white transition-transform duration-200', sortDirection === 'desc' ? 'rotate-180' : '']" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                        <svg v-else class="h-3.5 w-3.5 opacity-50 transition-opacity group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.69l3.72-3.72a.75.75 0 111.06 1.06l-5 5a.75.75 0 01-1.06 0l-5-5a.75.75 0 111.06-1.06l3.72 3.72V3.75A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
-                      </span>
-                    </button>
-                  </th>
-                  <th class="w-[320px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Isi Berita</th>
-                  <th class="w-[130px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none border-r border-white/15 lg:border-r-0">Gambar</th>
-                  <th class="w-[110px] px-2 py-2.5 text-center font-poppins text-[13px] font-semibold text-white select-none rounded-tr-[12px]">Aksi</th>
                 </tr>
               </thead>
               
@@ -457,9 +503,9 @@ const handleModalSubmit = (formData) => {
                      v-if="item.foto"
                      @click="openImage('/' + item.foto)" 
                      class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" 
-                     :title="item.foto.split('/').pop()"
+                     :title="'Lihat Gambar'"
                    >
-                     {{ item.foto.split('/').pop() }}
+                     Gambar
                    </button>
                   <span v-else class="font-inter text-[14px] text-gray-400">-</span>
                   </td>

@@ -157,5 +157,127 @@ public function createRoadmap(array $data)
             return $roadmap->delete();
         });
     }
-    
+
+    // ==========================================
+    // 4. MAHASISWA: ROADMAP LIST & PROGRESS
+    // ==========================================
+    public function getMahasiswaRoadmaps(int $userId, array $filters = []): array
+    {
+        $query = Roadmap::with([
+            'bulanRoadmap.materiRoadmap',
+            'pendaftaranRoadmap' => function ($q) use ($userId) {
+                $q->where('id_user', $userId);
+            }
+        ]);
+
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('nama_roadmap', 'like', "%{$search}%");
+        }
+
+        if (!empty($filters['kategori'])) {
+            $kategoriArray = array_map('trim', explode(',', $filters['kategori']));
+            $query->whereIn('kategori', $kategoriArray);
+        }
+
+        $roadmaps = $query->orderBy('id', 'asc')->get();
+
+        // Auto-sinkron semua tugas yang disetujui (HasilAktivitas status = disetujui) ke tabel Pencapaian
+        $allApprovedMateriIds = \App\Models\HasilAktivitas::where('id_user', $userId)
+            ->where(DB::raw('LOWER(status)'), 'disetujui')
+            ->pluck('id_materi_roadmap')
+            ->unique()
+            ->filter()
+            ->all();
+
+        foreach ($allApprovedMateriIds as $materiId) {
+            \App\Models\Pencapaian::firstOrCreate([
+                'id_user'           => $userId,
+                'id_materi_roadmap' => $materiId,
+            ]);
+        }
+
+        // Ambil semua id_materi_roadmap yang telah selesai oleh user ini
+        $userPencapaianIds = \App\Models\Pencapaian::where('id_user', $userId)
+            ->pluck('id_materi_roadmap')
+            ->flip()
+            ->all();
+
+        return $roadmaps->map(function ($roadmap) use ($userPencapaianIds) {
+            // Ambil semua ID materi dari semua bulan di roadmap ini
+            $allMateriIds = $roadmap->bulanRoadmap->flatMap(function ($bulan) {
+                return $bulan->materiRoadmap->pluck('id');
+            })->all();
+
+            $totalTasks = count($allMateriIds);
+            $completedTasks = 0;
+
+            foreach ($allMateriIds as $mId) {
+                if (isset($userPencapaianIds[$mId])) {
+                    $completedTasks++;
+                }
+            }
+
+            $categoriesLabel = 'Profesional | Bisnis | Birokrat | Akademisi';
+
+            return [
+                'id'               => $roadmap->id,
+                'title'            => $roadmap->nama_roadmap,
+                'category'         => $roadmap->kategori,
+                'categories_label' => $categoriesLabel,
+                'task_count'       => $totalTasks > 0 ? $totalTasks : 1,
+                'completed_tasks'  => $completedTasks,
+                'thumbnail'        => $roadmap->gambar ? (str_starts_with($roadmap->gambar, 'http') ? $roadmap->gambar : '/storage/' . ltrim($roadmap->gambar, '/')) : '',
+                'updated_at'       => $roadmap->updated_at ? $roadmap->updated_at->format('d/m/Y') : date('d/m/Y'),
+                'is_enrolled'      => $roadmap->pendaftaranRoadmap->isNotEmpty(),
+            ];
+        })->all();
+    }
+
+    /**
+     * Dapatkan daftar roadmap yang tersedia untuk modal Tambah Roadmap
+     */
+    public function getAvailableRoadmapsForUser(int $userId): array
+    {
+        $enrolledIds = \App\Models\PendaftaranRoadmap::where('id_user', $userId)->pluck('id_roadmap')->toArray();
+
+        return Roadmap::with('bulanRoadmap.materiRoadmap')
+            ->orderBy('id', 'asc')
+            ->get()
+            ->map(function ($r) use ($enrolledIds) {
+                $totalTask = $r->bulanRoadmap->flatMap->materiRoadmap->count();
+                return [
+                    'id'          => $r->id,
+                    'judul'       => $r->nama_roadmap,
+                    'kategori'    => $r->kategori,
+                    'totalTask'   => $totalTask,
+                    'partisipan'  => $r->partisipan ?? 0,
+                    'is_enrolled' => in_array($r->id, $enrolledIds),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Daftarkan mahasiswa ke roadmap
+     */
+    public function enrollRoadmaps(int $userId, array $roadmapIds): void
+    {
+        DB::transaction(function () use ($userId, $roadmapIds) {
+            foreach ($roadmapIds as $roadmapId) {
+                $exists = \App\Models\PendaftaranRoadmap::where('id_user', $userId)
+                    ->where('id_roadmap', $roadmapId)
+                    ->exists();
+
+                if (!$exists) {
+                    \App\Models\PendaftaranRoadmap::create([
+                        'id_user'    => $userId,
+                        'id_roadmap' => $roadmapId,
+                    ]);
+
+                    Roadmap::where('id', $roadmapId)->increment('partisipan');
+                }
+            }
+        });
+    }
 }

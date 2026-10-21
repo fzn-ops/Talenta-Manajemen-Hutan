@@ -58,6 +58,8 @@ const startResize = (e) => {
 // Lightbox state
 const showImageModal = ref(false);
 const selectedImage = ref('');
+const activeImageIndex = ref(0);
+const isHoveringNav = ref(false);
 
 const imageList = computed(() => {
 	const raw = props.data?.gambar_pengajuan_aktivitas || props.data?.gambar;
@@ -93,12 +95,54 @@ const getImageSrc = (gambar) => {
 	return `https://picsum.photos/seed/${(typeof gambar === 'string' ? gambar : 'dummy')}/800/600`;
 };
 
-const openImage = (gambar) => {
+const openImage = (target, index = 0) => {
 	if (document.activeElement instanceof HTMLElement) {
 		document.activeElement.blur();
 	}
-	selectedImage.value = getImageSrc(gambar);
+	if (typeof target === 'number') {
+		index = target;
+	} else if (typeof index === 'number' && index >= 0) {
+		// keep index
+	} else {
+		index = imageList.value.indexOf(target);
+	}
+	activeImageIndex.value = index >= 0 && index < imageList.value.length ? index : 0;
+	selectedImage.value = getImageSrc(imageList.value[activeImageIndex.value] || target);
 	showImageModal.value = true;
+};
+
+const prevImage = () => {
+	if (imageList.value.length <= 1) return;
+	activeImageIndex.value = (activeImageIndex.value - 1 + imageList.value.length) % imageList.value.length;
+	selectedImage.value = getImageSrc(imageList.value[activeImageIndex.value]);
+};
+
+const nextImage = () => {
+	if (imageList.value.length <= 1) return;
+	activeImageIndex.value = (activeImageIndex.value + 1) % imageList.value.length;
+	selectedImage.value = getImageSrc(imageList.value[activeImageIndex.value]);
+};
+
+// Touch swipe support on mobile
+const touchStartX = ref(0);
+const touchEndX = ref(0);
+
+const handleTouchStart = (e) => {
+	if (!e.changedTouches || e.changedTouches.length === 0) return;
+	touchStartX.value = e.changedTouches[0].clientX;
+};
+
+const handleTouchEnd = (e) => {
+	if (!e.changedTouches || e.changedTouches.length === 0) return;
+	touchEndX.value = e.changedTouches[0].clientX;
+	const diff = touchEndX.value - touchStartX.value;
+	if (Math.abs(diff) > 40 && imageList.value.length > 1) {
+		if (diff > 0) {
+			prevImage();
+		} else {
+			nextImage();
+		}
+	}
 };
 
 // Backdrop & Keyboard Handlers
@@ -123,18 +167,25 @@ const handleClose = () => {
 };
 
 const handleKeyDown = (e) => {
-	if (e.key === 'Escape' && props.show) {
-		if (document.activeElement instanceof HTMLElement) {
-			document.activeElement.blur();
-		}
-		if (showImageModal.value) {
+	if (showImageModal.value) {
+		if (e.key === 'Escape') {
 			e.preventDefault();
 			e.stopPropagation();
 			e.stopImmediatePropagation();
 			showImageModal.value = false;
-		} else {
-			handleClose();
+			isHoveringNav.value = false;
+		} else if (e.key === 'ArrowLeft') {
+			prevImage();
+		} else if (e.key === 'ArrowRight') {
+			nextImage();
 		}
+		return;
+	}
+	if (e.key === 'Escape' && props.show) {
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
+		handleClose();
 	}
 };
 
@@ -307,7 +358,7 @@ onBeforeUnmount(() => {
 														<!-- Preview / Zoom Button -->
 														<button
 															type="button"
-															@click.stop.prevent="e => { if (e.currentTarget) e.currentTarget.blur(); openImage(gbr); }"
+															@click.stop.prevent="e => { if (e.currentTarget) e.currentTarget.blur(); openImage(idx); }"
 															class="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white shadow-sm hover:bg-black/85 hover:scale-110 active:scale-95 transition cursor-pointer backdrop-blur-xs outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
 															style="outline: none !important; box-shadow: none !important;"
 															title="Lihat Gambar Penuh"
@@ -421,13 +472,18 @@ onBeforeUnmount(() => {
 				>
 					<div
 						v-if="showImageModal"
-						class="relative flex items-center justify-center bg-transparent"
+						class="relative flex flex-col items-center justify-center bg-transparent max-w-full max-h-full touch-pan-y select-none"
 						@click.stop
+						@touchstart="handleTouchStart"
+						@touchend="handleTouchEnd"
+						@mouseenter="isHoveringNav = true"
+						@mouseleave="isHoveringNav = false"
 					>
+						<!-- Close button -->
 						<button
 							type="button"
 							@click="showImageModal = false"
-							class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 cursor-pointer outline-none"
+							class="absolute top-3.5 right-3.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 cursor-pointer outline-none"
 							style="outline: none !important; box-shadow: none !important;"
 							title="Tutup Preview"
 						>
@@ -435,11 +491,67 @@ onBeforeUnmount(() => {
 								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 							</svg>
 						</button>
+
+						<!-- Prev button (slide in from left on image hover) -->
+						<button
+							v-if="imageList.length > 1"
+							type="button"
+							@click="prevImage"
+							:class="[
+								'absolute left-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
+								isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-6 pointer-events-none'
+							]"
+							title="Gambar Sebelumnya"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+							</svg>
+						</button>
+
+						<!-- Next button (slide in from right on image hover) -->
+						<button
+							v-if="imageList.length > 1"
+							type="button"
+							@click="nextImage"
+							:class="[
+								'absolute right-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
+								isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-6 pointer-events-none'
+							]"
+							title="Gambar Berikutnya"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+							</svg>
+						</button>
+
+						<!-- Image -->
 						<img
 							:src="selectedImage"
 							alt="Preview Gambar"
 							class="max-h-[85vh] max-w-[90vw] w-auto h-auto min-w-[280px] sm:min-w-[480px] rounded-xl object-contain shadow-2xl"
 						/>
+
+						<!-- Bottom Indicator (slide in from bottom on image hover on PC; always visible on mobile) -->
+						<div
+							v-if="imageList.length > 1"
+							:class="[
+								'absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-3.5 py-1.5 backdrop-blur-sm text-xs font-medium text-white shadow-lg transition-all duration-300 ease-out',
+								isHoveringNav ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-100 sm:opacity-0 sm:translate-y-6 sm:pointer-events-none'
+							]"
+						>
+							<span>Gambar {{ activeImageIndex + 1 }} dari {{ imageList.length }}</span>
+							<div class="flex items-center gap-1.5 ml-1">
+								<button
+									v-for="(_, dotIdx) in imageList"
+									:key="dotIdx"
+									type="button"
+									@click="activeImageIndex = dotIdx; selectedImage = getImageSrc(imageList[dotIdx])"
+									class="h-2 rounded-full transition-all cursor-pointer"
+									:class="activeImageIndex === dotIdx ? 'w-4 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'"
+									:title="'Buka Gambar ' + (dotIdx + 1)"
+								/>
+							</div>
+						</div>
 					</div>
 				</Transition>
 			</div>
