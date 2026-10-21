@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
 											? 'border-red-200 bg-red-50/70 text-red-700'
 											: 'border-[#d6e0ee] bg-[#f8fafc] text-[#7188a3] italic'"
 									>
-										{{ (data?.status === 'ditolak' && data?.catatan_penolakan) ? data.catatan_penolakan : '- Tidak ada catatan penolakan sebelumnya -' }}
+										{{ data?.catatan_penolakan ? data.catatan_penolakan : '- Tidak ada catatan penolakan sebelumnya -' }}
 									</div>
 								</div>
 							</div>

@@ -21,6 +21,7 @@ return new class extends Migration
                 'umum',
                 'lomba',
             ]);
+            $table->string('link_pendaftaran')->nullable();
             $table->boolean('status');
             $table->dateTime('deadline');
             $table->timestamps();

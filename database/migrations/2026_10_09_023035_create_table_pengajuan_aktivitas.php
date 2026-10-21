@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('kategori');
             $table->enum('status', ['menunggu', 'disetujui', 'ditolak'])
                   ->default('menunggu');
+            $table->string('link_pendaftaran')->nullable();
             $table->dateTime('deadline')->nullable();
             $table->timestamps();
         });

@@ -15,9 +15,9 @@ import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 // 1. STATE & DATA DUMMY
 // ==========================================
 const props = defineProps({
-  aktivitasData: Object,   // Data dari tab "Aktivitas yang Dibuka"
-  pendaftaranData: Object, // Data dari tab "Aktivitas yang Diikuti"
-  filters: Object          // Nilai filter yang lagi aktif (dikirim balik dari server)
+  aktivitasData: Object,   
+  pendaftaranData: Object, 
+  filters: Object      
 });
 
 // ==========================================
@@ -167,8 +167,17 @@ const getImageUrl = (path) => {
     }
     
     // 2. Kalau ada isinya, baru deh dicek
-    return String(path).startsWith('http') ? path : `/storage/${path}`;
+    return String(path).startsWith('http') ? path : `/${path}`;
 };
+
+// ==========================================
+// FUNGSI BUAT PINDAH KE HALAMAN DETAIL
+// ==========================================
+const goToDetail = (id) => {
+    console.log("Mencoba pindah ke detail aktivitas ID:", id);
+    router.get(`/mahasiswa/aktivitas/pendaftaran/${id}`);
+};
+
 </script>
 
 <template>
@@ -504,6 +513,7 @@ const getImageUrl = (path) => {
           <!-- KONTEN TAB 1: AKTIVITAS YANG DIBUKA                       -->
           <!-- ========================================================= -->
           <div v-if="activeTab === 'dibuka'">
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               
               <!-- Looping Pake aktivitasData -->
@@ -513,8 +523,14 @@ const getImageUrl = (path) => {
                 @click="goToDetail(item.id)"
                 class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none"
               >
+
                 <!-- BACKGROUND GAMBAR & GRADIENT -->
-                <img :src="getImageUrl(item.gambar)" class="absolute inset-0 h-full w-full object-cover" :alt="item.judul" />
+                <img 
+                    :src="getImageUrl(item?.gambar_aktivitas?.find(g => g.utama == 1)?.gambar)" 
+                    class="absolute inset-0 h-full w-full object-cover" 
+                    :alt="item?.judul" 
+                />
+                
                 <div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95"></div>
 
                 <!-- BADGE UMUM / LOMBA -->
@@ -584,7 +600,11 @@ const getImageUrl = (path) => {
                 class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none"
               >
                 <!-- BACKGROUND GAMBAR (Nembus relasi activity) -->
-                <img :src="getImageUrl(pendaftaran.activity?.gambar)" class="absolute inset-0 h-full w-full object-cover" :alt="pendaftaran.activity?.judul" />
+                <img 
+                    :src="getImageUrl(pendaftaran?.activity?.gambar_aktivitas?.find(g => g.utama === 1)?.gambar)" 
+                    class="absolute inset-0 h-full w-full object-cover" 
+                    :alt="pendaftaran?.activity?.judul" 
+                />
                 <div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95"></div>
 
                 <!-- BADGE UMUM / LOMBA (Nembus relasi activity) -->

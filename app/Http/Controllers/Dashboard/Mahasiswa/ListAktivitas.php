@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\PendaftaranAktivitasService;
 use App\Services\AktivitasService;
 use Inertia\Inertia; 
+use App\Models\User;
 
 class ListAktivitas extends Controller
 {
@@ -43,53 +44,71 @@ class ListAktivitas extends Controller
         $userId = $request->user()->id;
         $aktivitas = $this->AktivitasService->getAktivitasById($id);
         $pendaftaranDetail = $this->PendaftaranAktivitasService->getDetailPendaftaranMahasiswa($id, $userId);
+        $mahasiswaList = User::select('id', 'nama', 'nim')
+                                ->where('role', '!=', 'admin')                        
+                                ->get();
 
         // 3. Lempar ke file Vue!
         return Inertia::render('dashboard/mahasiswa/ActivityRegister', [
             'aktivitas'         => $aktivitas,
-            'pendaftaranDetail' => $pendaftaranDetail
+            'pendaftaranDetail' => $pendaftaranDetail,
+            'mahasiswaList'     => $mahasiswaList,
         ]);
     }
 
     // ==================================================
     // 2. FUNGSI MAHASISWA SUBMIT PENDAFTARAN (CREATE)
     // ==================================================
+
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'id_aktivitas'      => 'required|exists:aktivitas,id',
-            'nama_tim'          => 'nullable|string|max:255',
-            'bukti_pendaftaran' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', 
-            'peserta_ids'       => 'required|array', 
-            'peserta_ids.*'     => 'exists:users,id' 
+        // 1. Validasi bawaan dari Vue (namanya tetep 'bukti')
+        $request->validate([
+            'id_aktivitas' => 'required',
+            'nama_tim'     => 'required',
+            'peserta_ids'  => 'required|array',
+            'bukti'        => 'required|file|image|max:10240', 
         ]);
-
-        if ($request->hasFile('bukti_pendaftaran')) {
-            $path = $request->file('bukti_pendaftaran')->store('bukti_pendaftaran', 'public');
-            $validatedData['bukti_pendaftaran'] = $path;
+    
+        $pathBukti = null;
+        if ($request->hasFile('bukti')) {
+            $pathBukti = $request->file('bukti')->store('bukti_pendaftaran', 'public');
         }
-        
-        $this->PendaftaranAktivitasService->createData($validatedData);
-
-        return redirect()->back()->with('success', 'Berhasil mendaftar aktivitas! Silakan tunggu persetujuan Admin.');
+    
+        $data = [
+            'id_aktivitas'      => $request->id_aktivitas,
+            'nama_tim'          => $request->nama_tim,
+            'peserta_ids'       => $request->peserta_ids,
+            'bukti_pendaftaran' => $pathBukti, 
+        ];
+    
+        $this->PendaftaranAktivitasService->createData($data);
+    
+        return redirect()->back();
     }
 
     // ==================================================
     // 3. FUNGSI UPDATE PENDAFTARAN
     // ==================================================
-    public function update(Request $request, $id)
+public function update(Request $request, $id)
     {
+        // 1. Validasi namanya pakai 'bukti', BUKAN 'bukti_pendaftaran'
         $validatedData = $request->validate([
-            'nama_tim'          => 'nullable|string|max:255',
-            'bukti_pendaftaran' => 'nullable|image|mimes:jpg,jpeg,png|max:10240', 
-            'peserta_ids'       => 'nullable|array', 
-            'peserta_ids.*'     => 'exists:users,id'
+            'nama_tim'      => 'nullable|string|max:255',
+            'bukti'         => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
+            'peserta_ids'   => 'nullable|array', 
+            'peserta_ids.*' => 'exists:users,id'
         ]);
 
-        if ($request->hasFile('bukti_pendaftaran')) {
-            $path = $request->file('bukti_pendaftaran')->store('bukti_pendaftaran', 'public');
+        // 2. Tangkap filenya pakai nama 'bukti'
+        if ($request->hasFile('bukti')) {
+            $path = $request->file('bukti')->store('bukti_pendaftaran', 'public');
             $validatedData['bukti_pendaftaran'] = $path;
         }
+
+        $validatedData['status'] = 'Menunggu';
+
+        unset($validatedData['bukti']);
 
         $this->PendaftaranAktivitasService->updateData($id, $validatedData);
 
@@ -101,7 +120,7 @@ class ListAktivitas extends Controller
     // ==================================================
     public function destroy($id)
     {
-        $this->PendaftaranAktivitasService->deleteData($id);
+        $this->PendaftaranAktivitasService->delete($id);
 
         return redirect()->back()->with('success', 'Pendaftaran berhasil dibatalkan!');
     }

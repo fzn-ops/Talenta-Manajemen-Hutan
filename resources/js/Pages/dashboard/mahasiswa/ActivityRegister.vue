@@ -1,220 +1,308 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { Head, Link, usePage, router } from '@inertiajs/vue3';
+import { router, useForm, usePage,Link } from '@inertiajs/vue3';
 import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import LoadingSuccessModal from '@/Components/dashboard/mahasiswa/LoadingSuccessModal.vue';
 
+
 // ==========================================
 // 1. DATA DUMMY & USER STATE
 // ==========================================
+const props = defineProps({
+    aktivitas: Object,
+    pendaftaranDetail: Object,
+    mahasiswaList: Array
+});
+
+// ==========================================
+// 1. SETUP DATA PESERTA (DETEKSI CREATE vs EDIT)
+// ==========================================
+const existingPeserta = props.pendaftaranDetail?.peserta || [];
 const page = usePage();
 const currentUser = computed(() => {
-  const user = page.props.auth?.user;
-  return { name: user?.nama || user?.name || 'Fauzan Fuadiansyah', nim: user?.nim || 'J0403231085' };
+    const user = page.props.auth?.user;
+    return { 
+        id: user?.id,
+        name: user?.nama || user?.name || 'Fauzan Fuadiansyah', 
+        nim: user?.nim || 'J0403231085' 
+    };
 });
 
-const activity = ref({
-  id: 1,
-  judul: 'Lomba Agustusan MNH',
-  deadline: '16 Agustus 2026',
-  kategori: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
-  deskripsi: [
-    'Lorem ipsum dolor sit amet, cupidatat eiusmod duis ut. Magna dolore dolor ex elit sed non cillum do aliqua adipiscing ad.',
-    'Commodo in non exercitation nulla enim qui aliquip nulla. Esse adipiscing ex anim fugiat labore mollit mollit.',
-    'Velit quis aliqua sed dolore excepteur irure cillum labore duis.'
-  ],
-  link_pendaftaran: 'https://ipb.link/daftar-lomba-agustusan-manhut-26',
-  gambar_utama: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=800&auto=format&fit=crop',
-  thumbnails: [null, null, null]
+const isFormLocked = computed(() => {
+    if (!props.pendaftaranDetail) return false;
+    return props.pendaftaranDetail.status !== 'ditolak';
 });
 
-const getCategoryChipClass = (cat) => {
-  switch (cat) {
-    case 'Profesional':
-      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    case 'Bisnis':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'Birokrat':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'Akademisi':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
-  }
+let initialDisplayPeserta = [];
+let initialFormPeserta = [];
+let initialErrorsPeserta = [];
+
+if (existingPeserta.length > 0) {
+    existingPeserta.forEach(p => {
+        initialDisplayPeserta.push(`${p.name || p.nama} - ${p.nim}`);
+        initialFormPeserta.push(p.id);
+        initialErrorsPeserta.push('');
+    });
+} else {
+    initialDisplayPeserta.push(`${currentUser.value.name} - ${currentUser.value.nim}`);
+    initialFormPeserta.push(currentUser.value.id || 1);
+    initialErrorsPeserta.push('');
+}
+
+// ==========================================
+// 2. STATE FORM REGISTRASI
+// ==========================================
+const displayPeserta = ref(initialDisplayPeserta);
+
+const form = useForm({
+    id_aktivitas: props.aktivitas?.id,
+    nama_tim: props.pendaftaranDetail?.nama_tim || '',
+    peserta: initialFormPeserta, 
+    bukti: null
+});
+
+const errors = ref({ 
+    nama_tim: '', 
+    peserta: initialErrorsPeserta, 
+    bukti: '' 
+});
+
+// ==========================================
+// 3. LOAD PREVIEW GAMBAR (BUKTI PENDAFTARAN LAMA)
+// ==========================================
+const getImageUrl = (path) => {
+    // Kalau kosong, return null aja biar nampilin kotak upload default
+    if (!path) return null; 
+    
+    // Kalau path-nya udah berupa link utuh (misal dari Google), langsung pakai
+    if (typeof path === 'string' && path.startsWith('http')) return path;
+
+    // 🔥 Bersihin kata 'public/' kalau nggak sengaja kesimpen dari Controller
+    let cleanPath = path;
+    if (typeof path === 'string' && path.startsWith('public/')) {
+        cleanPath = path.replace('public/', '');
+    }
+
+    // Tambahin /storage/ di depannya biar tembus ke folder Laravel
+    return `/storage/${cleanPath}`;
 };
 
+const imagePreview = ref(
+    props.pendaftaranDetail?.bukti_pendaftaran 
+        ? getImageUrl(props.pendaftaranDetail.bukti_pendaftaran) 
+        : null
+);
+
+
+
+
+const getCategoryChipClass = (cat) => {
+    switch (cat) {
+        case 'Profesional': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        case 'Bisnis': return 'bg-amber-50 text-amber-700 border-amber-200';
+        case 'Birokrat': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'Akademisi': return 'bg-purple-50 text-purple-700 border-purple-200';
+        default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+};
+
+
 // ==========================================
-// 2. STATE FORM REGISTRASI & AUTOCOMPLETE
+// 3. LOGIC AUTOCOMPLETE (PAKAI DATA ASLI)
 // ==========================================
-const form = ref({
-  nama_tim: '',
-  peserta: [`${currentUser.value.name} - ${currentUser.value.nim}`], 
-  bukti: null
-});
-
-const errors = ref({ nama_tim: '', peserta: [''], bukti: '' });
-
-const dummyStudents = [
-  { name: 'Fauzan Fuadiansyah', nim: 'J0403231085' },
-  { name: 'Rio Ferddinansya', nim: 'J0403231086' },
-  { name: 'Budi Santoso', nim: 'J0403231087' },
-  { name: 'Siti Aminah', nim: 'J0403231088' },
-  { name: 'Ahmad Maulana', nim: 'J0403231089' },
-  { name: 'Kevin Pratama', nim: 'J0403231090' },
-];
-
 const activeDropdown = ref(null);
 
-const getFilteredStudents = (query) => {
-  if (!query) return dummyStudents;
-  const lowerQuery = query.toLowerCase();
-  return dummyStudents.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.nim.toLowerCase().includes(lowerQuery));
+const getFilteredStudents = (index) => {
+    const rawQuery = displayPeserta.value[index] || '';
+    const query = String(rawQuery).toLowerCase();
+
+    if (!props.mahasiswaList) return []; 
+    const selectedIds = form.peserta.filter((id, i) => i !== index && id);
+
+    return props.mahasiswaList.filter(student => {
+        if (selectedIds.includes(student.id)) return false; 
+
+        // Buang admin
+        const role = String(student.role || '').toLowerCase();
+        const nama = String(student.name || student.nama || '').toLowerCase();
+
+        // Kalau kotak input kosong, tampilkan sisa mahasiswa yang belum dipilih
+        if (query === '') return true;
+
+        // Cocokkan ketikan dengan nama atau NIM
+        const nim = String(student.nim || '').toLowerCase();
+        return nama.includes(query) || nim.includes(query);
+    });
 };
 
 const selectStudent = (index, student) => {
-  form.value.peserta[index] = `${student.name} - ${student.nim}`;
-  activeDropdown.value = null;
-  errors.value.peserta[index] = '';
+    form.peserta[index] = student.id; 
+    displayPeserta.value[index] = `${student.name || student.nama} - ${student.nim}`;
+    activeDropdown.value = null;
+    errors.value.peserta[index] = '';
 };
 
 const addPeserta = () => {
-  form.value.peserta.push('');
-  errors.value.peserta.push('');
+    form.peserta.push('');
+    displayPeserta.value.push('');
+    errors.value.peserta.push('');
 };
 
 const removePeserta = (index) => {
-  if (form.value.peserta.length > 1) {
-    form.value.peserta.splice(index, 1);
-    errors.value.peserta.splice(index, 1);
-  }
+    if (form.peserta.length > 1) {
+        form.peserta.splice(index, 1);
+        displayPeserta.value.splice(index, 1);
+        errors.value.peserta.splice(index, 1);
+    }
 };
 
 // ==========================================
-// 3. LOGIC UPLOAD FILE (MATCH PROFILE.VUE)
+// 4. LOGIC UPLOAD FILE (TETEP SAMA)
 // ==========================================
 const fileInput = ref(null);
-const imagePreview = ref(null);
 const isDragging = ref(false);
 const previewingImage = ref(null);
 
 const triggerUpload = () => fileInput.value?.click();
 
 const processFile = (file) => {
-  if (!file) return;
-
-  if (!file.type.startsWith('image/')) {
-    showToast('File harus berupa gambar (JPG, JPEG, PNG)!', 'error');
-    return;
-  }
-
-  if (file.size > 10 * 1024 * 1024) {
-    showToast('Ukuran gambar maksimal adalah 10MB!', 'error');
-    return;
-  }
-
-  form.value.bukti = file;
-  imagePreview.value = URL.createObjectURL(file);
-  errors.value.bukti = ''; 
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        showToast('File harus berupa gambar (JPG, JPEG, PNG)!', 'error');
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('Ukuran gambar maksimal adalah 10MB!', 'error');
+        return;
+    }
+    form.bukti = file;
+    imagePreview.value = URL.createObjectURL(file);
+    errors.value.bukti = ''; 
 };
 
-const handleFileUpload = (event) => {
-  processFile(event.target.files?.[0]);
-};
-
+const handleFileUpload = (event) => processFile(event.target.files?.[0]);
 const handleDrop = (event) => {
-  isDragging.value = false;
-  processFile(event.dataTransfer?.files?.[0]);
+    isDragging.value = false;
+    processFile(event.dataTransfer?.files?.[0]);
 };
 
 const removeImage = () => {
-  form.value.bukti = null;
-  imagePreview.value = null;
-  if (fileInput.value) fileInput.value.value = '';
+    form.bukti = null;
+    imagePreview.value = null;
+    if (fileInput.value) fileInput.value.value = '';
 };
 
-const openImagePreview = (img) => {
-  previewingImage.value = img;
-};
-
-const closeImagePreview = () => {
-  previewingImage.value = null;
-};
+const openImagePreview = (img) => previewingImage.value = img;
+const closeImagePreview = () => previewingImage.value = null;
 
 const handleKeyDown = (e) => {
-  if (e.key === 'Escape' && previewingImage.value) {
-    closeImagePreview();
-  }
+    if (e.key === 'Escape' && previewingImage.value) closeImagePreview();
 };
 
-onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleKeyDown);
-});
+onMounted(() => document.addEventListener('keydown', handleKeyDown));
+onBeforeUnmount(() => document.removeEventListener('keydown', handleKeyDown));
 
 // ==========================================
-// 4. TOAST, VALIDASI & SUBMIT LOGIC
+// 5. TOAST & SUBMIT LOGIC KE LARAVEL
 // ==========================================
 const toast = ref({ show: false, message: '', type: 'success' });
 const showToast = (message, type = 'success') => {
-  toast.value.show = false; 
-  setTimeout(() => { toast.value = { show: true, message, type }; setTimeout(() => { toast.value.show = false; }, 3500); }, 50);
+    toast.value.show = false; 
+    setTimeout(() => { toast.value = { show: true, message, type }; setTimeout(() => { toast.value.show = false; }, 3500); }, 50);
 };
 
 const isFeedbackModalOpen = ref(false);
 const feedbackStatus = ref('loading');
 
 const validateForm = () => {
-  let isValid = true;
-  errors.value.nama_tim = '';
-  errors.value.bukti = '';
-  errors.value.peserta = form.value.peserta.map(() => ''); 
+    let isValid = true;
+    errors.value.nama_tim = '';
+    errors.value.bukti = '';
+    errors.value.peserta = form.peserta.map(() => ''); 
 
-  if (!form.value.nama_tim.trim()) {
-    errors.value.nama_tim = 'Kolom nama tim harus diisi!';
-    isValid = false;
-  }
-
-  form.value.peserta.forEach((p, index) => {
-    if (!p.trim()) {
-      errors.value.peserta[index] = 'Kolom nama peserta harus diisi!';
-      isValid = false;
+    // 1. Validasi Nama Tim
+    if (!form.nama_tim.trim()) {
+        errors.value.nama_tim = 'Kolom nama tim harus diisi!';
+        isValid = false;
     }
-  });
 
-  if (!form.value.bukti) {
-    errors.value.bukti = 'Bukti pendaftaran wajib diupload!';
-    isValid = false;
-  }
+    // 2. Validasi Peserta
+    form.peserta.forEach((p, index) => {
+        if (!p || p === '') { 
+            errors.value.peserta[index] = 'Kolom nama peserta harus diisi/dipilih!';
+            isValid = false;
+        }
+    });
 
-  return isValid;
+    if (!form.bukti && !props.pendaftaranDetail) {
+        errors.value.bukti = 'Bukti pendaftaran wajib diupload!';
+        isValid = false;
+    }
+
+    return isValid;
 };
 
 const submitRegistration = () => {
-  if (!validateForm()) {
-    showToast('Mohon lengkapi formulir yang bertanda merah!', 'error');
-    return;
-  }
-  
-  isFeedbackModalOpen.value = true;
-  feedbackStatus.value = 'loading';
-
-  setTimeout(() => {
-    feedbackStatus.value = 'success';
-  }, 1500);
+    if (!validateForm()) {
+        showToast('Mohon lengkapi formulir yang bertanda merah!', 'error');
+        return;
+    }
+    
+    isFeedbackModalOpen.value = true;
+    feedbackStatus.value = 'loading';
+    
+    if (props.pendaftaranDetail) {
+        form.transform((data) => ({
+            ...data,
+            peserta_ids: data.peserta,
+        })).post(`/mahasiswa/aktivitas/pendaftaran/${props.pendaftaranDetail.id}/update`, { 
+            preserveScroll: true,
+            onSuccess: () => {
+                feedbackStatus.value = 'success';
+            },
+            onError: (err) => {
+                isFeedbackModalOpen.value = false;
+                console.error("Error validasi Update Laravel:", err);
+                showToast('Gagal memperbarui data, cek kembali form Anda!', 'error');
+            }
+        });
+    } else {
+        // ==========================================
+        // MODE DAFTAR BARU -> Kirim ke fungsi Daftar
+        // ==========================================
+        form.transform((data) => ({
+            ...data,
+            peserta_ids: data.peserta
+        })).post('/mahasiswa/aktivitas/pendaftaran/daftar', {
+            preserveScroll: true,
+            onSuccess: () => {
+                feedbackStatus.value = 'success';
+            },
+            onError: (err) => {
+                isFeedbackModalOpen.value = false;
+                console.error("Error validasi Daftar Laravel:", err);
+                showToast('Gagal mendaftar, cek kembali data Anda!', 'error');
+            }
+        });
+    }
 };
 
 const handleFeedbackClose = () => {
-  isFeedbackModalOpen.value = false;
-  router.visit('/mahasiswa/aktivitas/list');
+    isFeedbackModalOpen.value = false;
+    router.visit('/mahasiswa/aktivitas/list');
 };
+
+const closeDropdown = () => {
+    setTimeout(() => {
+        activeDropdown.value = null;
+    }, 200);
+};  
+
 </script>
 
 <template>
-  <Head :title="activity.judul" />
+  <Head :title="aktivitas.judul" />
 
   <MahasiswaLayout>
     <section class="mx-auto w-full max-w-[1200px] px-4 pt-8 pb-10 font-poppins sm:px-8 sm:pt-10 sm:pb-12">
@@ -226,13 +314,15 @@ const handleFeedbackClose = () => {
 
       <div class="space-y-6 sm:space-y-8 w-full">
         
-        <!-- BREADCRUMB (SEJAJAR PERSIS SECARA HORIZONTAL DENGAN TOMBOL DASHBOARD SIDEBAR) -->
-        <div class="flex h-11 items-center text-[13px] sm:text-[14px] font-poppins text-[#475569]">
-          <Link href="/mahasiswa/aktivitas/list" class="font-medium text-[#64748b] hover:text-[#183669] hover:underline transition-colors">
+        <!-- BREADCRUMB -->
+        <div class="flex h-11 items-center text-[13px] sm:text-[14px] font-poppins text-[#475569] w-full min-w-0">
+          <Link href="/mahasiswa/aktivitas/list" class="shrink-0 font-medium text-[#64748b] hover:text-[#183669] hover:underline transition-colors">
             List Aktivitas
           </Link>
-          <span class="mx-2 text-[#94a3b8]">/</span>
-          <span class="font-semibold text-[#17334F] underline decoration-[#17334F]/50 underline-offset-4 truncate max-w-[240px] sm:max-w-none">{{ activity.judul }}</span>
+          <span class="shrink-0 mx-2 text-[#94a3b8]">/</span>
+          <span class="flex-1 min-w-0 font-semibold text-[#17334F] underline decoration-[#17334F]/50 underline-offset-4 truncate">
+            {{ aktivitas?.judul || 'Memuat...' }}
+          </span>
         </div>
 
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-[360px_1fr] xl:grid-cols-[400px_1fr] xl:gap-12 items-start w-full">
@@ -240,36 +330,96 @@ const handleFeedbackClose = () => {
           <!-- KOLOM KIRI (POSTER & THUMBNAILS) -->
           <div class="flex flex-col gap-4 w-full max-w-[380px] mx-auto lg:mx-0 lg:max-w-none">
             <div class="aspect-[3/4] w-full overflow-hidden rounded-[14px] bg-slate-100 shadow-sm border border-[#d6e0ee] relative">
-              <img :src="activity.gambar_utama" class="h-full w-full object-cover" alt="Poster Aktivitas" />
+              <img 
+                :src="getImageUrl(aktivitas?.gambar_aktivitas?.find(g => g.utama == 1)?.gambar)" 
+                class="h-full w-full object-cover" 
+                alt="Poster Aktivitas" 
+              />
             </div>
             <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
-              <div v-for="(thumb, index) in activity.thumbnails" :key="index" class="aspect-square w-full rounded-[10px] bg-[#e2e8f0] shadow-xs border border-[#d6e0ee]/50 overflow-hidden">
-                <img v-if="thumb" :src="thumb" class="h-full w-full object-cover" />
+              <div 
+                v-for="(imgObj, index) in aktivitas?.gambar_aktivitas?.filter(g => g.utama != 1)" 
+                :key="index" 
+                class="aspect-square w-full rounded-[10px] bg-[#e2e8f0] shadow-xs border border-[#d6e0ee]/50 overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+              >
+                <img 
+                  :src="getImageUrl(imgObj?.gambar)" 
+                  class="h-full w-full object-cover" 
+                  alt="Thumbnail Aktivitas"
+                />
               </div>
             </div>
           </div>
 
           <!-- KOLOM KANAN (INFO & FORM REGISTRASI) -->
           <div class="flex flex-col w-full min-w-0">
-            
+            <div 
+                v-if="props.pendaftaranDetail && String(props.pendaftaranDetail.status).toLowerCase() === 'ditolak' && props.pendaftaranDetail.catatan_penolakan"
+                class="mb-5 flex items-start gap-3 rounded-[12px] border border-red-200 bg-red-50 p-4 shadow-sm"
+              >
+                <!-- Ikon Warning -->
+                <div class="mt-0.5 shrink-0 rounded-full bg-red-100 p-1">
+                  <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                
+                <!-- Isi Pesan -->
+                <div>
+                  <h3 class="font-poppins text-[13.5px] font-bold text-red-800">
+                    Pendaftaran Ditolak
+                  </h3>
+                  <p class="mt-1 font-inter text-[12.5px] sm:text-[13px] text-red-700 leading-relaxed">
+                    Alasan: <span class="font-semibold">{{ props.pendaftaranDetail.catatan_penolakan }}</span>
+                    <br>
+                    <span class="text-[12px] opacity-90 mt-1 inline-block">Silakan perbaiki data form di bawah dan kirim ulang pendaftaran Anda.</span>
+                  </p>
+                </div>
+              </div>
             <!-- HEADER DETAIL AKTIVITAS -->
             <div class="mb-5 sm:mb-6 border-b border-[#e2e8f0] pb-5 sm:pb-6 w-full">
               <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-3">
+                
+                <!-- 1. Judul di Kiri -->
                 <h1 class="font-poppins text-2xl sm:text-[32px] lg:text-[36px] font-bold text-[#17334F] leading-tight">
-                  {{ activity.judul }}
+                  {{ aktivitas.judul }}
                 </h1>
-                <div class="inline-flex items-center gap-2 text-[12.5px] sm:text-[13.5px] font-semibold text-[#183669] shrink-0 sm:mt-1 font-poppins bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full shadow-xs self-start sm:self-auto">
-                  <svg class="h-4 w-4 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                  </svg>
-                  <span>Deadline: {{ activity.deadline }}</span>
+                
+                <!-- 2. Wadah Baru (Biar Deadline & Status Numpuk Rapi di Kanan) -->
+                <div class="flex flex-col gap-2 shrink-0 sm:mt-1 self-start sm:self-auto sm:items-end">
+                  
+                  <!-- Badge Deadline (Asli punya lu) -->
+                  <div class="inline-flex items-center gap-2 text-[12.5px] sm:text-[13.5px] font-semibold text-[#183669] font-poppins bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full shadow-xs">
+                    <svg class="h-4 w-4 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Deadline: {{ aktivitas.deadline }}</span>
+                  </div>
+
+                  <!-- Badge Status (Baru) -->
+                  <div 
+                    v-if="props.pendaftaranDetail"
+                    class="inline-flex items-center gap-2 text-[12.5px] sm:text-[13.5px] font-semibold font-poppins border px-3 py-1.5 rounded-full shadow-xs"
+                    :class="{
+                      'bg-yellow-50 text-yellow-700 border-yellow-200': props.pendaftaranDetail.status === 'menunggu',
+                      'bg-green-50 text-green-700 border-green-200': props.pendaftaranDetail.status === 'disetujui',
+                      'bg-red-50 text-red-700 border-red-200': props.pendaftaranDetail.status === 'ditolak',
+                      'bg-slate-50 text-slate-700 border-slate-200': !['menunggu', 'disetujui', 'ditolak'].includes(props.pendaftaranDetail.status)
+                    }"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Status: {{ props.pendaftaranDetail.status }}</span>
+                  </div>
+
                 </div>
               </div>
 
-              <!-- KATEGORI PILLS / CHIPS (MATCH ACTIVITYSUBMISSION.VUE) -->
+              <!-- KATEGORI PILLS / CHIPS (MATCH aktivitasSUBMISSION.VUE) -->
               <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
                 <span
-                  v-for="cat in activity.kategori"
+                  v-for="cat in aktivitas.kategori"
                   :key="cat"
                   :class="[
                     'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-poppins text-[11px] sm:text-[11.5px] font-semibold border shadow-xs',
@@ -283,14 +433,15 @@ const handleFeedbackClose = () => {
 
             <!-- DESKRIPSI -->
             <div class="mb-6 space-y-3 font-inter text-[13.5px] sm:text-[14px] leading-relaxed text-[#475569] w-full">
-              <p v-for="(paragraf, index) in activity.deskripsi" :key="index">{{ paragraf }}</p>
+              <!-- OPSI 1: Kalau deskripsi cuma 1 paragraf panjang, panggil langsung aja -->
+              <p>{{ aktivitas?.deskripsi }}</p>
             </div>
 
             <!-- LINK PENDAFTARAN -->
             <div class="mb-7 w-full">
               <p class="font-poppins text-[12.5px] sm:text-[13px] font-semibold text-[#183669] mb-1">Link Pendaftaran:</p>
-              <a :href="activity.link_pendaftaran" target="_blank" class="font-inter text-[13.5px] sm:text-sm font-semibold text-[#2563eb] underline hover:text-[#1d4ed8] transition-colors break-all">
-                {{ activity.link_pendaftaran }}
+              <a :href="aktivitas?.link_pendaftaran" target="_blank" class="font-inter text-[13.5px] sm:text-sm font-semibold text-[#2563eb] underline hover:text-[#1d4ed8] transition-colors break-all">
+                {{ aktivitas?.link_pendaftaran }}
               </a>
             </div>
 
@@ -310,6 +461,7 @@ const handleFeedbackClose = () => {
                   v-model="form.nama_tim" 
                   placeholder="Masukan Nama Tim" 
                   @input="errors.nama_tim = ''"
+                  :disabled="isFormLocked"
                   class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
                   :class="[
                     errors.nama_tim 
@@ -337,31 +489,40 @@ const handleFeedbackClose = () => {
                       <div class="relative flex-1 min-w-0">
                         <input 
                           type="text" 
-                          v-model="form.peserta[index]" 
+                          v-model="displayPeserta[index]" 
                           placeholder="Masukkan Nama - NIM" 
                           @input="activeDropdown = index; errors.peserta[index] = ''"
                           @focus="activeDropdown = index"
-                          @blur="activeDropdown = null"
+                          @blur="closeDropdown"
+                          :disabled="isFormLocked"
                           class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
                           :class="[
-                            errors.peserta[index] 
-                              ? 'border-red-400 focus:border-red-500 bg-red-50/20' 
-                              : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'
-                          ]" 
+                            isFormLocked 
+                              // 1. JIKA DIKUNCI: Abu-abu kaku
+                              ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed pointer-events-none opacity-80' 
+                              
+                              // 2. JIKA DIBUKA: Cek error
+                              : (errors.peserta[index] 
+                                  // 2a. Kalau ada error -> Merah
+                                  ? 'border-red-400 focus:border-red-500 bg-red-50/20 text-[#1e3456]' 
+                                  // 2b. Kalau aman -> Normal
+                                  : 'bg-white text-[#1e3456] border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white')
+                          ]"
                         />
                         
                         <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="transform scale-95 opacity-0 translate-y-1" enter-to-class="transform scale-100 opacity-100 translate-y-0" leave-active-class="transition duration-100 ease-in" leave-from-class="transform scale-100 opacity-100 translate-y-0" leave-to-class="transform scale-95 opacity-0 translate-y-1">
-                          <ul v-if="activeDropdown === index && getFilteredStudents(form.peserta[index]).length > 0" class="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-[10px] border border-[#d6e0ee] bg-white py-1.5 shadow-xl font-inter">
-                            <li v-for="student in getFilteredStudents(form.peserta[index])" :key="student.nim" @mousedown.prevent="selectStudent(index, student)" class="cursor-pointer px-4 py-2 text-sm transition-colors hover:bg-[#f0f4f9] hover:text-[#183669] flex flex-col">
-                              <span class="font-bold text-gray-800">{{ student.name }}</span>
+                          <ul v-if="activeDropdown === index && getFilteredStudents(index).length > 0" class="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-[10px] border border-[#d6e0ee] bg-white py-1.5 shadow-xl font-inter">
+                            <li v-for="student in getFilteredStudents(index)" :key="student.nim" @mousedown.prevent="selectStudent(index, student)" class="cursor-pointer px-4 py-2 text-sm transition-colors hover:bg-[#f0f4f9] hover:text-[#183669] flex flex-col">
+                              <span class="font-bold text-gray-800">{{ student.nama }}</span>
                               <span class="text-xs text-gray-500 font-medium">{{ student.nim }}</span>
                             </li>
                           </ul>
                         </Transition>
                       </div>
                       
+                      <!-- Tombol Tambah (Hanya di baris pertama & kalau belum ada data pendaftaran) -->
                       <button 
-                        v-if="index === 0" 
+                        v-if="index === 0 && !isFormLocked" 
                         type="button" 
                         @click="addPeserta" 
                         class="mt-1 sm:mt-1.5 flex h-[42px] sm:h-[44px] w-[42px] sm:w-[44px] shrink-0 items-center justify-center rounded-[10px] border border-[#d6e0ee] bg-white text-[#183669] transition-colors hover:border-[#183669] hover:bg-[#fafcff] active:scale-95 focus:outline-none cursor-pointer shadow-xs"
@@ -370,8 +531,9 @@ const handleFeedbackClose = () => {
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                       </button>
                       
+                      <!-- Tombol Hapus (Hanya di baris kedua dst & kalau belum ada data pendaftaran) -->
                       <button 
-                        v-else 
+                        v-else-if="index !== 0 && !isFormLocked" 
                         type="button" 
                         @click="removePeserta(index)" 
                         class="mt-1 sm:mt-1.5 flex h-[42px] sm:h-[44px] w-[42px] sm:w-[44px] shrink-0 items-center justify-center rounded-[10px] border border-red-200 bg-white text-red-500 transition-colors hover:border-red-400 hover:bg-red-50 active:scale-95 focus:outline-none cursor-pointer shadow-xs"
@@ -398,26 +560,31 @@ const handleFeedbackClose = () => {
                 </label>
                 <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Masukan bukti pendaftaran berupa jpg/png/jpeg (MAX 10MB)</p>
                 
+                <!-- 🔥 Ganti jadi isFormLocked -->
                 <input 
                   type="file" 
                   ref="fileInput" 
                   accept="image/png, image/jpeg, image/jpg" 
                   class="hidden" 
+                  :disabled="isFormLocked"
                   @change="handleFileUpload" 
                 />
 
                 <!-- DROP ZONE -->
                 <div
-                  @dragover.prevent="isDragging = true"
-                  @dragleave.prevent="isDragging = false"
-                  @drop.prevent="handleDrop"
+                  @click="!isFormLocked && triggerUpload()" 
+                  @dragover.prevent="!isFormLocked && (isDragging = true)"
+                  @dragleave.prevent="!isFormLocked && (isDragging = false)"
+                  @drop.prevent="!isFormLocked && handleDrop($event)"
                   :class="[
                     'mt-1.5 flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3.5 text-center transition-colors min-h-[145px] w-full',
-                    errors.bukti
-                      ? 'border-red-400 bg-red-50/20'
-                      : isDragging
-                        ? 'border-[#183669] bg-[#183669]/5'
-                        : 'border-[#183669]/30 bg-[#fafcff] hover:border-[#183669]/60'
+                    isFormLocked 
+                      ? 'pointer-events-none cursor-not-allowed bg-gray-50/50 border-gray-200 opacity-90'
+                      : (errors.bukti
+                        ? 'border-red-400 bg-red-50/20'
+                        : (isDragging
+                          ? 'border-[#183669] bg-[#183669]/5'
+                          : 'border-[#183669]/30 bg-[#fafcff] hover:border-[#183669]/60 cursor-pointer'))
                   ]"
                 >
                   <!-- State 1: Belum Ada Gambar -->
@@ -447,10 +614,13 @@ const handleFeedbackClose = () => {
                       Format .JPG, .PNG, .JPEG • Maksimal 10MB
                     </p>
 
+                    <!-- 🔥 Ganti Class & Disabled Upload -->
                     <button
                       type="button"
-                      @click="triggerUpload"
-                      class="mt-2.5 rounded-[8px] border border-[#a6b7cb] bg-white px-5 py-1.5 font-inter text-[12px] font-semibold text-[#5a718d] transition hover:bg-slate-50 hover:border-[#183669] hover:text-[#183669] shadow-xs cursor-pointer"
+                      @click.stop="triggerUpload"
+                      :disabled="isFormLocked"
+                      class="mt-2.5 rounded-[8px] border border-[#a6b7cb] bg-white px-5 py-1.5 font-inter text-[12px] font-semibold text-[#5a718d] transition shadow-xs"
+                      :class="isFormLocked ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-50 hover:border-[#183669] hover:text-[#183669] cursor-pointer'"
                     >
                       Upload
                     </button>
@@ -470,9 +640,12 @@ const handleFeedbackClose = () => {
 
                       <!-- ACTION OVERLAY (DELETE, PREVIEW, REPLACE) -->
                       <div class="absolute inset-0 bg-black/40 flex flex-col justify-between p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        
                         <!-- DELETE -->
                         <div class="flex justify-end w-full">
+                          <!-- 🔥 Tambah v-if="!isFormLocked" biar ngilang pas dikunci -->
                           <button
+                            v-if="!isFormLocked"
                             type="button"
                             @click.stop.prevent="removeImage"
                             class="flex h-6 w-6 items-center justify-center rounded-full bg-red-600/90 text-white shadow-sm hover:bg-red-700 hover:scale-110 active:scale-95 transition cursor-pointer"
@@ -486,6 +659,8 @@ const handleFeedbackClose = () => {
 
                         <!-- PREVIEW + REPLACE -->
                         <div class="flex items-center justify-center gap-2 w-full pb-0.5">
+                          
+                          <!-- Tombol PREVIEW (Mata) -> Biarin selalu ada -->
                           <button
                             type="button"
                             @click.stop.prevent="openImagePreview(imagePreview)"
@@ -497,7 +672,9 @@ const handleFeedbackClose = () => {
                             </svg>
                           </button>
 
+                          <!-- Tombol REPLACE (Ganti Gambar) -> 🔥 Tambah v-if="!isFormLocked" -->
                           <button
+                            v-if="!isFormLocked"
                             type="button"
                             @click.stop.prevent="triggerUpload"
                             class="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-sm hover:bg-amber-600 hover:scale-110 active:scale-95 transition cursor-pointer"
@@ -512,16 +689,16 @@ const handleFeedbackClose = () => {
                     </div>
                   </div>
                 </div>
-                
-                <p v-if="errors.bukti" class="mt-1 font-inter text-[11px] font-medium text-red-500 flex items-center gap-1">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  {{ errors.bukti }}
+                  <p v-if="errors.bukti" class="mt-1 font-inter text-[11px] font-medium text-red-500 flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    {{ errors.bukti }}
                 </p>
               </div>
 
               <!-- SUBMIT BUTTON -->
               <div class="mt-2 flex justify-end w-full">
                 <button 
+                  v-if="!isFormLocked"
                   type="submit" 
                   class="w-full sm:w-auto rounded-[10px] bg-[#183669] px-8 py-2.5 font-poppins text-sm font-semibold text-white shadow-sm transition hover:bg-[#132b53] active:scale-[0.98] focus:outline-none cursor-pointer"
                 >
