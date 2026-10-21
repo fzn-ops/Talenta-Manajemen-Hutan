@@ -22,6 +22,7 @@ const props = defineProps({
             judul: '',
             deskripsi: '',
             deadline: '',
+            link_pendaftaran: '',
             kategori: [],
             gambar: [],
             catatan_penolakan: ''
@@ -47,6 +48,7 @@ const form = ref({
     judul: '',
     deskripsi: '',
     deadline: '',
+    link_pendaftaran: '',
     kategori: [],
     gambar: [],
     gambar_dihapus: [],
@@ -57,6 +59,7 @@ const errors = ref({
     judul: '',
     deskripsi: '',
     deadline: '',
+    link_pendaftaran: '',
     kategori: '',
     gambar: ''
 });
@@ -93,6 +96,7 @@ const syncFormData = () => {
         judul: '',
         deskripsi: '',
         deadline: '',
+        link_pendaftaran: '',
         kategori: '',
         gambar: ''
     };
@@ -124,6 +128,7 @@ const syncFormData = () => {
         judul: data.judul || '',
         deskripsi: data.deskripsi || '',
         deadline: data.deadline || '',
+        link_pendaftaran: data.link_pendaftaran || '',
         kategori,
         gambar,
         gambar_dihapus : [],
@@ -431,6 +436,7 @@ const validateForm = () => {
         judul: '',
         deskripsi: '',
         deadline: '',
+        link_pendaftaran: '',
         kategori: '',
         gambar: ''
     };
@@ -504,6 +510,24 @@ const validateForm = () => {
         isValid = false;
     }
 
+    // Link Pendaftaran
+    const linkPendaftaran = (form.value.link_pendaftaran || '').trim();
+    if (!linkPendaftaran) {
+        errors.value.link_pendaftaran = 'Link pendaftaran wajib diisi.';
+        isValid = false;
+    } else {
+        try {
+            const parsedUrl = new URL(linkPendaftaran);
+            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                errors.value.link_pendaftaran = 'Link pendaftaran harus diawali dengan http:// atau https://';
+                isValid = false;
+            }
+        } catch (_) {
+            errors.value.link_pendaftaran = 'Format link pendaftaran tidak valid (contoh: https://...).';
+            isValid = false;
+        }
+    }
+
     return isValid;
 };
 
@@ -523,6 +547,7 @@ const submit = () => {
         judul: form.value.judul.trim(),
         deskripsi: form.value.deskripsi,
         deadline: form.value.deadline,
+        link_pendaftaran: (form.value.link_pendaftaran || '').trim(),
         kategori: [...form.value.kategori],
         catatan_penolakan: form.value.catatan_penolakan
     };
@@ -604,10 +629,10 @@ const submit = () => {
                                 <!-- KOLOM KIRI -->
                                 <!-- ================================================= -->
 
-                                <div class="flex flex-col gap-3.5 sm:gap-4">
+                                <div class="flex flex-col gap-3.5 sm:gap-4 md:h-full">
 
                                     <!-- JUDUL -->
-                                    <div>
+                                    <div class="shrink-0">
                                         <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
                                             Judul Aktivitas
                                             <span class="text-red-500">*</span>
@@ -638,74 +663,29 @@ const submit = () => {
                                         </p>
                                     </div>
 
-                                    <!-- KATEGORI -->
-                                    <div>
-                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-                                            Kategori Talenta
-                                            <span class="text-red-500">*</span>
-                                        </label>
-
-                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-                                            Masukkan kemungkinan kategori dari aktivitas kamu yah!
-                                        </p>
-
-                                        <div class="grid grid-cols-2 gap-2 sm:gap-2.5 mt-2">
-                                            <label
-                                                v-for="kat in kategoriOptions"
-                                                :key="kat"
-                                                class="flex items-center gap-2 p-2 rounded-[8px] border transition cursor-pointer select-none"
-                                                :class="
-                                                    form.kategori.includes(kat)
-                                                        ? 'border-[#183669] bg-[#183669]/5'
-                                                        : errors.kategori
-                                                            ? 'border-red-300 hover:border-red-400 bg-red-50/10'
-                                                            : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'
-                                                "
-                                            >
-                                                <input
-                                                    v-model="form.kategori"
-                                                    type="checkbox"
-                                                    :value="kat"
-                                                    @change="errors.kategori = ''"
-                                                    class="h-4 w-4 rounded border-[#d6e0ee] text-[#183669] focus:ring-0 focus:outline-none cursor-pointer"
-                                                />
-
-                                                <span class="font-inter text-[12.5px] sm:text-[13px] font-medium text-[#1e3456]">
-                                                    {{ kat }}
-                                                </span>
-                                            </label>
-                                        </div>
-
-                                        <p
-                                            v-if="errors.kategori"
-                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
-                                        >
-                                            {{ errors.kategori }}
-                                        </p>
-                                    </div>
-
                                     <!-- DESKRIPSI -->
-                                    <div>
-                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+                                    <div class="flex-1 flex flex-col min-h-0">
+                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669] shrink-0">
                                             Deskripsi
                                             <span class="text-red-500">*</span>
                                         </label>
 
-                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5">
+                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5 shrink-0">
                                             Jelaskan gambaran kegiatan ini yah!
                                         </p>
 
                                         <RichTextEditor
                                             v-model="form.deskripsi"
                                             placeholder="Pelatihan manajer KDMP"
-                                            min-height="115px"
+                                            min-height="140px"
                                             :has-error="!!errors.deskripsi"
                                             @update:modelValue="errors.deskripsi = ''"
+                                            class="flex-1 flex flex-col min-h-0"
                                         />
 
                                         <p
                                             v-if="errors.deskripsi"
-                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
+                                            class="mt-1 font-inter text-[11px] font-medium text-red-500 shrink-0"
                                         >
                                             {{ errors.deskripsi }}
                                         </p>
@@ -933,6 +913,89 @@ const submit = () => {
                                             class="mt-1 font-inter text-[11px] font-medium text-red-500"
                                         >
                                             {{ errors.gambar }}
+                                        </p>
+                                    </div>
+
+                                    <!-- KATEGORI -->
+                                    <div>
+                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+                                            Kategori Talenta
+                                            <span class="text-red-500">*</span>
+                                        </label>
+
+                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+                                            Masukkan kemungkinan kategori dari aktivitas kamu yah!
+                                        </p>
+
+                                        <div class="grid grid-cols-2 gap-2 sm:gap-2.5 mt-2">
+                                            <label
+                                                v-for="kat in kategoriOptions"
+                                                :key="kat"
+                                                class="flex items-center gap-2 p-2 rounded-[8px] border transition cursor-pointer select-none"
+                                                :class="
+                                                    form.kategori.includes(kat)
+                                                        ? 'border-[#183669] bg-[#183669]/5'
+                                                        : errors.kategori
+                                                            ? 'border-red-300 hover:border-red-400 bg-red-50/10'
+                                                            : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'
+                                                "
+                                            >
+                                                <input
+                                                    v-model="form.kategori"
+                                                    type="checkbox"
+                                                    :value="kat"
+                                                    @change="errors.kategori = ''"
+                                                    class="h-4 w-4 rounded border-[#d6e0ee] text-[#183669] focus:ring-0 focus:outline-none cursor-pointer"
+                                                />
+
+                                                <span class="font-inter text-[12.5px] sm:text-[13px] font-medium text-[#1e3456]">
+                                                    {{ kat }}
+                                                </span>
+                                            </label>
+                                        </div>
+
+                                        <p
+                                            v-if="errors.kategori"
+                                            class="mt-1 font-inter text-[11px] font-medium text-red-500"
+                                        >
+                                            {{ errors.kategori }}
+                                        </p>
+                                    </div>
+
+                                    <!-- LINK PENDAFTARAN -->
+                                    <div>
+                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+                                            Link Pendaftaran
+                                            <span class="text-red-500">*</span>
+                                        </label>
+
+                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+                                            Masukkan link pendaftaran eksternal atau Google Form (contoh: https://...)
+                                        </p>
+
+                                        <div class="relative mt-1 sm:mt-1.5">
+                                            <input
+                                                v-model="form.link_pendaftaran"
+                                                type="url"
+                                                placeholder="https://..."
+                                                @input="errors.link_pendaftaran = ''"
+                                                class="h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+                                                :class="
+                                                    errors.link_pendaftaran
+                                                        ? 'border-red-400 focus:border-red-500 bg-red-50/20'
+                                                        : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'
+                                                "
+                                            />
+                                        </div>
+
+                                        <p
+                                            v-if="errors.link_pendaftaran"
+                                            class="mt-1 font-inter text-[11px] font-medium text-red-500 flex items-center gap-1"
+                                        >
+                                            <svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                            </svg>
+                                            <span>{{ errors.link_pendaftaran }}</span>
                                         </p>
                                     </div>
 

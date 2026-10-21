@@ -46,15 +46,19 @@ class AktivitasController extends Controller
     {
         // 1. Validasi Input
         $validated = $request->validate([
-            'judul'      => 'required|string|max:255',
-            'deskripsi'  => 'required|string',
-            'kategori'   => 'required|array', // Wajib array karena kita pakai JSON
-            'partisipan' => 'nullable|integer',
-            'jenis'      => 'nullable|in:umum,lomba',
-            'status'     => 'nullable|boolean',
-            'deadline'   => 'required|date',
-            'gambar'     => 'nullable|array|max:3', // Misal maksimal 3 gambar sesuai sisaSlot lu
-            'gambar.*'   => 'image|mimes:jpeg,png,jpg|max:10240',
+            'judul'            => 'required|string|max:255',
+            'deskripsi'        => 'required|string',
+            'kategori'         => 'required|array', // Wajib array karena kita pakai JSON
+            'partisipan'       => 'nullable|integer',
+            'jenis'            => 'nullable|in:umum,lomba',
+            'status'           => 'nullable|boolean',
+            'deadline'         => 'required|date',
+            'link_pendaftaran' => 'required|url|max:2048',
+            'gambar'           => 'nullable|array|max:3', // Misal maksimal 3 gambar sesuai sisaSlot lu
+            'gambar.*'         => 'image|mimes:jpeg,png,jpg|max:10240',
+        ], [
+            'link_pendaftaran.required' => 'Link pendaftaran wajib diisi.',
+            'link_pendaftaran.url'      => 'Link pendaftaran harus berupa URL/tautan yang valid (contoh: https://...).',
         ]);
 
         $validated['partisipan'] = $validated['partisipan'] ?? 0;
@@ -75,17 +79,21 @@ class AktivitasController extends Controller
     {
         // 1. Validasi Input
         $validated = $request->validate([
-            'judul'      => 'required|string|max:255',
-            'deskripsi'  => 'required|string',
-            'kategori'   => 'required|array',
-            'partisipan' => 'nullable|integer',
-            'jenis'      => 'nullable|in:umum,lomba',
-            'status'     => 'nullable',
-            'deadline'   => 'required|date',
-            'gambar'     => 'nullable|array|max:3',
-            'gambar.*'   => 'image|mimes:jpeg,png,jpg|max:10240',
+            'judul'            => 'required|string|max:255',
+            'deskripsi'        => 'required|string',
+            'kategori'         => 'required|array',
+            'partisipan'       => 'nullable|integer',
+            'jenis'            => 'nullable|in:umum,lomba',
+            'status'           => 'nullable',
+            'deadline'         => 'required|date',
+            'link_pendaftaran' => 'required|url|max:2048',
+            'gambar'           => 'nullable|array|max:3',
+            'gambar.*'         => 'image|mimes:jpeg,png,jpg|max:10240',
             'deleted_images'   => 'nullable|array',
             'deleted_images.*' => 'integer', 
+        ], [
+            'link_pendaftaran.required' => 'Link pendaftaran wajib diisi.',
+            'link_pendaftaran.url'      => 'Link pendaftaran harus berupa URL/tautan yang valid (contoh: https://...).',
         ]);
 
         // 2. Default Values (Biar MySQL gak error 1364)

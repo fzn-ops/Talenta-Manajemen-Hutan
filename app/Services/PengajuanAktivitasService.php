@@ -52,13 +52,14 @@ public function getPaginatedData(Request $request)
     public function createPengajuan(Request $request)
     {
         $pengajuan = PengajuanAktivitas::create([
-            'id_user'    => $request->user()->id,
-            'judul'      => $request->judul,
-            'deskripsi'  => $request->deskripsi,
-            'kategori'   => $request->kategori,
-            'partisipan' => $request->partisipan,
-            'deadline'   => $request->deadline,
-            'status'     => 'menunggu',
+            'id_user'          => $request->user()->id,
+            'judul'            => $request->judul,
+            'deskripsi'        => $request->deskripsi,
+            'kategori'         => $request->kategori,
+            'partisipan'       => $request->partisipan,
+            'deadline'         => $request->deadline,
+            'link_pendaftaran' => $request->link_pendaftaran,
+            'status'           => 'menunggu',
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -85,11 +86,12 @@ public function getPaginatedData(Request $request)
                         ->firstOrFail();
 
         $pengajuan->update([
-            'judul'      => $request->judul,
-            'deskripsi'  => $request->deskripsi,
-            'kategori'   => $request->kategori,
-            'deadline'   => $request->deadline,
-            'status'     => 'menunggu',
+            'judul'            => $request->judul,
+            'deskripsi'        => $request->deskripsi,
+            'kategori'         => $request->kategori,
+            'deadline'         => $request->deadline,
+            'link_pendaftaran' => $request->link_pendaftaran,
+            'status'           => 'menunggu',
         ]);
         $pengajuan->touch();
 

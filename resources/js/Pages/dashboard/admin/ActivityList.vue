@@ -171,7 +171,7 @@ const formatDate = (dateStr) => {
 // ==============================
 const openTambah = () => {
   isEditing.value = false;
-  selectedActivityData.value = { id: null, judul: '', deskripsi: '', deadline: '', kategori: [], gambar: [] };
+  selectedActivityData.value = { id: null, judul: '', deskripsi: '', deadline: '', link_pendaftaran: '', kategori: [], gambar: [] };
   showFormModal.value = true;
 };
 

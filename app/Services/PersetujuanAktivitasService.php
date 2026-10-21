@@ -80,13 +80,14 @@ class PersetujuanAktivitasService
 
             // Simpan ke tabel aktivitas utama
             $aktivitas = Aktivitas::create([
-                'judul'      => $pengajuan->judul,
-                'deskripsi'  => $pengajuan->deskripsi,
-                'kategori'   => $kategoriArray,
-                'partisipan' => $pengajuan->partisipan ?? 0,
-                'jenis'      => 'umum',
-                'status'     => 1, // Status aktif agar langsung tampil di List Aktivitas
-                'deadline'   => $pengajuan->deadline,
+                'judul'            => $pengajuan->judul,
+                'deskripsi'        => $pengajuan->deskripsi,
+                'kategori'         => $kategoriArray,
+                'partisipan'       => $pengajuan->partisipan ?? 0,
+                'jenis'            => 'umum',
+                'status'           => 1, // Status aktif agar langsung tampil di List Aktivitas
+                'deadline'         => $pengajuan->deadline,
+                'link_pendaftaran' => $pengajuan->link_pendaftaran,
             ]);
 
             // Update status pengajuan menjadi disetujui

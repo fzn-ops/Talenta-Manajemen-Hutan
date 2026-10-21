@@ -30,7 +30,7 @@ const editorRef = ref(null);
 const containerRef = ref(null);
 
 // Resizing height state
-const editorHeight = ref(props.minHeight || '130px');
+const editorHeight = ref(null);
 const isResizing = ref(false);
 
 const startResize = (e) => {
@@ -41,11 +41,12 @@ const startResize = (e) => {
 	isResizing.value = true;
 	const startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 	const startHeight = editorRef.value ? editorRef.value.offsetHeight : 130;
+	const minLimit = parseInt(props.minHeight, 10) || 90;
 
 	const onMouseMove = (moveEvent) => {
 		if (!isResizing.value) return;
 		const clientY = moveEvent.type.includes('touch') ? moveEvent.touches[0].clientY : moveEvent.clientY;
-		const newHeight = Math.max(90, Math.min(500, startHeight + (clientY - startY)));
+		const newHeight = Math.max(minLimit, Math.min(850, startHeight + (clientY - startY)));
 		editorHeight.value = `${newHeight}px`;
 	};
 
@@ -63,6 +64,18 @@ const startResize = (e) => {
 	window.addEventListener('touchmove', onMouseMove, { passive: false });
 	window.addEventListener('touchend', onMouseUp);
 };
+
+const editorStyle = computed(() => {
+	if (editorHeight.value) {
+		return {
+			height: editorHeight.value,
+			minHeight: editorHeight.value,
+		};
+	}
+	return {
+		minHeight: props.minHeight || '130px',
+	};
+});
 
 // Formats State
 const activeFormats = ref({
@@ -354,7 +367,7 @@ onUnmounted(() => {
 		]"
 	>
 		<!-- Compact Single-Row Toolbar -->
-		<div class="border-b border-[#e6edf6] bg-[#f8fafc] px-2 py-1.5 rounded-t-[9px] select-none text-[#435b76]">
+		<div class="border-b border-[#e6edf6] bg-[#f8fafc] px-2 py-1.5 rounded-t-[9px] select-none text-[#435b76] shrink-0">
 			<!-- Toolbar Items -->
 			<div class="flex flex-wrap w-full items-center gap-1.5">
 				<!-- Heading Dropdown -->
@@ -659,7 +672,7 @@ onUnmounted(() => {
 		</div>
 
 		<!-- Contenteditable Text Area with Controlled Height -->
-		<div class="relative w-full">
+		<div class="relative w-full flex-1 flex flex-col min-h-0">
 			<div
 				ref="editorRef"
 				contenteditable="true"
@@ -667,8 +680,8 @@ onUnmounted(() => {
 				@keyup="updateActiveFormats"
 				@mouseup="updateActiveFormats"
 				@focus="updateActiveFormats"
-				:style="{ height: editorHeight, minHeight }"
-				class="editor-content w-full overflow-y-auto p-3.5 pb-7 font-inter text-[14px] leading-relaxed text-[#1e3456] focus:outline-none max-h-[500px] rounded-b-[9px]"
+				:style="editorStyle"
+				class="editor-content w-full flex-1 overflow-y-auto p-3.5 pb-7 font-inter text-[14px] leading-relaxed text-[#1e3456] focus:outline-none max-h-[850px] rounded-b-[9px]"
 			></div>
 
 			<!-- Floating Placeholder -->

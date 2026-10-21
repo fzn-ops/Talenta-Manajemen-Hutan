@@ -19,6 +19,7 @@ class Aktivitas extends Model
         'jenis',
         'status',
         'deadline',
+        'link_pendaftaran',
         'created_at',
         'updated_at',
     ];

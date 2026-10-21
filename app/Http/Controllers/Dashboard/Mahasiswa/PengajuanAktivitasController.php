@@ -44,11 +44,15 @@ class PengajuanAktivitasController extends Controller
     {
         // Validasi inputan biar data yang masuk bersih
         $request->validate([
-            'judul'      => 'required|string|max:255',
-            'deskripsi'  => 'required|string',
-            'kategori'   => 'required|string|max:255',
-            'deadline'   => 'required|date',
-            'gambar.*'   => 'nullable|image|mimes:jpg,jpeg,png|max:2048' // Maksimal 2MB per foto
+            'judul'            => 'required|string|max:255',
+            'deskripsi'        => 'required|string',
+            'kategori'         => 'required|string|max:255',
+            'deadline'         => 'required|date',
+            'link_pendaftaran' => 'required|url|max:2048',
+            'gambar.*'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048' // Maksimal 2MB per foto
+        ], [
+            'link_pendaftaran.required' => 'Link pendaftaran wajib diisi.',
+            'link_pendaftaran.url'      => 'Link pendaftaran harus berupa URL/tautan yang valid (contoh: https://...).',
         ]);
 
         $this->pengajuanService->createPengajuan($request);
@@ -62,11 +66,15 @@ class PengajuanAktivitasController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'judul'         => 'required|string|max:255',
-            'deskripsi'     => 'required|string',
-            'kategori'      => 'required|string|max:255',
-            'deadline'      => 'required|date',
-            'gambar_baru.*' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+            'judul'            => 'required|string|max:255',
+            'deskripsi'        => 'required|string',
+            'kategori'         => 'required|string|max:255',
+            'deadline'         => 'required|date',
+            'link_pendaftaran' => 'required|url|max:2048',
+            'gambar_baru.*'    => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+        ], [
+            'link_pendaftaran.required' => 'Link pendaftaran wajib diisi.',
+            'link_pendaftaran.url'      => 'Link pendaftaran harus berupa URL/tautan yang valid (contoh: https://...).',
         ]);
 
         $this->pengajuanService->updatePengajuan($request, $id);

@@ -20,6 +20,7 @@ const props = defineProps({
 			judul: '',
 			deskripsi: '',
 			deadline: '',
+			link_pendaftaran: '',
 			kategori: [],
 			gambar: [],
 		}),
@@ -35,6 +36,7 @@ const form = ref({
 	judul: '',
 	deskripsi: '',
 	deadline: '',
+	link_pendaftaran: '',
 	kategori: [],
 	gambar: [],
 });
@@ -67,6 +69,7 @@ const syncFormData = () => {
 		judul: props.initialData?.judul || '',
 		deskripsi: props.initialData?.deskripsi || '',
 		deadline: props.initialData?.deadline || '',
+		link_pendaftaran: props.initialData?.link_pendaftaran || '',
 		kategori: props.initialData?.kategori ? [...props.initialData.kategori] : [],
 		gambar: props.initialData?.gambar ? [...props.initialData.gambar] : [],
 	};
@@ -354,6 +357,20 @@ const handleSubmit = () => {
 		errors.value.kategori = 'Pilih minimal 1 kategori aktivitas.';
 	}
 
+	const inputLink = (form.value.link_pendaftaran || '').trim();
+	if (!inputLink) {
+		errors.value.link_pendaftaran = 'Link pendaftaran wajib diisi.';
+	} else {
+		try {
+			const parsedUrl = new URL(inputLink);
+			if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+				errors.value.link_pendaftaran = 'Link pendaftaran harus diawali dengan http:// atau https://';
+			}
+		} catch (_) {
+			errors.value.link_pendaftaran = 'Format link pendaftaran tidak valid (contoh: https://...).';
+		}
+	}
+
 	if (Object.keys(errors.value).length > 0) {
 		return;
 	}
@@ -363,6 +380,7 @@ const handleSubmit = () => {
 		judul: inputJudul,
 		deskripsi: inputDeskripsi,
 		deadline: inputDeadline,
+		link_pendaftaran: (form.value.link_pendaftaran || '').trim(),
 		kategori: [...form.value.kategori],
 		gambar: [...form.value.gambar],
 		deleted_images: deletedImageIds.value,
@@ -413,9 +431,9 @@ const handleSubmit = () => {
 						<form @submit.prevent="handleSubmit" novalidate>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 								<!-- Kolom Kiri -->
-								<div class="flex flex-col gap-3.5 sm:gap-4">
+								<div class="flex flex-col gap-3.5 sm:gap-4 md:h-full">
 									<!-- Judul Aktivitas -->
-									<div>
+									<div class="shrink-0">
 										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
 											Judul Aktivitas<span class="text-red-500">*</span>
 										</label>
@@ -439,55 +457,32 @@ const handleSubmit = () => {
 									</div>
 
 									<!-- Deskripsi (RichTextEditor) -->
-									<div>
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+									<div class="flex-1 flex flex-col min-h-0">
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669] shrink-0">
 											Deskripsi<span class="text-red-500">*</span>
 										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5">
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5 shrink-0">
 											Jelaskan gambaran kegiatan ini yah!
 										</p>
 										<RichTextEditor
 											v-model="form.deskripsi"
 											placeholder="Pelatihan manajer KDMP"
-											min-height="115px"
+											min-height="140px"
 											:has-error="!!errors.deskripsi"
 											@update:modelValue="errors.deskripsi = ''"
+											class="flex-1 flex flex-col min-h-0"
 										/>
-										<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500 shrink-0">
 											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 											</svg>
 											<span>{{ errors.deskripsi }}</span>
 										</p>
 									</div>
-
-									<!-- Deadline -->
-									<div>
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Deadline<span class="text-red-500">*</span>
-										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-											Masukkan tanggal batas registrasi dari aktivitas kamu yah!
-										</p>
-										<div class="mt-1 sm:mt-1.5">
-											<DatePicker
-												v-model="form.deadline"
-												:has-error="!!errors.deadline"
-												placeholder="Pilih tanggal deadline"
-												@update:modelValue="errors.deadline = ''"
-											/>
-										</div>
-										<p v-if="errors.deadline" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-											</svg>
-											<span>{{ errors.deadline }}</span>
-										</p>
-									</div>
 								</div>
 
 								<!-- Kolom Kanan -->
-								<div class="flex flex-col gap-4">
+								<div class="flex flex-col gap-3.5 sm:gap-4">
 									<!-- Image Upload Box Container -->
 									<div>
 										<div class="flex items-center justify-between">
@@ -666,6 +661,54 @@ const handleSubmit = () => {
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 											</svg>
 											<span>{{ errors.kategori }}</span>
+										</p>
+									</div>
+
+									<!-- Link Pendaftaran -->
+									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Link Pendaftaran<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Masukkan link pendaftaran eksternal atau Google Form (contoh: https://...)
+										</p>
+										<input
+											v-model="form.link_pendaftaran"
+											type="url"
+											placeholder="https://..."
+											@input="errors.link_pendaftaran = ''"
+											class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+											:class="errors.link_pendaftaran ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
+										/>
+										<p v-if="errors.link_pendaftaran" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.link_pendaftaran }}</span>
+										</p>
+									</div>
+
+									<!-- Deadline -->
+									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Deadline<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Masukkan tanggal batas registrasi dari aktivitas kamu yah!
+										</p>
+										<div class="mt-1 sm:mt-1.5">
+											<DatePicker
+												v-model="form.deadline"
+												:has-error="!!errors.deadline"
+												placeholder="Pilih tanggal deadline"
+												@update:modelValue="errors.deadline = ''"
+											/>
+										</div>
+										<p v-if="errors.deadline" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.deadline }}</span>
 										</p>
 									</div>
 								</div>
