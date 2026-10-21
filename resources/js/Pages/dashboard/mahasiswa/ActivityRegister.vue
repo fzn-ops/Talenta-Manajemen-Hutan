@@ -31,7 +31,7 @@ const currentUser = computed(() => {
 
 const isFormLocked = computed(() => {
     if (!props.pendaftaranDetail) return false;
-    return props.pendaftaranDetail.status !== 'ditolak';
+    return props.pendaftaranDetail.status.toLowerCase() === 'disetujui';
 });
 
 let initialDisplayPeserta = [];
