@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import DatePicker from '@/Components/dashboard/DatePicker.vue';
 import RichTextEditor from '@/Components/dashboard/RichTextEditor.vue';
 
@@ -42,6 +42,9 @@ const imageInput = ref(null);
 const imagePreview = ref(null);
 const isDragging = ref(false);
 
+// Backdrop tracking
+const isBackdropClick = ref(false);
+
 const resetErrors = () => {
 	errors.value = {
 		judul: '',
@@ -51,14 +54,28 @@ const resetErrors = () => {
 	};
 };
 
+const removeImage = () => {
+	if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+		URL.revokeObjectURL(imagePreview.value);
+	}
+	form.value.foto = null;
+	imagePreview.value = null;
+	if (imageInput.value) {
+		imageInput.value.value = '';
+	}
+};
+
 const resetForm = () => {
 	form.value = {
 		id: null,
 		judul: '',
 		created_at: '',
 		deskripsi: '',
-		foto: '',
+		foto: null,
 	};
+	if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+		URL.revokeObjectURL(imagePreview.value);
+	}
 	imagePreview.value = null;
 	if (imageInput.value) {
 		imageInput.value.value = '';
@@ -113,6 +130,9 @@ const processImageFile = (file) => {
 			errors.value.foto = 'Ukuran gambar maksimal 10MB!';
 			return;
 		}
+		if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+			URL.revokeObjectURL(imagePreview.value);
+		}
 		form.value.foto = file;
 		imagePreview.value = URL.createObjectURL(file);
 		errors.value.foto = '';
@@ -166,6 +186,35 @@ const handleClose = () => {
 	emit('close');
 };
 
+const handleBackdropMouseDown = (e) => {
+	isBackdropClick.value = e.target === e.currentTarget;
+};
+
+const handleBackdropMouseUp = (e) => {
+	if (isBackdropClick.value && e.target === e.currentTarget) {
+		handleClose();
+	}
+	isBackdropClick.value = false;
+};
+
+const handleKeyDown = (event) => {
+	if (event.key !== 'Escape' || !props.show) {
+		return;
+	}
+	handleClose();
+};
+
+onMounted(() => {
+	document.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+	document.removeEventListener('keydown', handleKeyDown);
+	if (imagePreview.value && imagePreview.value.startsWith('blob:')) {
+		URL.revokeObjectURL(imagePreview.value);
+	}
+});
+
 const handleSubmit = () => {
     // 1. Validasi lu tetep jalanin di awal
     if (!validateForm()) return;
@@ -200,7 +249,8 @@ const handleSubmit = () => {
 			<div
 				v-if="show"
 				class="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/40 backdrop-blur-xs p-3 sm:p-6 flex justify-center items-start min-h-screen"
-				@click.self="handleClose"
+				@mousedown="handleBackdropMouseDown"
+				@mouseup="handleBackdropMouseUp"
 			>
 				<Transition
 					enter-active-class="ease-out duration-200"
@@ -223,7 +273,7 @@ const handleSubmit = () => {
 
 						<form @submit.prevent="handleSubmit" novalidate>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-								<!-- Kolom Kiri -->
+								<!-- Kolom Kiri: Judul & Tanggal -->
 								<div class="flex flex-col gap-3.5 sm:gap-4">
 									<!-- Judul Berita -->
 									<div>
@@ -272,35 +322,11 @@ const handleSubmit = () => {
 											<span>{{ errors.created_at }}</span>
 										</p>
 									</div>
-
-									<!-- Isi Berita (RichTextEditor) -->
-									<div class="flex-1 flex flex-col">
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Isi Berita<span class="text-red-500">*</span>
-										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5">
-											Tuliskan konten berita secara lengkap di sini.
-										</p>
-										<RichTextEditor
-											v-model="form.deskripsi"
-											placeholder="Tulis isi berita..."
-											min-height="140px"
-											:has-error="!!errors.deskripsi"
-											@update:modelValue="errors.deskripsi = ''"
-										/>
-										<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-											</svg>
-											<span>{{ errors.deskripsi }}</span>
-										</p>
-									</div>
 								</div>
 
-								<!-- Kolom Kanan -->
+								<!-- Kolom Kanan: Thumbnail Upload -->
 								<div class="flex flex-col gap-3.5 sm:gap-4">
-									<!-- Thumbnail Upload -->
-									<div class="flex-1 flex flex-col">
+									<div>
 										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
 											Gambar / Thumbnail<span class="text-red-500">*</span>
 										</label>
@@ -317,34 +343,57 @@ const handleSubmit = () => {
 										/>
 
 										<div
-											@click="triggerImageUpload"
 											@dragover.prevent="isDragging = true"
 											@dragleave.prevent="isDragging = false"
 											@drop.prevent="handleImageDrop"
 											:class="[
-												'relative flex flex-1 min-h-[200px] sm:min-h-[240px] w-full flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3.5 text-center transition-colors cursor-pointer group select-none',
+												'mt-1.5 flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3.5 text-center transition-colors min-h-[145px]',
 												errors.foto ? 'border-red-400 bg-red-50/20' : (isDragging ? 'border-[#183669] bg-[#183669]/5' : 'border-[#183669]/30 bg-[#fafcff] hover:border-[#183669]/60')
 											]"
 										>
-											<template v-if="imagePreview">
-												<div class="relative h-full w-full min-h-[170px] rounded-[10px] overflow-hidden border border-[#d6e0ee] bg-white p-2 flex items-center justify-center">
-													<img :src="imagePreview" alt="Preview" class="max-h-[220px] w-full object-contain" />
-													<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-[10px]">
-														<span class="rounded-[8px] bg-white px-3 py-1.5 text-[12px] font-bold text-[#183669] shadow-md">Ganti Gambar</span>
-													</div>
-												</div>
-											</template>
-											<template v-else>
-												<svg class="h-10 w-10 text-[#8c9eb5] group-hover:text-[#183669] transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+											<!-- State 1: Belum ada gambar -->
+											<div v-if="!imagePreview" class="flex flex-col items-center justify-center py-2.5">
+												<svg class="h-9 w-9 text-[#8c9eb5]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
 												</svg>
-												<p class="mt-2 font-inter text-[12px] text-[#7188a3]">
+												<p class="mt-1.5 font-inter text-[12px] text-[#7188a3]">
 													Upload gambar atau seret file ke form ini
 												</p>
-												<button type="button" class="mt-2.5 rounded-[8px] border border-[#a6b7cb] bg-white px-5 py-1.5 font-inter text-[12px] font-semibold text-[#5a718d] transition hover:bg-slate-50 shadow-xs cursor-pointer">
+												<p class="font-inter text-[10px] text-[#94a3b8] mt-0.5">
+													(JPG/PNG, MAX 10MB)
+												</p>
+												<button
+													type="button"
+													@click="triggerImageUpload"
+													class="mt-2.5 rounded-[8px] border border-[#a6b7cb] bg-white px-5 py-1 font-inter text-[12px] font-semibold text-[#5a718d] transition hover:bg-slate-50 shadow-xs cursor-pointer"
+												>
 													Upload
 												</button>
-											</template>
+											</div>
+
+											<!-- State 2: Sudah ada gambar -->
+											<div v-else class="relative w-full flex items-center justify-center py-1">
+												<div class="relative max-h-[160px] rounded-[10px] overflow-hidden border border-[#d6e0ee] bg-white p-1.5 flex items-center justify-center group shadow-xs">
+													<img :src="imagePreview" alt="Preview" class="max-h-[140px] w-auto max-w-full object-contain rounded-[6px]" />
+													<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity rounded-[10px]">
+														<button
+															type="button"
+															@click.stop="triggerImageUpload"
+															class="rounded-[8px] bg-white px-3 py-1 font-inter text-[12px] font-bold text-[#183669] shadow-md hover:bg-slate-50 transition cursor-pointer"
+														>
+															Ganti Gambar
+														</button>
+														<button
+															type="button"
+															@click.stop="removeImage"
+															class="rounded-[8px] bg-red-600 px-3 py-1 font-inter text-[12px] font-bold text-white shadow-md hover:bg-red-700 transition cursor-pointer"
+															title="Hapus Gambar"
+														>
+															Hapus
+														</button>
+													</div>
+												</div>
+											</div>
 										</div>
 										<p v-if="errors.foto" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -353,6 +402,29 @@ const handleSubmit = () => {
 											<span>{{ errors.foto }}</span>
 										</p>
 									</div>
+								</div>
+
+								<!-- Isi Berita (Full Width: Kolom Kiri & Kanan Disatukan) -->
+								<div class="col-span-1 md:col-span-2 flex flex-col">
+									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+										Isi Berita<span class="text-red-500">*</span>
+									</label>
+									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1 sm:mb-1.5">
+										Tuliskan konten berita secara lengkap di sini.
+									</p>
+									<RichTextEditor
+										v-model="form.deskripsi"
+										placeholder="Tulis isi berita..."
+										min-height="180px"
+										:has-error="!!errors.deskripsi"
+										@update:modelValue="errors.deskripsi = ''"
+									/>
+									<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+										<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+										</svg>
+										<span>{{ errors.deskripsi }}</span>
+									</p>
 								</div>
 							</div>
 
