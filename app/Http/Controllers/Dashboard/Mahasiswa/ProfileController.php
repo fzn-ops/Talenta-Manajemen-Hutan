@@ -61,10 +61,23 @@ class ProfileController extends Controller
             'email.unique' => 'Email ini sudah digunakan oleh akun lain.',
         ]);
 
+        // 1. Deteksi perubahan email
+        $emailBerubah = $user->email !== $validated['email'];
+
+        // 2. Update data biasa (yang diizinkan di $fillable)
         $user->update([
             'email' => $validated['email'],
             'no_handphone' => $validated['no_handphone'] ?? null,
         ]);
+
+        if ($emailBerubah) {
+            $user->email_verified_at = null; 
+            $user->save(); 
+
+            $user->sendEmailVerificationNotification();
+            
+            return back()->with('success', 'Data akun diperbarui. Silakan cek kotak masuk Anda untuk verifikasi email baru!');
+        }
 
         return back()->with('success', 'Data akun berhasil diperbarui.');
     }

@@ -75,10 +75,57 @@ const isPhoneEmp = computed(() => props.isPhoneEmpty ?? page.props.auth?.user?.i
 const isLockedAccount = computed(() => props.isLocked ?? page.props.auth?.user?.is_locked ?? (isDefaultPass.value || isEmailEmp.value));
 
 const isLoading = ref(true);
+const isSending = ref(false);
+const countdown = ref(0);
+
+const startTimer = (durationInSeconds) => {
+    countdown.value = durationInSeconds;
+    const timer = setInterval(() => {
+        countdown.value--;
+        if (countdown.value <= 0) {
+            clearInterval(timer);
+            localStorage.removeItem('verifyCooldown');
+        }
+    }, 1000);
+};
+
+const sendVerification = () => {
+    if (countdown.value > 0) return; 
+
+    isSending.value = true;
+    
+    router.post(route('verification.send'), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isSending.value = false;
+            showToast('success', 'Berhasil!', 'Link verifikasi berhasil dikirim! Silakan cek email Anda.');
+            
+            const cooldownEnd = Date.now() + 60000;
+            localStorage.setItem('verifyCooldown', cooldownEnd);
+            startTimer(60);
+        },
+        onError: () => {
+            isSending.value = false;
+            showToast('error', 'Gagal!', 'Terlalu banyak permintaan atau terjadi kesalahan. Tunggu sebentar lalu coba lagi.');
+        }
+    });
+};
+
 onMounted(() => {
-	setTimeout(() => {
-		isLoading.value = false;
-	}, 200);
+    setTimeout(() => {
+        isLoading.value = false;
+    }, 200);
+    const cooldownEnd = localStorage.getItem('verifyCooldown'); 
+    if (cooldownEnd) {
+        const now = Date.now();
+        const remaining = Math.floor((cooldownEnd - now) / 1000); 
+        
+        if (remaining > 0) {
+            startTimer(remaining); 
+        } else {
+            localStorage.removeItem('verifyCooldown'); 
+        }
+    }
 });
 
 // 1. State Data Diri
@@ -419,6 +466,9 @@ const savePassword = () => {
 		},
 	});
 };
+
+
+
 </script>
 
 <template>
@@ -700,6 +750,27 @@ const savePassword = () => {
 												</span>
 											</button>
 										</div>
+
+										<div 
+										    v-if="$page.props.auth.user.email_verified_at === null && !isAccountChanged" 
+										    class="mt-2 flex items-center gap-1.5 text-[12px] sm:text-[13px]"
+										>
+										    <svg class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+										    </svg>
+										    <span class="text-red-500 font-medium">Email belum diverifikasi.</span>
+											<button 
+										    	@click="sendVerification" 
+										    	:disabled="isSending || countdown > 0"
+										    	class="text-sm font-medium text-[#183669] hover:text-[#122b54] underline disabled:opacity-50 										disabled:cursor-not-allowed"
+											>
+										    <!-- Ganti teks tombol berdasarkan kondisinya -->
+										    <span v-if="isSending">Mengirim...</span>
+										    <span v-else-if="countdown > 0">Kirim ulang dalam {{ countdown }} detik</span>
+										    <span v-else>Kirim ulang link verifikasi</span>
+										</button>
+										</div>
+
 										<p v-if="accountErrors.email" class="mt-1.5 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />

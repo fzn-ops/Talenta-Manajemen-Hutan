@@ -51,6 +51,8 @@ class PendaftaranAktivitasService {
             'status' => 'Disetujui'
         ]);
 
+        $pendaftaran->activity()->increment('partisipan');
+
         return $pendaftaran;
     }
 
