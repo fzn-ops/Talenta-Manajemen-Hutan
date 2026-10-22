@@ -110,4 +110,17 @@ class RoadmapDetailController extends Controller
 
         return redirect()->back()->with('success', 'Item berhasil dihapus.');
     }
+
+    /**
+     * Get roadmap participants list with their progress (AJAX JSON)
+     */
+    public function getParticipants($roadmapId)
+    {
+        $data = $this->roadmapDetailService->getRoadmapParticipants((int) $roadmapId);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+        ]);
+    }
 }

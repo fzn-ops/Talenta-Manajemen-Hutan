@@ -10,7 +10,7 @@ use App\Models\MateriRoadmap;
 class RoadmapSevice {
     public function getPaginationRoadmap(array $filters = [], $perPage = 10)
     {
-        $query = Roadmap::with(['bulanRoadmap.materiRoadmap']);
+        $query = Roadmap::with(['bulanRoadmap.materiRoadmap'])->withCount('pendaftaranRoadmap as partisipan');
 
         // 1. Fitur Search
         if (!empty($filters['search'])) {
@@ -66,7 +66,6 @@ public function createRoadmap(array $data)
                 'nama_roadmap' => $data['nama_roadmap'],
                 'gambar'       => $pathGambar,
                 'kategori'     => $kategori, 
-                'partisipan'   => $data['partisipan'] ?? 0,
             ]);
 
             // C. OTOMATIS Buat 1 Bulan (Bulan ke-1)
@@ -242,6 +241,7 @@ public function createRoadmap(array $data)
         $enrolledIds = \App\Models\PendaftaranRoadmap::where('id_user', $userId)->pluck('id_roadmap')->toArray();
 
         return Roadmap::with('bulanRoadmap.materiRoadmap')
+            ->withCount('pendaftaranRoadmap as partisipan')
             ->orderBy('id', 'asc')
             ->get()
             ->map(function ($r) use ($enrolledIds) {
@@ -274,8 +274,6 @@ public function createRoadmap(array $data)
                         'id_user'    => $userId,
                         'id_roadmap' => $roadmapId,
                     ]);
-
-                    Roadmap::where('id', $roadmapId)->increment('partisipan');
                 }
             }
         });

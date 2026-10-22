@@ -8,6 +8,7 @@ use App\Models\MateriRoadmap;
 use App\Models\Pencapaian;
 use App\Models\HasilAktivitas;
 use App\Models\PendaftaranAktivitas;
+use App\Models\PendaftaranRoadmap;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -26,7 +27,7 @@ class RoadmapDetailService
             'bulanRoadmap.materiRoadmap' => function ($query) {
                 $query->orderBy('id', 'asc');
             }
-        ])->findOrFail($roadmapId);
+        ])->withCount('pendaftaranRoadmap as partisipan')->findOrFail($roadmapId);
 
         // Ensure at least 1 month and 1 material exists
         if ($roadmap->bulanRoadmap->isEmpty()) {
@@ -390,7 +391,7 @@ class RoadmapDetailService
             'bulanRoadmap.materiRoadmap' => function ($query) {
                 $query->orderBy('id', 'asc');
             }
-        ])->findOrFail($roadmapId);
+        ])->withCount('pendaftaranRoadmap as partisipan')->findOrFail($roadmapId);
 
         // Kumpulkan semua ID materi dari seluruh bulan pada roadmap ini
         $allMateriIds = $roadmap->bulanRoadmap->flatMap(function ($bulan) {
@@ -705,5 +706,81 @@ class RoadmapDetailService
 
             return true;
         });
+    }
+
+    /**
+     * Ambil daftar seluruh mahasiswa yang terdaftar di roadmap beserta detail profil dan progress penyelesaian
+     */
+    public function getRoadmapParticipants(int $roadmapId): array
+    {
+        $roadmap = Roadmap::with('bulanRoadmap.materiRoadmap')->findOrFail($roadmapId);
+
+        $materials = $roadmap->bulanRoadmap->values()->flatMap(function ($b, $bIdx) {
+            return $b->materiRoadmap->values()->map(function ($m) use ($b, $bIdx) {
+                return [
+                    'id'         => $m->id,
+                    'topik'      => $m->topik,
+                    'judul'      => $m->judul,
+                    'tipe'       => (int) $m->tipe, // 1 = Tugas, 0 = Materi
+                    'bulan_id'   => $b->id,
+                    'bulan_ke'   => $b->bulan_ke,
+                    'bulan_name' => 'Bulan ' . ($bIdx + 1),
+                ];
+            });
+        })->values()->all();
+
+        $allMateriIds = collect($materials)->pluck('id')->all();
+        $totalTasks = count($allMateriIds);
+
+        $enrollments = PendaftaranRoadmap::with('user')
+            ->where('id_roadmap', $roadmapId)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        if ($enrollments->isEmpty()) {
+            return [
+                'total_participants' => 0,
+                'total_tasks'        => $totalTasks,
+                'materials'          => $materials,
+                'participants'       => [],
+            ];
+        }
+
+        $userIds = $enrollments->pluck('id_user')->filter()->unique()->all();
+
+        // 1 query efisien untuk mengambil seluruh pencapaian mahasiswa pada roadmap ini (anti N+1)
+        $pencapaianByUser = Pencapaian::whereIn('id_user', $userIds)
+            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->get(['id_user', 'id_materi_roadmap', 'created_at'])
+            ->groupBy('id_user');
+
+        $participants = $enrollments->map(function ($enrollment) use ($pencapaianByUser, $totalTasks) {
+            $user = $enrollment->user;
+            $userCompletions = $pencapaianByUser[$enrollment->id_user] ?? collect([]);
+            $completedMateriIds = $userCompletions->pluck('id_materi_roadmap')->unique()->values()->all();
+            $completed = count($completedMateriIds);
+            $progress = $totalTasks > 0 ? (int) round(($completed / $totalTasks) * 100) : 0;
+
+            return [
+                'id'                   => $user ? $user->id : $enrollment->id_user,
+                'nama'                 => $user ? ($user->nama ?: 'Mahasiswa') : 'Mahasiswa',
+                'nim'                  => $user ? ($user->nim ?: '-') : '-',
+                'angkatan'             => $user ? ($user->angkatan ?: '-') : '-',
+                'talent_mapping'       => $user ? ($user->talent_mapping ?: '-') : '-',
+                'email'                => $user ? ($user->email ?: '-') : '-',
+                'completed'            => $completed,
+                'completed_materi_ids' => $completedMateriIds,
+                'total'                => $totalTasks,
+                'progress'             => $progress,
+                'enrolled_at'          => $enrollment->created_at ? $enrollment->created_at->format('d M Y') : '-',
+            ];
+        })->values()->all();
+
+        return [
+            'total_participants' => count($participants),
+            'total_tasks'        => $totalTasks,
+            'materials'          => $materials,
+            'participants'       => $participants,
+        ];
     }
 }

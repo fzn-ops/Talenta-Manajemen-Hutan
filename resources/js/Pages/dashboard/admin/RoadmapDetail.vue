@@ -8,6 +8,15 @@ import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import RoadmapCardBuilder from '@/Components/dashboard/admin/RoadmapCardBuilder.vue';
 import RoadmapMaterialNavigation from '@/Components/dashboard/admin/RoadmapMaterialNavigation.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import ModalRoadmapParticipants from '@/Components/dashboard/admin/ModalRoadmapParticipants.vue';
+
+const isParticipantsModalOpen = ref(false);
+const activeMateriIdForModal = ref(null);
+
+const openParticipantsModal = (materiId = null) => {
+	activeMateriIdForModal.value = materiId;
+	isParticipantsModalOpen.value = true;
+};
 
 const props = defineProps({
 	roadmap: {
@@ -647,13 +656,33 @@ const executeDeleteItem = () => {
 			</nav>
 
 			<!-- Page Header Section -->
-			<div class="space-y-1">
-				<h1 class="text-[28px] sm:text-[34px] lg:text-[38px] font-extrabold leading-tight text-[#17334F] tracking-tight">
-					{{ currentRoadmap.title }}
-				</h1>
-				<p class="font-inter text-[13px] sm:text-[14px] font-medium text-[#64748b]">
-					{{ currentRoadmap.subTitle }}
-				</p>
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<div class="space-y-1">
+					<h1 class="text-[28px] sm:text-[34px] lg:text-[38px] font-extrabold leading-tight text-[#17334F] tracking-tight">
+						{{ currentRoadmap.title }}
+					</h1>
+					<p class="font-inter text-[13px] sm:text-[14px] font-medium text-[#64748b]">
+						{{ currentRoadmap.subTitle }}
+					</p>
+				</div>
+
+				<!-- Right Action: Partisipan Button -->
+				<button
+					type="button"
+					@click="openParticipantsModal(null)"
+					class="inline-flex items-center gap-2.5 self-start sm:self-center px-4 py-2.5 rounded-[10px] bg-white border border-[#d6e0ee] text-[#183669] hover:bg-[#fafcff] hover:border-[#183669] transition shadow-xs text-[13px] sm:text-[14px] font-bold group cursor-pointer"
+					title="Lihat daftar mahasiswa yang terdaftar di roadmap ini"
+				>
+					<span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#183669]/10 text-[#183669] group-hover:bg-[#183669] group-hover:text-white transition">
+						<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+							<path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+						</svg>
+					</span>
+					<span>Lihat Partisipan</span>
+					<span class="px-2 py-0.5 text-xs rounded-full bg-[#183669] text-white font-bold">
+						{{ currentRoadmap.partisipan || 0 }}
+					</span>
+				</button>
 			</div>
 
 			<div class="mt-6 w-full max-w-full overflow-visible">
@@ -731,9 +760,24 @@ const executeDeleteItem = () => {
 							<template v-if="!isEditingContent">
 								<!-- Title & Edit Button -->
 								<div class="flex items-start gap-4">
-									<h2 class="flex-1 min-w-0 font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight break-words">
-										{{ currentItem?.judul || currentItem?.topic || 'Belum ada judul' }}
-									</h2>
+									<div class="flex-1 min-w-0">
+										<h2 class="font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight break-words">
+											{{ currentItem?.judul || currentItem?.topic || 'Belum ada judul' }}
+										</h2>
+										<div class="mt-2.5 flex items-center gap-2">
+											<button
+												type="button"
+												@click="openParticipantsModal(currentItem?.id)"
+												class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[8px] border border-[#d6e0ee] bg-[#fafcff] text-[12px] font-semibold text-[#183669] hover:bg-white hover:border-[#183669] transition shadow-2xs cursor-pointer"
+												title="Lihat siapa mahasiswa yang sudah dan belum menyelesaikan materi/tugas ini"
+											>
+												<svg class="h-3.5 w-3.5 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+												</svg>
+												<span>Status Pengerjaan Mahasiswa</span>
+											</button>
+										</div>
+									</div>
 									<div class="shrink-0 pt-0.5">
 										<button
 											type="button"
@@ -1154,6 +1198,15 @@ const executeDeleteItem = () => {
 				Hapus Item
 			</template>
 		</DeleteModal>
+
+		<!-- ================= MODAL: ROADMAP PARTICIPANTS & PROGRESS ================= -->
+		<ModalRoadmapParticipants
+			:show="isParticipantsModalOpen"
+			:roadmap-id="currentRoadmap.id"
+			:roadmap-title="currentRoadmap.title"
+			:initial-materi-id="activeMateriIdForModal"
+			@close="isParticipantsModalOpen = false"
+		/>
 
 		<!-- Toast Notification -->
 		<ToastNotification

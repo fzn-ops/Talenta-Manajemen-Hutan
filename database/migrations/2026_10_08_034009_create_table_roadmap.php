@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('nama_roadmap');
             $table->string('gambar')->nullable();
             $table->enum('kategori', ['Profesional', 'Bisnis', 'Birokrasi', 'Akademisi']);
-            $table->integer('partisipan');
             $table->timestamps();
         });
 

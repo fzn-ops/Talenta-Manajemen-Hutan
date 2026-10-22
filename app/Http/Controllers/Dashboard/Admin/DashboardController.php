@@ -36,7 +36,7 @@ class DashboardController extends Controller
             ->get();
 
         // 4. Distribusi Peserta dari Roadmap / Kategori
-        $roadmaps = Roadmap::select('kategori', 'partisipan')->get();
+        $roadmaps = Roadmap::withCount('pendaftaranRoadmap as partisipan')->get();
         $profCount = $roadmaps->whereIn('kategori', ['Profesional', 'Professional'])->sum('partisipan');
         $bisnisCount = $roadmaps->where('kategori', 'Bisnis')->sum('partisipan');
         $birokratCount = $roadmaps->whereIn('kategori', ['Birokrat', 'Birokrasi'])->sum('partisipan');

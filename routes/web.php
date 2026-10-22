@@ -90,6 +90,7 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
 
     // Detail Roadmap, Bulan & Materi
     Route::get('/roadmap/{id}', [RoadmapDetailController::class, 'show'])->name('roadmap.detail');
+    Route::get('/roadmap/{roadmapId}/participants', [RoadmapDetailController::class, 'getParticipants'])->name('roadmap.participants');
     Route::post('/roadmap/{roadmapId}/bulan', [RoadmapDetailController::class, 'storeBulan'])->name('roadmap.bulan.store');
     Route::delete('/roadmap/{roadmapId}/bulan/{bulanId}', [RoadmapDetailController::class, 'destroyBulan'])->name('roadmap.bulan.destroy');
     Route::post('/roadmap/{roadmapId}/bulan/{bulanId}/materi', [RoadmapDetailController::class, 'storeMateri'])->name('roadmap.materi.store');

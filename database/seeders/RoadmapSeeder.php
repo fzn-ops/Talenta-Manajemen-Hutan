@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use App\Models\Roadmap;
 use App\Models\BulanRoadmap;
 use App\Models\MateriRoadmap;
+use App\Models\PendaftaranRoadmap;
+use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 
 class RoadmapSeeder extends Seeder
@@ -16,6 +18,7 @@ class RoadmapSeeder extends Seeder
     public function run(): void
     {
         Schema::disableForeignKeyConstraints();
+        PendaftaranRoadmap::truncate();
         MateriRoadmap::truncate();
         BulanRoadmap::truncate();
         Roadmap::truncate();
@@ -406,6 +409,7 @@ class RoadmapSeeder extends Seeder
         foreach ($roadmapsData as $rData) {
             $months = $rData['months'];
             unset($rData['months']);
+            unset($rData['partisipan']);
 
             $roadmap = Roadmap::create($rData);
 
@@ -426,6 +430,26 @@ class RoadmapSeeder extends Seeder
                         'deskripsi'        => $item['deskripsi'],
                         'kartu_konten'     => $item['cards'],
                         'jumlah_aktivitas' => $isTask ? ($item['jumlah_aktivitas'] ?? 1) : null,
+                    ]);
+                }
+            }
+        }
+
+        // Seed contoh mahasiswa yang mendaftar ke roadmap (menghasilkan count partisipan nyata)
+        $mahasiswaUsers = User::where('role', 'mahasiswa')->pluck('id')->toArray();
+        if (!empty($mahasiswaUsers)) {
+            $allRoadmaps = Roadmap::all();
+            foreach ($allRoadmaps as $idx => $rm) {
+                if (isset($mahasiswaUsers[0])) {
+                    PendaftaranRoadmap::firstOrCreate([
+                        'id_user'    => $mahasiswaUsers[0],
+                        'id_roadmap' => $rm->id,
+                    ]);
+                }
+                if (isset($mahasiswaUsers[1]) && $idx % 2 === 0) {
+                    PendaftaranRoadmap::firstOrCreate([
+                        'id_user'    => $mahasiswaUsers[1],
+                        'id_roadmap' => $rm->id,
                     ]);
                 }
             }

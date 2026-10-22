@@ -42,7 +42,6 @@ class RoadmapController extends Controller
         $validated = $request->validate([
             'nama_roadmap' => 'required|string|max:255',
             'kategori'     => 'required|string|in:Profesional,Bisnis,Birokrasi,Akademisi',
-            'partisipan'   => 'nullable|integer',
             'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:5120', 
         ]);
 
@@ -59,7 +58,6 @@ class RoadmapController extends Controller
         $validated = $request->validate([
             'nama_roadmap' => 'required|string|max:255',
             'kategori'     => 'required|string|in:Profesional,Bisnis,Birokrasi,Akademisi',
-            'partisipan'   => 'nullable|integer',
             'gambar'       => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 

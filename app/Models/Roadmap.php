@@ -15,7 +15,6 @@ class Roadmap extends Model
         'nama_roadmap',
         'gambar',
         'kategori',
-        'partisipan',
     ];
 
     public function bulanRoadmap()
