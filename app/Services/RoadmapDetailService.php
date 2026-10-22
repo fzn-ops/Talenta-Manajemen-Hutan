@@ -38,11 +38,11 @@ class RoadmapDetailService
             MateriRoadmap::create([
                 'id_bulan_roadmap' => $bulan->id,
                 'topik'            => 'Materi 1',
-                'tipe'             => 1,
+                'tipe'             => 0, // 0 = Materi, 1 = Tugas
                 'judul'            => 'Pengantar Modul',
                 'deskripsi'        => '',
                 'kartu_konten'     => [],
-                'maksimal_tugas'   => 0,
+                'jumlah_aktivitas' => 0,
             ]);
 
             $roadmap->load([
@@ -72,18 +72,32 @@ class RoadmapDetailService
                 'name'     => 'Bulan ' . ($idx + 1),
                 'bulan_ke' => $bulan->bulan_ke,
                 'items'    => $bulan->materiRoadmap->values()->map(function ($materi) {
+                    $isTask = (bool) $materi->tipe; // 1 = Tugas, 0 = Materi
+                    $cards = $materi->kartu_konten ?? [];
+                    $jumlahAktivitas = $isTask ? max(1, (int) ($materi->jumlah_aktivitas ?? $materi->maksimal_tugas ?? 1)) : 0;
+                    if ($isTask) {
+                        foreach ($cards as &$c) {
+                            if (($c['type'] ?? '') === 'task_submission') {
+                                if (!isset($c['minTasks']) || (int) $c['minTasks'] <= 0) {
+                                    $c['minTasks'] = $jumlahAktivitas;
+                                }
+                            }
+                        }
+                    }
+
                     return [
-                        'id'             => $materi->id,
-                        'type'           => $materi->tipe ? 'Materi' : 'Tugas',
-                        'topik'          => $materi->topik, // "Materi 1", "Tugas 1" (sidebar label)
-                        'judul'          => $materi->judul, // Judul panjang konten materi
-                        'title'          => $materi->topik, // for sidebar navigation compatibility
-                        'topic'          => $materi->judul, // for content heading compatibility
-                        'description'    => $materi->deskripsi ?? '',
-                        'cards'          => $materi->kartu_konten ?? [],
-                        'maksimal_tugas' => $materi->maksimal_tugas ?? 0,
-                        'file'           => null,
-                        'fileName'       => '',
+                        'id'               => $materi->id,
+                        'type'             => $materi->tipe ? 'Tugas' : 'Materi',
+                        'topik'            => $materi->topik, // "Materi 1", "Tugas 1" (sidebar label)
+                        'judul'            => $materi->judul, // Judul panjang konten materi
+                        'title'            => $materi->topik, // for sidebar navigation compatibility
+                        'topic'            => $materi->judul, // for content heading compatibility
+                        'description'      => $materi->deskripsi ?? '',
+                        'cards'            => $cards,
+                        'jumlah_aktivitas' => $jumlahAktivitas,
+                        'maksimal_tugas'   => $jumlahAktivitas,
+                        'file'             => null,
+                        'fileName'         => '',
                     ];
                 })->all(),
             ];
@@ -119,11 +133,11 @@ class RoadmapDetailService
         MateriRoadmap::create([
             'id_bulan_roadmap' => $bulan->id,
             'topik'            => 'Materi 1',
-            'tipe'             => 1, // Materi
+            'tipe'             => 0, // 0 = Materi, 1 = Tugas
             'judul'            => 'Pengantar Modul Baru',
             'deskripsi'        => '',
             'kartu_konten'     => [],
-            'maksimal_tugas'   => 0,
+            'jumlah_aktivitas' => 0,
         ]);
 
         return $bulan;
@@ -168,18 +182,19 @@ class RoadmapDetailService
             ->where('id_roadmap', $roadmapId)
             ->firstOrFail();
 
-        $tipe = ($data['type'] ?? 'Materi') === 'Tugas' ? 0 : 1;
+        $tipe = ($data['type'] ?? 'Materi') === 'Tugas' ? 1 : 0;
         $topik = trim($data['topik'] ?? $data['title'] ?? 'Materi');
         $judul = trim($data['judul'] ?? 'Topik ' . $topik);
 
         $cards = [];
-        if ($tipe === 0) {
+        if ($tipe === 1) {
             $cards[] = [
                 'id'       => (string) round(microtime(true) * 1000),
                 'type'     => 'task_submission',
                 'content'  => 'Ikuti Kegiatan Terkait ' . $judul,
                 'fileName' => '',
                 'isFixed'  => true,
+                'minTasks' => 1,
             ];
         }
 
@@ -190,7 +205,7 @@ class RoadmapDetailService
             'judul'            => $judul,
             'deskripsi'        => '',
             'kartu_konten'     => $cards,
-            'maksimal_tugas'   => $tipe === 0 ? 1 : 0,
+            'jumlah_aktivitas' => $tipe === 1 ? 1 : null,
         ]);
     }
 
@@ -281,24 +296,34 @@ class RoadmapDetailService
                 if (empty(trim($content))) {
                     $content = 'Ikuti Kegiatan Terkait ' . ($judul ?: $materi->judul);
                 }
+                $minTasks = isset($card['minTasks']) ? max(1, (int) $card['minTasks']) : ($materi->jumlah_aktivitas ?: ($materi->maksimal_tugas ?: 1));
             }
 
-            $processedCards[] = [
+            $cardItem = [
                 'id'       => $card['id'] ?? (string) uniqid(),
                 'type'     => $type,
                 'content'  => $content,
                 'fileName' => $fileName,
                 'isFixed'  => $isFixed,
             ];
+
+            if ($type === 'task_submission') {
+                $cardItem['minTasks'] = $minTasks ?? 1;
+            }
+
+            $processedCards[] = $cardItem;
         }
 
-        // If Tugas (tipe == 0), ensure task_submission card exists
-        if (!$materi->tipe) {
+        // If Tugas (tipe == 1), ensure task_submission card exists
+        if ($materi->tipe) {
             $hasTaskSub = false;
             foreach ($processedCards as &$c) {
                 if ($c['type'] === 'task_submission') {
                     $hasTaskSub = true;
                     $c['isFixed'] = true;
+                    if (!isset($c['minTasks']) || (int) $c['minTasks'] <= 0) {
+                        $c['minTasks'] = $materi->jumlah_aktivitas ?: ($materi->maksimal_tugas ?: 1);
+                    }
                 }
             }
             if (!$hasTaskSub) {
@@ -308,14 +333,24 @@ class RoadmapDetailService
                     'content'  => 'Ikuti Kegiatan Terkait ' . ($judul ?: $materi->topik),
                     'fileName' => '',
                     'isFixed'  => true,
+                    'minTasks' => $materi->jumlah_aktivitas ?: ($materi->maksimal_tugas ?: 1),
                 ];
             }
         }
 
+        $jumlahAktivitas = $materi->jumlah_aktivitas ?: ($materi->maksimal_tugas ?: 1);
+        foreach ($processedCards as $pc) {
+            if ($pc['type'] === 'task_submission' && isset($pc['minTasks'])) {
+                $jumlahAktivitas = (int) $pc['minTasks'];
+                break;
+            }
+        }
+
         $materi->update([
-            'judul'        => $judul,
-            'kartu_konten' => $processedCards,
-            'deskripsi'    => $firstDescription,
+            'judul'            => $judul,
+            'kartu_konten'     => $processedCards,
+            'deskripsi'        => $firstDescription,
+            'jumlah_aktivitas' => $jumlahAktivitas,
         ]);
 
         return $materi;
@@ -410,7 +445,7 @@ class RoadmapDetailService
                 'bulan_ke' => $bulan->bulan_ke,
                 'items'    => $bulan->materiRoadmap->values()->map(function ($materi) use ($completedSet, $userHasilList) {
                     $isCompleted = isset($completedSet[$materi->id]);
-                    $isTask = !$materi->tipe; // 0 = Tugas, 1 = Materi
+                    $isTask = (bool) $materi->tipe; // 1 = Tugas, 0 = Materi
 
                     // Format submission activities untuk Tugas
                     $activities = [];
@@ -453,19 +488,32 @@ class RoadmapDetailService
                         })->values()->all();
                     }
 
+                    $cards = $materi->kartu_konten ?? [];
+                    $jumlahAktivitas = $isTask ? max(1, (int) ($materi->jumlah_aktivitas ?? $materi->maksimal_tugas ?? 1)) : 0;
+                    if ($isTask) {
+                        foreach ($cards as &$c) {
+                            if (($c['type'] ?? '') === 'task_submission') {
+                                if (!isset($c['minTasks']) || (int) $c['minTasks'] <= 0) {
+                                    $c['minTasks'] = $jumlahAktivitas;
+                                }
+                            }
+                        }
+                    }
+
                     return [
-                        'id'             => $materi->id,
-                        'type'           => $materi->tipe ? 'Materi' : 'Tugas',
-                        'topik'          => $materi->topik,
-                        'judul'          => $materi->judul,
-                        'title'          => $materi->topik,
-                        'topic'          => $materi->judul,
-                        'description'    => $materi->deskripsi ?? '',
-                        'cards'          => $materi->kartu_konten ?? [],
-                        'maksimal_tugas' => $materi->maksimal_tugas ?? 0,
-                        'isCompleted'    => $isCompleted,
-                        'status'         => $taskStatus,
-                        'activities'     => $activities,
+                        'id'               => $materi->id,
+                        'type'             => $materi->tipe ? 'Tugas' : 'Materi',
+                        'topik'            => $materi->topik,
+                        'judul'            => $materi->judul,
+                        'title'            => $materi->topik,
+                        'topic'            => $materi->judul,
+                        'description'      => $materi->deskripsi ?? '',
+                        'cards'            => $cards,
+                        'jumlah_aktivitas' => $jumlahAktivitas,
+                        'maksimal_tugas'   => $jumlahAktivitas,
+                        'isCompleted'      => $isCompleted,
+                        'status'           => $taskStatus,
+                        'activities'       => $activities,
                     ];
                 })->all(),
             ];

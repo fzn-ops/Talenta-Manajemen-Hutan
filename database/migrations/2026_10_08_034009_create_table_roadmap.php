@@ -41,7 +41,7 @@ return new class extends Migration
             $table->string('topik');
             $table->text('deskripsi');
             $table->json('kartu_konten')->nullable();
-            $table->integer('maksimal_tugas')->nullable();;
+            $table->integer('jumlah_aktivitas')->nullable();
             $table->timestamps();
         });
     }
@@ -51,9 +51,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roadmap');
-        Schema::dropIfExists('pendaftaran_roadmap');
         Schema::dropIfExists('materi_roadmap');
         Schema::dropIfExists('bulan_roadmap');
+        Schema::dropIfExists('pendaftaran_roadmap');
+        Schema::dropIfExists('roadmap');
     }
 };

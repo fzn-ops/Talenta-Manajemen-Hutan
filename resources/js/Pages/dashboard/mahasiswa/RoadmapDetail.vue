@@ -261,13 +261,47 @@ onUnmounted(() => {
 // =========================================================================
 const isSelectActivityModalOpen = ref(false);
 
+const requiredTasksCount = computed(() => {
+	if (!currentItem.value || currentItem.value.type !== 'Tugas') return 1;
+	if (currentItem.value.cards) {
+		const tCard = currentItem.value.cards.find(c => c.type === 'task_submission');
+		if (tCard && tCard.minTasks) return Math.max(1, parseInt(tCard.minTasks) || 1);
+	}
+	return Math.max(1, parseInt(currentItem.value.jumlah_aktivitas ?? currentItem.value.maksimal_tugas) || 1);
+});
+
+const currentActivitiesCount = computed(() => {
+	return currentItem.value?.activities?.length || 0;
+});
+
+const isMaxActivitiesReached = computed(() => {
+	return currentActivitiesCount.value >= requiredTasksCount.value;
+});
+
 const handleOpenAddActivityModal = () => {
 	if (!currentItem.value || currentItem.value.type !== 'Tugas') return;
+	if (isMaxActivitiesReached.value) {
+		showToast(
+			'info',
+			'Batas Tercapai',
+			`Tugas ini mewajibkan tepat ${requiredTasksCount.value} kegiatan (tidak kurang dan tidak lebih). Anda sudah memilih ${currentActivitiesCount.value} kegiatan.`
+		);
+		return;
+	}
 	isSelectActivityModalOpen.value = true;
 };
 
 const handleActivitySelected = async (selectedActivity) => {
 	if (!currentItem.value) return;
+	if (isMaxActivitiesReached.value) {
+		showToast(
+			'error',
+			'Batas Kegiatan Tercapai',
+			`Tugas ini mewajibkan tepat ${requiredTasksCount.value} kegiatan (tidak kurang dan tidak lebih).`
+		);
+		return;
+	}
+
 	if (!currentItem.value.activities) {
 		currentItem.value.activities = [];
 	}
@@ -672,21 +706,32 @@ const getPdfUrl = (content) => {
 							<!-- TASK ACTIVITIES SUBMISSION UI (Only for Tugas - DENGAN POP UP PILIH KEGIATAN) -->
 							<!-- ========================================================================= -->
 							<div v-if="currentItem?.type === 'Tugas'" class="mt-8 border-t border-[#d6e0ee] pt-6">
-								<div class="flex items-center justify-between mb-5">
+								<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
 									<div>
-										<h3 class="font-poppins text-lg font-bold text-[#17334F]">
-											{{ getTaskInstructionText(currentItem) }}
-										</h3>
-										<p class="text-xs text-[#64748b] mt-0.5 font-inter">
-											Pilih kegiatan yang telah diikuti dengan kategori yang sesuai untuk memenuhi tugas ini.
+										<div class="flex items-center gap-2.5 flex-wrap">
+											<h3 class="font-poppins text-lg font-bold text-[#17334F]">
+												{{ getTaskInstructionText(currentItem) }}
+											</h3>
+											<span
+												class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border"
+												:class="currentActivitiesCount === requiredTasksCount ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'"
+											>
+												Wajib: {{ requiredTasksCount }} Kegiatan ({{ currentActivitiesCount }}/{{ requiredTasksCount }})
+											</span>
+										</div>
+										<p class="text-xs text-[#64748b] mt-1 font-inter">
+											Mahasiswa wajib memasukkan tepat {{ requiredTasksCount }} kegiatan (tidak kurang dan tidak lebih) yang telah diikuti dengan kategori yang sesuai.
 										</p>
 									</div>
 									<button
 										type="button"
 										@click="handleOpenAddActivityModal"
-										class="rounded-[8px] bg-[#183669] px-5 py-2 text-[13px] font-bold text-white hover:bg-[#122b54] active:scale-95 transition shadow-sm cursor-pointer shrink-0"
+										:disabled="isMaxActivitiesReached"
+										class="rounded-[8px] px-5 py-2 text-[13px] font-bold text-white transition active:scale-95 shadow-sm cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+										:class="isMaxActivitiesReached ? 'bg-slate-400' : 'bg-[#183669] hover:bg-[#122b54]'"
+										:title="isMaxActivitiesReached ? `Sudah mencapai batas ${requiredTasksCount} kegiatan` : 'Tambah Kegiatan'"
 									>
-										Tambah
+										{{ isMaxActivitiesReached ? 'Sudah Lengkap' : 'Tambah' }}
 									</button>
 								</div>
 

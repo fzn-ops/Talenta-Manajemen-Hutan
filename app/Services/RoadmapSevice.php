@@ -77,7 +77,7 @@ public function createRoadmap(array $data)
             // D. OTOMATIS Buat 1 Materi awal sebagai "Draft/Pengantar"
             MateriRoadmap::create([
                 'id_bulan_roadmap' => $bulan->id,
-                'tipe'             => 1,         
+                'tipe'             => 0, // 0 = Materi, 1 = Tugas
                 'topik'            => 'Materi 1',   
                 'judul'            => 'Pengantar Modul',
                 'kartu_konten'     => [
@@ -88,7 +88,7 @@ public function createRoadmap(array $data)
                         'fileName' => '',
                     ]
                 ],
-                'maksimal_tugas'   => 0,
+                'jumlah_aktivitas' => 0,
                 'deskripsi'        => 'Materi awal untuk roadmap ini. Silakan diedit melalui menu Materi.',
             ]);
 

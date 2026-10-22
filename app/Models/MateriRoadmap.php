@@ -17,13 +17,13 @@ class MateriRoadmap extends Model
         'deskripsi',
         'tipe',
         'topik',
-        'maksimal_tugas',
+        'jumlah_aktivitas',
         'kartu_konten',
     ];
 
     protected $casts = [
         'kartu_konten'   => 'array',
-        'maksimal_tugas' => 'integer',
+        'jumlah_aktivitas' => 'integer',
         'tipe'           => 'boolean',
     ];  
 

@@ -78,11 +78,34 @@ const addCard = (type) => {
 		content: '',
 		file: null,
 		fileName: '',
+		minTasks: type === 'task_submission' ? 1 : undefined,
 	}];
 };
 
 const removeCard = (id) => {
 	cards.value = cards.value.filter((c) => c.id !== id);
+};
+
+// Stepper controls for minTasks
+const decrementMinTasks = (card) => {
+	const current = parseInt(card.minTasks) || 1;
+	card.minTasks = Math.max(1, current - 1);
+};
+
+const incrementMinTasks = (card) => {
+	const current = parseInt(card.minTasks) || 1;
+	card.minTasks = Math.min(100, current + 1);
+};
+
+const validateMinTasks = (card) => {
+	const current = parseInt(card.minTasks);
+	if (isNaN(current) || current < 1) {
+		card.minTasks = 1;
+	} else if (current > 100) {
+		card.minTasks = 100;
+	} else {
+		card.minTasks = current;
+	}
 };
 
 // Drag and drop mechanics
@@ -470,15 +493,73 @@ const getVideoEmbedUrl = (url) => {
 					</div>
 
 					<!-- TASK SUBMISSION CARD (Admin Config) -->
-					<div v-else-if="card.type === 'task_submission'">
-						<label class="block text-[12.5px] font-semibold text-[#183669] mb-1">Judul / Instruksi Pengumpulan Tugas</label>
-						<input
-							type="text"
-							v-model="card.content"
-							placeholder="Contoh: Ikuti Kegiatan Terkait Analisis Kelayakan Finansial..."
-							class="w-full rounded-[8px] border border-[#d6e0ee] bg-white px-3 py-2.5 font-inter text-[13px] text-[#334155] placeholder-[#94a3b8] focus:border-[#183669] focus:ring-1 focus:ring-[#183669] outline-none transition-colors"
-						/>
-						<div class="mt-2 flex items-start gap-2 bg-[#f0f4f9] p-3 rounded-[6px]">
+					<div v-else-if="card.type === 'task_submission'" class="space-y-4">
+						<div>
+							<label class="block text-[12.5px] font-semibold text-[#183669] mb-1">Judul / Instruksi Pengumpulan Tugas</label>
+							<input
+								type="text"
+								v-model="card.content"
+								placeholder="Contoh: Ikuti Kegiatan Terkait Analisis Kelayakan Finansial..."
+								class="w-full rounded-[8px] border border-[#d6e0ee] bg-white px-3 py-2.5 font-inter text-[13px] text-[#334155] placeholder-[#94a3b8] focus:border-[#183669] focus:outline-none focus:ring-0 transition-colors"
+							/>
+						</div>
+
+						<div>
+							<label class="block text-[12.5px] font-semibold text-[#183669] mb-1.5">
+								Jumlah Tugas Wajib (Minimal Kegiatan)
+							</label>
+							<div class="flex items-center gap-2.5">
+								<div class="inline-flex items-center rounded-[8px] border border-[#d6e0ee] bg-white p-1 focus-within:border-[#183669] transition-colors">
+									<!-- Minus Button -->
+									<button
+										type="button"
+										@click="decrementMinTasks(card)"
+										:disabled="(parseInt(card.minTasks) || 1) <= 1"
+										class="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#f1f5f9] text-[#183669] hover:bg-[#e2e8f0] disabled:opacity-35 disabled:cursor-not-allowed transition active:scale-95 cursor-pointer"
+										title="Kurangi jumlah kegiatan"
+									>
+										<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15" />
+										</svg>
+									</button>
+
+									<!-- Number Input (Clean, No browser drag/spin glitch) -->
+									<input
+										type="number"
+										min="1"
+										max="100"
+										step="1"
+										v-model.number="card.minTasks"
+										@blur="validateMinTasks(card)"
+										@keydown.up.prevent="incrementMinTasks(card)"
+										@keydown.down.prevent="decrementMinTasks(card)"
+										@wheel.prevent
+										class="w-14 text-center font-inter text-[13.5px] font-bold text-[#183669] bg-transparent outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:ring-0"
+									/>
+
+									<!-- Plus Button -->
+									<button
+										type="button"
+										@click="incrementMinTasks(card)"
+										class="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#f1f5f9] text-[#183669] hover:bg-[#e2e8f0] transition active:scale-95 cursor-pointer"
+										title="Tambah jumlah kegiatan"
+									>
+										<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+										</svg>
+									</button>
+								</div>
+
+								<span class="font-inter text-[13px] font-semibold text-[#5a718d]">
+									Kegiatan
+								</span>
+							</div>
+							<p class="text-[11.5px] text-[#64748b] mt-1.5 font-inter">
+								Mahasiswa diwajibkan untuk mengumpulkan tepat sejumlah ini (tidak kurang dan tidak lebih).
+							</p>
+						</div>
+
+						<div class="flex items-start gap-2 bg-[#f0f4f9] p-3 rounded-[6px]">
 							<svg class="h-5 w-5 text-[#8ca1b9] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 							</svg>

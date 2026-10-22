@@ -159,6 +159,7 @@ const stripError = (cards) => {
 		content: c.content,
 		fileName: c.fileName || '',
 		isFixed: Boolean(c.isFixed),
+		minTasks: c.type === 'task_submission' ? (Math.max(1, parseInt(c.minTasks) || 1)) : undefined,
 	}));
 };
 
@@ -200,6 +201,7 @@ const syncEditorState = () => {
 
 		// Enforce task_submission card for Tugas
 		if (currentItem.value.type === 'Tugas') {
+			const targetMinTasks = (currentItem.value.jumlah_aktivitas || currentItem.value.maksimal_tugas) > 0 ? (currentItem.value.jumlah_aktivitas || currentItem.value.maksimal_tugas) : 1;
 			const hasTaskSub = editCards.value.some(c => c.type === 'task_submission');
 			if (!hasTaskSub) {
 				editCards.value.push({
@@ -208,10 +210,16 @@ const syncEditorState = () => {
 					content: `Ikuti Kegiatan Terkait ${currentItem.value.judul || currentItem.value.topic || 'Tugas'}`,
 					fileName: '',
 					isFixed: true, // Cannot be deleted
+					minTasks: targetMinTasks,
 				});
 			} else {
 				const taskSub = editCards.value.find(c => c.type === 'task_submission');
-				if (taskSub) taskSub.isFixed = true;
+				if (taskSub) {
+					taskSub.isFixed = true;
+					if (taskSub.minTasks === undefined || taskSub.minTasks === null || taskSub.minTasks <= 0) {
+						taskSub.minTasks = targetMinTasks;
+					}
+				}
 			}
 		}
 
@@ -288,35 +296,15 @@ watch(() => months.value.length, () => {
 	nextTick(() => checkTopRightCorner());
 });
 
-// Student Task Activities (Mockup)
-const handleAddActivity = async () => {
-	if (!currentItem.value) return;
-	if (!currentItem.value.activities) {
-		currentItem.value.activities = [];
+const getTaskMinRequirement = (item) => {
+	if (!item || item.type !== 'Tugas') return 1;
+	if (item.cards) {
+		const tCard = item.cards.find(c => c.type === 'task_submission');
+		if (tCard && tCard.minTasks) return Math.max(1, parseInt(tCard.minTasks) || 1);
 	}
-	currentItem.value.activities.push({
-		id: Date.now(),
-		notes: '',
-		fileName: '',
-		expanded: true,
-	});
-	
-	await nextTick();
-	const mainEl = document.querySelector('main');
-	if (mainEl) {
-		mainEl.scrollTo({ top: mainEl.scrollHeight, behavior: 'smooth' });
-	}
+	return Math.max(1, parseInt(item.jumlah_aktivitas ?? item.maksimal_tugas) || 1);
 };
 
-const handleRemoveActivity = (index) => {
-	if (currentItem.value && currentItem.value.activities) {
-		currentItem.value.activities.splice(index, 1);
-	}
-};
-
-const handleSubmitActivity = (index) => {
-	showToast('success', 'Berhasil Dikirim', 'Bukti kegiatan berhasil disubmit.');
-};
 
 const getTaskInstructionText = (item) => {
 	if (!item || item.type !== 'Tugas') return '';
@@ -343,14 +331,17 @@ const handleSaveItem = () => {
 		let isEmpty = false;
 		if (c.type === 'text') isEmpty = !c.content || c.content.trim() === '' || c.content === '<p></p>';
 		else if (c.type === 'image' || c.type === 'pdf') isEmpty = !c.content;
-		else if (c.type === 'video' || c.type === 'task_submission') isEmpty = !c.content || c.content.trim() === '';
+		else if (c.type === 'video') isEmpty = !c.content || c.content.trim() === '';
+		else if (c.type === 'task_submission') {
+			isEmpty = !c.content || c.content.trim() === '' || !c.minTasks || parseInt(c.minTasks) < 1;
+		}
 		
 		c.hasError = isEmpty;
 		if (isEmpty) hasEmpty = true;
 	});
 
 	if (hasEmpty) {
-		showToast('error', 'Gagal Disimpan', 'Terdapat konten materi yang belum terisi dengan sempurna.');
+		showToast('error', 'Gagal Disimpan', 'Terdapat konten materi yang belum terisi dengan sempurna (pastikan judul dan jumlah tugas minimal terisi valid).');
 		return;
 	}
 
@@ -743,8 +734,33 @@ const executeDeleteItem = () => {
 									<h2 class="flex-1 min-w-0 font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight break-words">
 										{{ currentItem?.judul || currentItem?.topic || 'Belum ada judul' }}
 									</h2>
-									<div class="shrink-0 pt-1">
-										<EditButtonTable @click="startEditContent" label="Edit Konten" />
+									<div class="shrink-0 pt-0.5">
+										<button
+											type="button"
+											@click="startEditContent"
+											class="inline-flex items-center gap-1.5 rounded-[8px] bg-[#ffd56a] hover:bg-[#ffcc54] active:scale-95 px-3.5 py-1.5 font-poppins text-[13px] font-bold text-[#8a5b00] shadow-xs transition-all cursor-pointer"
+											title="Edit Konten Materi"
+										>
+											<svg
+												width="15"
+												height="15"
+												viewBox="0 0 19 19"
+												fill="none"
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-3.5 w-3.5 shrink-0"
+												aria-hidden="true"
+											>
+												<path
+													d="M4.92119 4.92074C4.92119 5.18177 4.81749 5.43211 4.63291 5.61669C4.44833 5.80126 4.19798 5.90496 3.93695 5.90496H2.95271C2.69168 5.90496 2.44133 6.00865 2.25675 6.19323C2.07217 6.3778 1.96847 6.62814 1.96847 6.88917V15.7471C1.96847 16.0082 2.07217 16.2585 2.25675 16.4431C2.44133 16.6277 2.69168 16.7313 2.95271 16.7313H11.8108C12.0719 16.7313 12.3222 16.6277 12.5068 16.4431C12.6914 16.2585 12.7951 16.0082 12.7951 15.7471V14.7629C12.7951 14.5019 12.8988 14.2515 13.0834 14.067C13.2679 13.8824 13.5183 13.7787 13.7793 13.7787C14.0404 13.7787 14.2907 13.8824 14.4753 14.067C14.6599 14.2515 14.7636 14.5019 14.7636 14.7629V15.7471C14.7636 16.5302 14.4525 17.2812 13.8987 17.835C13.345 18.3887 12.594 18.6998 11.8108 18.6998H2.95271C2.1696 18.6998 1.41857 18.3887 0.864829 17.835C0.311088 17.2812 0 16.5302 0 15.7471V6.88917C0 6.10608 0.311088 5.35506 0.864829 4.80134C1.41857 4.24761 2.1696 3.93652 2.95271 3.93652H3.93695C4.19798 3.93652 4.44833 4.04022 4.63291 4.22479C4.81749 4.40937 4.92119 4.65971 4.92119 4.92074Z"
+													fill="#8a5b00"
+												/>
+												<path
+													d="M11.413 2.96342L15.7358 7.2861L9.55481 13.4896C9.4634 13.5813 9.3548 13.6541 9.23522 13.7037C9.11564 13.7534 8.98744 13.779 8.85797 13.779H5.90526C5.64422 13.779 5.39388 13.6753 5.2093 13.4907C5.02472 13.3061 4.92102 13.0558 4.92102 12.7948V9.84211C4.92105 9.71264 4.94662 9.58444 4.99628 9.46487C5.04593 9.34529 5.11869 9.23669 5.21039 9.14528L11.413 2.96342ZM17.8067 0.893608C18.3495 1.43606 18.6678 2.16332 18.6979 2.93014C18.728 3.69697 18.4677 4.44693 17.9691 5.03027L17.8076 5.20743L17.1256 5.89048L12.8077 1.57272L13.4918 0.893608C14.064 0.32144 14.84 0 15.6492 0C16.4584 0 17.2345 0.32144 17.8067 0.893608Z"
+													fill="#8a5b00"
+												/>
+											</svg>
+											<span>Edit</span>
+										</button>
 									</div>
 								</div>
 
@@ -843,67 +859,46 @@ const executeDeleteItem = () => {
 									</p>
 								</div>
 								
-								<!-- Task Activities Submission UI (Only for Tugas) -->
+								<!-- Task Information & Instruction Preview (Admin View) -->
 								<div v-if="currentItem?.type === 'Tugas'" class="mt-8 border-t border-[#d6e0ee] pt-6">
-									<div class="flex items-center justify-between mb-5">
-										<h3 class="font-poppins text-lg font-bold text-[#17334F]">{{ getTaskInstructionText(currentItem) }}</h3>
-										<button @click="handleAddActivity" type="button" class="rounded-[6px] bg-[#183669] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#122b54] active:scale-95 transition shadow-sm">
-											Tambah
-										</button>
-									</div>
-									
-									<div class="flex flex-col gap-4">
-										<div v-for="(activity, index) in (currentItem.activities || [])" :key="activity.id" class="rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-sm">
-											<!-- Card Header -->
-											<div class="flex items-center justify-between bg-[#fafcff] px-5 py-3.5 border-b border-[#d6e0ee] cursor-pointer hover:bg-[#f4f7fb] transition" @click="activity.expanded = !activity.expanded">
-												<h4 class="font-poppins text-[15px] font-bold text-[#17334F]">Kegiatan {{ index + 1 }}</h4>
-												<svg class="h-5 w-5 text-[#17334F] transition-transform" :class="{'rotate-180': !activity.expanded}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+									<div class="rounded-[10px] border border-[#d6e0ee] bg-[#fafcff] p-5 sm:p-6 shadow-xs transition-all">
+										<div class="flex items-start gap-4">
+											<!-- Icon Box -->
+											<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] bg-[#e8eff8] text-[#183669] border border-[#d6e0ee]">
+												<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
 												</svg>
 											</div>
-											
-											<!-- Card Body -->
-											<div v-show="activity.expanded" class="p-5 flex flex-col gap-4 bg-white">
-												<p class="font-inter text-[13px] text-[#334155] leading-relaxed">
-													Masukkan bukti dan output yang kamu dapatkan dari kegiatan ini dalam bentuk PDF atau ketikkan pada kolom dibawah ini
-												</p>
-												
-												<textarea
-													v-model="activity.notes"
-													rows="4"
-													placeholder="Ketikkan apa yang kamu dapatkan disini:"
-													class="w-full rounded-[8px] border border-[#d6e0ee] bg-white p-3 font-inter text-[13px] text-[#334155] placeholder-[#94a3b8] focus:border-[#183669] focus:ring-1 focus:ring-[#183669] outline-none transition-colors resize-y"
-												></textarea>
-												
-												<div class="mt-2 flex flex-col gap-3">
-													<p class="font-inter text-[12px] text-[#64748b]">
-														Kamu juga bisa upload bukti atau rangkuman kegiatan yang disertai dokumentasi pada kolom dibawah ini
-													</p>
-													<div class="flex items-center gap-3 bg-[#fafcff] p-3 rounded-[8px] border border-dashed border-[#d6e0ee]">
-														<button type="button" class="shrink-0 rounded-[6px] bg-[#183669] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#122b54] transition shadow-sm">
-															Pilih File
-														</button>
-														<span class="font-inter text-[12px] text-[#64748b] truncate">
-															{{ activity.fileName || 'No File Chosen' }}
-														</span>
-													</div>
+
+											<!-- Content Details -->
+											<div class="flex-1 min-w-0">
+												<div class="flex flex-wrap items-center gap-2 mb-1.5">
+													<span class="font-poppins text-[11px] font-bold uppercase tracking-wider text-[#7188a3]">
+														Instruksi Pengumpulan Tugas
+													</span>
+													<span class="inline-flex items-center gap-1 rounded-full bg-[#183669]/10 px-2.5 py-0.5 font-poppins text-[11.5px] font-bold text-[#183669]">
+														<svg class="h-3.5 w-3.5 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+														</svg>
+														Wajib: {{ getTaskMinRequirement(currentItem) }} Kegiatan
+													</span>
 												</div>
-												
-												<!-- Actions -->
-												<div class="mt-2 flex items-center justify-end gap-3 pt-4 border-t border-[#f1f5f9]">
-													<button type="button" @click="handleRemoveActivity(index)" class="flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#ff6b6b] text-white hover:bg-[#fa5252] transition shadow-sm" title="Hapus Kegiatan">
-														<svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-													</button>
-													<button type="button" @click="handleSubmitActivity(index)" class="rounded-[6px] bg-[#183669] px-7 py-2.5 text-[13px] font-bold text-white hover:bg-[#122b54] active:scale-95 transition shadow-sm">
-														Kirim
-													</button>
+
+												<h3 class="font-poppins text-[16px] sm:text-[17px] font-bold text-[#17334F] leading-snug">
+													{{ getTaskInstructionText(currentItem) }}
+												</h3>
+
+												<p class="font-inter text-[13px] text-[#5a718d] leading-relaxed mt-2.5">
+													Mahasiswa diwajibkan untuk mengumpulkan tepat <strong class="text-[#183669] font-bold">{{ getTaskMinRequirement(currentItem) }} kegiatan</strong> (tidak kurang dan tidak lebih) yang relevan melalui formulir tugas pada halaman mahasiswa.
+												</p>
+
+												<div class="mt-4 flex items-center gap-2 text-[12px] text-[#7188a3] font-inter border-t border-[#e2eaf4] pt-3">
+													<svg class="h-4 w-4 text-[#8ca1b9] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+													</svg>
+													<span>Untuk mengubah judul instruksi atau jumlah minimal kegiatan, klik tombol <strong class="text-[#183669]">Edit</strong> di atas.</span>
 												</div>
 											</div>
-										</div>
-										
-										<!-- Empty State for Activities -->
-										<div v-if="!currentItem.activities || currentItem.activities.length === 0" class="flex flex-col items-center justify-center p-8 bg-[#fafcff] border border-dashed border-[#d6e0ee] rounded-[10px]">
-											<p class="font-inter text-[13px] text-[#64748b] text-center">Belum ada kegiatan yang ditambahkan. Klik <strong class="text-[#183669]">Tambah</strong> untuk mulai.</p>
 										</div>
 									</div>
 								</div>

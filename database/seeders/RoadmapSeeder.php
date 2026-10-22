@@ -35,7 +35,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Cara Mendapatkan Return Usaha 100% dalam 1 Bulan',
                                 'deskripsi'      => '<p>Materi fundamental untuk memahami strategi percepatan pengembangan dan model integrasi berkelanjutan pada ekosistem industri modern.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c1',
@@ -56,7 +56,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Analisis Kelayakan Finansial dan Pasar Produk Hutan',
                                 'deskripsi'      => '<p>Tugas mandiri untuk menganalisis potensi pasar dan perhitungan ROI serta payback period dari produk olahan hutan berkelanjutan.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c3',
@@ -78,7 +78,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 2',
                                 'judul'          => 'Strategi Pemasaran Digital & Branding Komoditas Kehutanan',
                                 'deskripsi'      => '<p>Memahami cara membangun identitas brand ramah lingkungan dan optimalisasi kanal digital.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c5',
@@ -93,7 +93,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 2',
                                 'judul'          => 'Pembuatan Pitch Deck Bisnis Agroforestry',
                                 'deskripsi'      => '<p>Susun pitch deck sebanyak 10-12 slide yang merangkum model bisnis dan proyeksi usaha Anda.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c6',
@@ -120,7 +120,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Pengembangan Model Bisnis Ekowisata Berbasis Komunitas',
                                 'deskripsi'      => '<p>Pelajari tahapan merancang paket ekowisata dan pelibatan masyarakat lokal.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c8',
@@ -135,7 +135,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Rancangan Program Eduwisata Hutan Pendidikan',
                                 'deskripsi'      => '<p>Buat proposal program eduwisata lengkap dengan jadwal kegiatan dan estimasi anggaran.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c9',
@@ -169,7 +169,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Validasi Masalah & Peluang Pasar Produk Hutan Non-Kayu',
                                 'deskripsi'      => '<p>Tahapan customer discovery dan validasi market size untuk produk turunan hasil hutan.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c11',
@@ -184,7 +184,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Penyusunan Business Model Canvas (BMC)',
                                 'deskripsi'      => '<p>Identifikasi 9 blok bangunan bisnis untuk rintisan startup kehutanan Anda.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c12',
@@ -218,7 +218,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Struktur Kelembagaan & Kebijakan Tata Kelola Kehutanan',
                                 'deskripsi'      => '<p>Mempelajari kerangka kerja Kementerian Lingkungan Hidup dan Kehutanan serta instansi daerah.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c14',
@@ -233,7 +233,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Analisis Kasus Kebijakan Tata Ruang Kehutanan',
                                 'deskripsi'      => '<p>Kajian kritis terhadap implementasi perhutanan sosial di tingkat tapak.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c15',
@@ -267,7 +267,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Strategi Penulisan Proposal Riset & Aplikasi Beasiswa',
                                 'deskripsi'      => '<p>Panduan menyusun research proposal berstandar internasional dan kiat wawancara beasiswa.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c17',
@@ -282,7 +282,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Draft Awal Research Statement & Study Plan',
                                 'deskripsi'      => '<p>Menyusun 1.000 kata rencana studi dan tujuan riset pascasarjana.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c18',
@@ -316,7 +316,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Metodologi Penapisan & Pelingkupan AMDAL',
                                 'deskripsi'      => '<p>Standar baku mutu lingkungan dan teknik identifikasi dampak penting hipotetik.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c20',
@@ -331,7 +331,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Penyusunan Matriks Rencana Pengelolaan Lingkungan (RKL)',
                                 'deskripsi'      => '<p>Praktik perumusan mitigasi dampak terhadap flora, fauna, dan kualitas air.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c21',
@@ -365,7 +365,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Materi 1',
                                 'judul'          => 'Desain Lansekap Kawasan Wisata Alam & Agroforestri',
                                 'deskripsi'      => '<p>Kombinasi komoditas produktif (kopi/kakao) dengan konservasi tutupan tajuk pohon.</p>',
-                                'maksimal_tugas' => 0,
+                                'jumlah_aktivitas' => 0,
                                 'cards'          => [
                                     [
                                         'id'       => 'c23',
@@ -380,7 +380,7 @@ class RoadmapSeeder extends Seeder
                                 'topik'          => 'Tugas 1',
                                 'judul'          => 'Perhitungan Daya Dukung Wisata (Carrying Capacity)',
                                 'deskripsi'      => '<p>Menghitung batas maksimum pengunjung harian agar tidak mendegradasi lingkungan.</p>',
-                                'maksimal_tugas' => 1,
+                                'jumlah_aktivitas' => 1,
                                 'cards'          => [
                                     [
                                         'id'       => 'c24',
@@ -417,14 +417,15 @@ class RoadmapSeeder extends Seeder
                 $bulan = BulanRoadmap::create($mData);
 
                 foreach ($items as $item) {
+                    $isTask = str_starts_with($item['topik'], 'Tugas');
                     MateriRoadmap::create([
                         'id_bulan_roadmap' => $bulan->id,
                         'judul'            => $item['judul'],
-                        'tipe'             => $item['tipe'],
+                        'tipe'             => $isTask ? 1 : 0, // 1 = Tugas, 0 = Materi
                         'topik'            => $item['topik'],
                         'deskripsi'        => $item['deskripsi'],
                         'kartu_konten'     => $item['cards'],
-                        'maksimal_tugas'   => $item['maksimal_tugas'],
+                        'jumlah_aktivitas' => $isTask ? ($item['jumlah_aktivitas'] ?? 1) : null,
                     ]);
                 }
             }
