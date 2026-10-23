@@ -21,6 +21,7 @@ const props = defineProps({
             id: null,
             judul: '',
             deskripsi: '',
+            jenis: 'umum',
             deadline: '',
             link_pendaftaran: '',
             kategori: [],
@@ -47,6 +48,7 @@ const form = ref({
     id: null,
     judul: '',
     deskripsi: '',
+    jenis: 'umum',
     deadline: '',
     link_pendaftaran: '',
     kategori: [],
@@ -58,6 +60,7 @@ const form = ref({
 const errors = ref({
     judul: '',
     deskripsi: '',
+    jenis: '',
     deadline: '',
     link_pendaftaran: '',
     kategori: '',
@@ -95,6 +98,7 @@ const syncFormData = () => {
     errors.value = {
         judul: '',
         deskripsi: '',
+        jenis: '',
         deadline: '',
         link_pendaftaran: '',
         kategori: '',
@@ -127,6 +131,7 @@ const syncFormData = () => {
         id: data.id || null,
         judul: data.judul || '',
         deskripsi: data.deskripsi || '',
+        jenis: data.jenis || 'umum',
         deadline: data.deadline || '',
         link_pendaftaran: data.link_pendaftaran || '',
         kategori,
@@ -156,7 +161,9 @@ const handleClose = () => {
     errors.value = {
         judul: '',
         deskripsi: '',
+        jenis: '',
         deadline: '',
+        link_pendaftaran: '',
         kategori: '',
         gambar: ''
     };
@@ -477,6 +484,14 @@ const validateForm = () => {
         isValid = false;
     }
 
+    // Tipe Aktivitas (Jenis)
+    if (!form.value.jenis) {
+        errors.value.jenis =
+            'Tipe aktivitas wajib dipilih.';
+
+        isValid = false;
+    }
+
     // Deadline
     if (!deadline) {
         errors.value.deadline =
@@ -546,6 +561,7 @@ const submit = () => {
         id: form.value.id,
         judul: form.value.judul.trim(),
         deskripsi: form.value.deskripsi,
+        jenis: form.value.jenis || 'umum',
         deadline: form.value.deadline,
         link_pendaftaran: (form.value.link_pendaftaran || '').trim(),
         kategori: [...form.value.kategori],
@@ -660,6 +676,64 @@ const submit = () => {
                                             class="mt-1 font-inter text-[11px] font-medium text-red-500"
                                         >
                                             {{ errors.judul }}
+                                        </p>
+                                    </div>
+
+                                    <!-- TIPE AKTIVITAS (UMUM / LOMBA) -->
+                                    <div class="shrink-0">
+                                        <label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+                                            Tipe Aktivitas
+                                            <span class="text-red-500">*</span>
+                                        </label>
+
+                                        <p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+                                            Pilih jenis aktivitas yang diajukan
+                                        </p>
+
+                                        <div class="grid grid-cols-2 gap-2 sm:gap-2.5 mt-1.5">
+                                            <label
+                                                class="flex items-center gap-2.5 px-3 py-2 sm:py-2.5 rounded-[10px] border transition cursor-pointer select-none"
+                                                :class="form.jenis === 'umum' ? 'border-[#183669] bg-[#183669]/5 shadow-xs' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="mahasiswa_tipe_aktivitas"
+                                                    value="umum"
+                                                    v-model="form.jenis"
+                                                    @change="errors.jenis = ''"
+                                                    class="h-4 w-4 border-[#d6e0ee] text-[#183669] focus:ring-0 focus:outline-none cursor-pointer"
+                                                />
+                                                <div class="flex flex-col min-w-0">
+                                                    <span class="font-inter text-[12.5px] sm:text-[13px] font-semibold text-[#1e3456] leading-tight">Umum</span>
+                                                </div>
+                                            </label>
+
+                                            <label
+                                                class="flex items-center gap-2.5 px-3 py-2 sm:py-2.5 rounded-[10px] border transition cursor-pointer select-none"
+                                                :class="form.jenis === 'lomba' ? 'border-[#183669] bg-[#183669]/5 shadow-xs' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="mahasiswa_tipe_aktivitas"
+                                                    value="lomba"
+                                                    v-model="form.jenis"
+                                                    @change="errors.jenis = ''"
+                                                    class="h-4 w-4 border-[#d6e0ee] text-[#183669] focus:ring-0 focus:outline-none cursor-pointer"
+                                                />
+                                                <div class="flex flex-col min-w-0">
+                                                    <span class="font-inter text-[12.5px] sm:text-[13px] font-semibold text-[#1e3456] leading-tight">Lomba</span>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <p
+                                            v-if="errors.jenis"
+                                            class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500"
+                                        >
+                                            <svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                            </svg>
+                                            <span>{{ errors.jenis }}</span>
                                         </p>
                                     </div>
 

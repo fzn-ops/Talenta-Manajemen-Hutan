@@ -17,6 +17,10 @@ return new class extends Migration
             $table->string('judul');
             $table->text('deskripsi');
             $table->string('kategori');
+            $table->enum('jenis', [
+                'umum',
+                'lomba',
+            ])->default('umum');
             $table->enum('status', ['menunggu', 'disetujui', 'ditolak'])
                   ->default('menunggu');
             $table->string('link_pendaftaran')->nullable();

@@ -19,6 +19,7 @@ const props = defineProps({
 			id: null,
 			judul: '',
 			deskripsi: '',
+			jenis: 'umum',
 			deadline: '',
 			link_pendaftaran: '',
 			kategori: [],
@@ -35,6 +36,7 @@ const form = ref({
 	id: null,
 	judul: '',
 	deskripsi: '',
+	jenis: 'umum',
 	deadline: '',
 	link_pendaftaran: '',
 	kategori: [],
@@ -68,6 +70,7 @@ const syncFormData = () => {
 		id: props.initialData?.id || null,
 		judul: props.initialData?.judul || '',
 		deskripsi: props.initialData?.deskripsi || '',
+		jenis: props.initialData?.jenis || 'umum',
 		deadline: props.initialData?.deadline || '',
 		link_pendaftaran: props.initialData?.link_pendaftaran || '',
 		kategori: props.initialData?.kategori ? [...props.initialData.kategori] : [],
@@ -353,6 +356,9 @@ const handleSubmit = () => {
 	if (!form.value.gambar || form.value.gambar.length === 0) {
 		errors.value.gambar = 'Minimal 1 gambar pendukung wajib diunggah.';
 	}
+	if (!form.value.jenis) {
+		errors.value.jenis = 'Tipe aktivitas wajib dipilih.';
+	}
 	if (!form.value.kategori || form.value.kategori.length === 0) {
 		errors.value.kategori = 'Pilih minimal 1 kategori aktivitas.';
 	}
@@ -379,6 +385,7 @@ const handleSubmit = () => {
 		id: form.value.id,
 		judul: inputJudul,
 		deskripsi: inputDeskripsi,
+		jenis: form.value.jenis || 'umum',
 		deadline: inputDeadline,
 		link_pendaftaran: (form.value.link_pendaftaran || '').trim(),
 		kategori: [...form.value.kategori],
@@ -453,6 +460,57 @@ const handleSubmit = () => {
 												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 											</svg>
 											<span>{{ errors.judul }}</span>
+										</p>
+									</div>
+
+									<!-- Tipe Aktivitas (Umum / Lomba) -->
+									<div class="shrink-0">
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Tipe Aktivitas<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Pilih jenis aktivitas yang diselenggarakan
+										</p>
+										<div class="grid grid-cols-2 gap-2 sm:gap-2.5 mt-1.5">
+											<label
+												class="flex items-center gap-2.5 px-3 py-2 sm:py-2.5 rounded-[10px] border transition cursor-pointer select-none"
+												:class="form.jenis === 'umum' ? 'border-[#183669] bg-[#183669]/5 shadow-xs' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'"
+											>
+												<input
+													type="radio"
+													name="admin_tipe_aktivitas"
+													value="umum"
+													v-model="form.jenis"
+													@change="errors.jenis = ''"
+													class="h-4 w-4 border-[#d6e0ee] text-[#183669] focus:ring-0 focus:outline-none cursor-pointer"
+												/>
+												<div class="flex flex-col min-w-0">
+													<span class="font-inter text-[12.5px] sm:text-[13px] font-semibold text-[#1e3456] leading-tight">Umum</span>
+												</div>
+											</label>
+
+											<label
+												class="flex items-center gap-2.5 px-3 py-2 sm:py-2.5 rounded-[10px] border transition cursor-pointer select-none"
+												:class="form.jenis === 'lomba' ? 'border-[#183669] bg-[#183669]/5 shadow-xs' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'"
+											>
+												<input
+													type="radio"
+													name="admin_tipe_aktivitas"
+													value="lomba"
+													v-model="form.jenis"
+													@change="errors.jenis = ''"
+													class="h-4 w-4 border-[#d6e0ee] text-[#183669] focus:ring-0 focus:outline-none cursor-pointer"
+												/>
+												<div class="flex flex-col min-w-0">
+													<span class="font-inter text-[12.5px] sm:text-[13px] font-semibold text-[#1e3456] leading-tight">Lomba</span>
+												</div>
+											</label>
+										</div>
+										<p v-if="errors.jenis" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.jenis }}</span>
 										</p>
 									</div>
 

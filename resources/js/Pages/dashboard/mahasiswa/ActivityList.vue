@@ -25,12 +25,16 @@ const props = defineProps({
 // ==========================================
 const activeTab = ref('dibuka'); 
 
+const validDeadlines = ['terdekat', 'terjauh', 'terlewat'];
+const validBidang = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
+const validStatus = ['menunggu', 'diterima', 'ditolak'];
+
 // Isi default dari props filters biar form pencarian gak kosong pas di-reload
 const searchQuery = ref(props.filters?.search || '');
 const activeCategory = ref(props.filters?.jenis || 'Semua');
-const filterDeadline = ref(props.filters?.sort || ''); 
-const filterStatus = ref(props.filters?.status || ''); 
-const filterBidang = ref(props.filters?.kategori || ''); 
+const filterDeadline = ref(validDeadlines.includes(props.filters?.sort) ? props.filters.sort : ''); 
+const filterStatus = ref(validStatus.includes(props.filters?.status) ? props.filters.status : ''); 
+const filterBidang = ref(validBidang.includes(props.filters?.kategori) ? props.filters.kategori : ''); 
 
 const categories = ['Semua', 'umum', 'lomba'];
 
@@ -53,9 +57,13 @@ const fetchFilteredData = () => {
     };
 
     if (activeTab.value === 'dibuka') {
-        params.sort = filterDeadline.value; 
+        if (filterDeadline.value && validDeadlines.includes(filterDeadline.value)) {
+            params.sort = filterDeadline.value; 
+        }
     } else {
-        params.status = filterStatus.value;
+        if (filterStatus.value && validStatus.includes(filterStatus.value)) {
+            params.status = filterStatus.value;
+        }
     }
 
     Object.keys(params).forEach(key => {
@@ -128,14 +136,20 @@ const getCategoryChipClass = (cat) => {
 const showFilter = ref(false);
 const toggleFilter = () => { showFilter.value = !showFilter.value; };
 const resetFilters = () => {
-  filterDeadline.value = ''; filterBidang.value = ''; filterStatus.value = '';
+  filterDeadline.value = ''; 
+  filterBidang.value = ''; 
+  filterStatus.value = '';
 };
 
 const isFilterActive = computed(() => {
   if (activeTab.value === 'dibuka') {
-    return Boolean(filterBidang.value || filterDeadline.value);
+    const hasBidang = Boolean(filterBidang.value && validBidang.includes(filterBidang.value));
+    const hasDeadline = Boolean(filterDeadline.value && validDeadlines.includes(filterDeadline.value));
+    return hasBidang || hasDeadline;
   }
-  return Boolean(filterBidang.value || filterStatus.value);
+  const hasBidang = Boolean(filterBidang.value && validBidang.includes(filterBidang.value));
+  const hasStatus = Boolean(filterStatus.value && validStatus.includes(filterStatus.value));
+  return hasBidang || hasStatus;
 });
 
 const toast = ref({ show: false, message: '', type: 'success' });

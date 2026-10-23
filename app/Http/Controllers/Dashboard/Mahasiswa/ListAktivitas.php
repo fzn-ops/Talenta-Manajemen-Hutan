@@ -28,14 +28,24 @@ class ListAktivitas extends Controller
         $perPage = $request->get('per_page', 8); 
         $userId = $request->user()->id; 
 
+        // Hanya izinkan sorting deadline valid untuk mahasiswa ('terdekat', 'terjauh', 'terlewat')
+        if (isset($filters['sort']) && !in_array($filters['sort'], ['terdekat', 'terjauh', 'terlewat'])) {
+            unset($filters['sort']);
+        }
+
         $aktivitasData = $this->AktivitasService->getPaginationAktivitas($filters, $perPage, $userId);
         
         $pendaftaranData = $this->PendaftaranAktivitasService->getDataPaginationMahasiswa($userId, $filters, $perPage);
 
+        $safeFilters = $request->only(['search', 'jenis', 'status', 'kategori', 'waktu', 'sort', 'per_page']);
+        if (isset($safeFilters['sort']) && !in_array($safeFilters['sort'], ['terdekat', 'terjauh', 'terlewat'])) {
+            $safeFilters['sort'] = null;
+        }
+
         return Inertia::render('dashboard/mahasiswa/ActivityList', [
             'aktivitasData'   => $aktivitasData,
             'pendaftaranData' => $pendaftaranData,
-            'filters'         => $request->only(['search', 'jenis', 'status', 'kategori', 'waktu', 'sort', 'per_page'])
+            'filters'         => $safeFilters
         ]);
     }
 

@@ -47,6 +47,7 @@ class PengajuanAktivitasController extends Controller
             'judul'            => 'required|string|max:255',
             'deskripsi'        => 'required|string',
             'kategori'         => 'required|string|max:255',
+            'jenis'            => 'required|in:umum,lomba',
             'deadline'         => 'required|date',
             'link_pendaftaran' => 'required|url|max:2048',
             'gambar.*'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048' // Maksimal 2MB per foto
@@ -69,6 +70,7 @@ class PengajuanAktivitasController extends Controller
             'judul'            => 'required|string|max:255',
             'deskripsi'        => 'required|string',
             'kategori'         => 'required|string|max:255',
+            'jenis'            => 'required|in:umum,lomba',
             'deadline'         => 'required|date',
             'link_pendaftaran' => 'required|url|max:2048',
             'gambar_baru.*'    => 'nullable|image|mimes:jpg,jpeg,png|max:2048'

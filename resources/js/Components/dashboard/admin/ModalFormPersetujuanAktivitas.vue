@@ -264,6 +264,22 @@ onBeforeUnmount(() => {
 									/>
 								</div>
 
+								<!-- Tipe Aktivitas -->
+								<div>
+									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+										Tipe Aktivitas
+									</label>
+									<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">Jenis aktivitas yang diajukan</p>
+									<div class="mt-1 sm:mt-1.5 flex items-center">
+										<span :class="[
+											'inline-flex items-center justify-center rounded-full px-3 py-1 font-inter text-[12px] font-semibold border capitalize',
+											data?.jenis === 'lomba' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-[#183669] border-blue-200'
+										]">
+											{{ data?.jenis === 'lomba' ? 'Lomba (Kompetisi)' : 'Umum' }}
+										</span>
+									</div>
+								</div>
+
 								<!-- Kategori -->
 								<div>
 									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
