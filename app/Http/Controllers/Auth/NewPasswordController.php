@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,15 +14,25 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response;   
+
 
 class NewPasswordController extends Controller
 {
     /**
      * Display the password reset view.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        $tokenExists = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->exists();
+
+        // Kalau tidak ada di database (artinya sudah dipakai/kedaluwarsa), lempar error 403
+        if (!$tokenExists) {
+            abort(403, 'Tautan reset password sudah tidak valid, kedaluwarsa, atau sudah pernah digunakan.');
+        }
+
         return Inertia::render('Auth/ResetPassword', [
             'email' => $request->email,
             'token' => $request->route('token'),
@@ -39,6 +51,13 @@ class NewPasswordController extends Controller
             'email' => 'required|email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $user = User::where('email', $request->email)->first();
+        if ($user && Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['Password baru tidak boleh sama dengan password sebelumnya.'],
+            ]);
+        }
 
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
@@ -67,3 +86,4 @@ class NewPasswordController extends Controller
         ]);
     }
 }
+

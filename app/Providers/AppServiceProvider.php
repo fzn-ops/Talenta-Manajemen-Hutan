@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -22,10 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Biarkan bawaan Laravel 11 ini tetap ada
         Vite::prefetch(concurrency: 3);
 
-        // 🔥 2. Tambahkan pengaturan kustomisasi template email di sini
         VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
             return (new MailMessage)
                 ->subject('Aksi Diperlukan: Verifikasi Email Akun Talenta')
@@ -34,5 +33,17 @@ class AppServiceProvider extends ServiceProvider
                     'nama' => $notifiable->name,
                 ]);
         });
+
+        ResetPassword::toMailUsing(function ($notifiable, $token) {
+        $url = url(route('password.reset', [
+            'token' => $token,
+            'email' => $notifiable->getEmailForPasswordReset(),
+        ], false));
+
+        return (new MailMessage)
+            ->subject('Reset Password Akun Anda')
+            ->view('emails.custom_reset_password', ['url' => $url]);
+        });
+
     }
 }

@@ -1,4 +1,5 @@
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 
 defineProps({
@@ -11,9 +12,64 @@ const form = useForm({
   email: '',
 });
 
+const cooldown = ref(0);
+let timer = null;
+
+const startCooldown = () => {
+  // Set waktu kedaluwarsa 60 detik dari sekarang (dalam milidetik)
+  const expirationTime = Date.now() + 60 * 1000;
+  localStorage.setItem('forgot_password_cooldown', expirationTime);
+
+  cooldown.value = 60;
+  if (timer) clearInterval(timer);
+
+  timer = setInterval(() => {
+    const remaining = Math.round((localStorage.getItem('forgot_password_cooldown') - Date.now()) / 1000);
+    if (remaining > 0) {
+      cooldown.value = remaining;
+    } else {
+      cooldown.value = 0;
+      clearInterval(timer);
+      localStorage.removeItem('forgot_password_cooldown');
+    }
+  }, 1000);
+};
+
+onMounted(() => {
+  const expirationTime = localStorage.getItem('forgot_password_cooldown');
+  if (expirationTime) {
+    const remaining = Math.round((expirationTime - Date.now()) / 1000);
+    if (remaining > 0) {
+      cooldown.value = remaining;
+      timer = setInterval(() => {
+        const currentRemaining = Math.round((localStorage.getItem('forgot_password_cooldown') - Date.now()) / 1000);
+        if (currentRemaining > 0) {
+          cooldown.value = currentRemaining;
+        } else {
+          cooldown.value = 0;
+          clearInterval(timer);
+          localStorage.removeItem('forgot_password_cooldown');
+        }
+      }, 1000);
+    } else {
+      localStorage.removeItem('forgot_password_cooldown');
+    }
+  }
+});
+
+// Bersihkan interval saat komponen ditutup
+onUnmounted(() => {
+  if (timer) clearInterval(timer);
+});
+
 const submit = () => {
-  // Menggunakan rute bawaan Laravel Breeze
-  form.post(route('password.email'));
+  if (cooldown.value > 0) return;
+
+  form.post(route('password.email'), {
+    onSuccess: () => {
+      startCooldown();
+    },
+  });
 };
 </script>
 
@@ -23,18 +79,16 @@ const submit = () => {
   <!-- Background hijau penuh layar dengan ornamen (Sama seperti Login) -->
   <div class="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#4b857a] font-sans">
 
-     <!-- ========================================== -->
+    <!-- ========================================== -->
     <!-- AREA SVG ORNAMEN RESPONSIVE                -->
     <!-- ========================================== -->
     
     <!-- 1. Ornamen Kiri Atas (Daun Kuning) -->
     <div class="pointer-events-none absolute -left-6 -top-6 z-0 sm:left-0 sm:top-0">
-      <!-- w-32 di HP (128px), w-48 di tablet (192px), w-64 di desktop (256px) -->
       <img src="/assets/images/icon_daun_login_kiri.svg" alt="" class="w-32 opacity-90 transition-all duration-300 sm:w-48 md:w-56 lg:w-58">
     </div>
 
     <!-- 2. Ornamen Kanan Atas (Garis & Bintang) -->
-    <!-- Posisi di-adjust agar tidak terlalu jauh ke kanan/atas -->
     <div class="pointer-events-none absolute -right-5 top-4 z-0 sm:right-4 sm:top-8 md:right-1 md:top-1">
       <img src="/assets/images/garis_bintang_login_kanan.svg" alt="" class="w-24 transition-all duration-300 sm:w-32 md:w-40 lg:w-[24rem]">
     </div>
@@ -73,7 +127,12 @@ const submit = () => {
       </div>
 
       <form @submit.prevent="submit" class="flex flex-col gap-6">
-        
+
+        <!-- Pesan Error Validasi -->
+        <div v-if="form.errors.email" class="rounded-lg bg-red-50 p-2 text-center text-xs font-bold text-red-600 border border-red-200">
+          {{ form.errors.email }}
+        </div>
+
         <!-- Input Email -->
         <div class="relative">
           <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-2 text-[#152c5b]">
@@ -91,20 +150,17 @@ const submit = () => {
             autofocus
             autocomplete="username"
           />
-          <!-- Pesan Error Validasi -->
-          <div v-if="form.errors.email" class="mt-2 text-[12.5px] font-bold text-red-500">
-            {{ form.errors.email }}
-          </div>
         </div>
 
         <div class="mt-2 flex flex-col gap-4">
-          <!-- Tombol Submit -->
+          <!-- Tombol Submit dengan Indikator Cooldown -->
           <button 
             type="submit" 
-            :disabled="form.processing" 
+            :disabled="form.processing || cooldown > 0" 
             class="w-full rounded-full bg-[#4b857a] py-3 text-[15px] font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#3b6b62] hover:shadow-lg focus:outline-none disabled:opacity-70 disabled:hover:translate-y-0"
           >
-            Kirim Link Reset
+            <span v-if="cooldown > 0">Kirim Ulang dalam {{ cooldown }} detik</span>
+            <span v-else>Kirim Link Reset</span>
           </button>
 
           <!-- Kembali ke Login -->
