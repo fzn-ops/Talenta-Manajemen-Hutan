@@ -581,13 +581,21 @@ const handleModalSubmit = (selectedIds) => {
 						class="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[#d6e0ee] bg-white px-6 py-16 text-center"
 					>
 						<h3 class="font-poppins text-[16px] font-bold text-[#17334F]">
-							Roadmap tidak ditemukan
+							{{ roadmapsList.length === 0 ? 'Belum Ada Roadmap yang Diikuti' : 'Roadmap tidak ditemukan' }}
 						</h3>
 						<p class="mt-1 font-inter text-[13px] text-[#64748b] max-w-sm">
-							Tidak ada data roadmap yang sesuai dengan kata kunci atau filter yang Anda pilih.
+							{{ roadmapsList.length === 0 ? 'Kamu belum mengikuti roadmap apapun. Yuk klik tombol Tambah untuk memilih roadmap yang ingin kamu ikuti!' : 'Tidak ada data roadmap yang sesuai dengan kata kunci atau filter yang Anda pilih.' }}
 						</p>
 						<button
-							v-if="searchQuery || hasActiveFilters"
+							v-if="roadmapsList.length === 0"
+							type="button"
+							@click="openTambah"
+							class="mt-4 rounded-lg bg-[#183669] px-4 py-2 font-poppins text-xs font-semibold text-white transition hover:bg-[#122b54] active:scale-95 cursor-pointer shadow-xs"
+						>
+							+ Tambah Roadmap
+						</button>
+						<button
+							v-else-if="searchQuery || hasActiveFilters"
 							type="button"
 							@click="searchQuery = ''; resetAllFilters()"
 							class="mt-4 rounded-lg bg-[#183669] px-4 py-2 font-poppins text-xs font-semibold text-white transition hover:bg-[#122b54] cursor-pointer"
@@ -599,6 +607,7 @@ const handleModalSubmit = (selectedIds) => {
 
 				<!-- Pagination Component -->
 				<TablePagination
+					v-if="filteredRoadmaps.length > 0"
 					:current-page="currentPage"
 					:total-pages="totalPages"
 					:total-items="filteredRoadmaps.length"

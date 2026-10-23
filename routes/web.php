@@ -18,6 +18,7 @@ use App\Http\Controllers\Dashboard\Mahasiswa\PengajuanAktivitasController as Mah
 use App\Http\Controllers\Dashboard\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Dashboard\Mahasiswa\ListAktivitas as MahasiswaListAktivitas;
 use App\Http\Controllers\Dashboard\Mahasiswa\RoadmapController as MahasiswaRoadmapController;
+use App\Http\Controllers\Dashboard\Mahasiswa\DashboardController as MahasiswaDashboardController;
 
 /* Route Landing dan Website Public*/
 
@@ -143,9 +144,7 @@ Route::middleware(['auth','role:admin'])->prefix('admin')->group(function(){
 
 /* Mahasiswa Dashboard Routes */
 Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('dashboard/mahasiswa/Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [MahasiswaDashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/roadmap', [MahasiswaRoadmapController::class, 'index'])->name('roadmap');
     Route::post('/roadmap/enroll', [MahasiswaRoadmapController::class, 'enroll'])->name('roadmap.enroll');
