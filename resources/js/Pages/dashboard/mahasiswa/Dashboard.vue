@@ -7,94 +7,20 @@ const props = defineProps({
 	stats: {
 		type: Object,
 		default: () => ({
-			profesional: 10,
-			bisnis: 100,
+			profesional: 0,
+			bisnis: 0,
 			birokrat: 0,
-			akademisi: 10,
-			totalKegiatan: 10,
+			akademisi: 0,
+			totalKegiatan: 0,
 		}),
 	},
 	roadmaps: {
 		type: Array,
-		default: () => [
-			{
-				id: 1,
-				title: 'Persiapan Karir Software Engineer & Fullstack Developer',
-				category: 'Profesional',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-			},
-			{
-				id: 2,
-				title: 'Inkubasi Bisnis & Rintisan Startup Berbasis Hasil Hutan',
-				category: 'Bisnis',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-			},
-			{
-				id: 3,
-				title: 'Jalur Masuk ASN & Karir Birokrasi Lingkungan Hidup',
-				category: 'Birokrat',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-			},
-			{
-				id: 4,
-				title: 'Persiapan Studi Lanjut S2/S3 & Publikasi Ilmiah Kehutanan',
-				category: 'Akademisi',
-				task_count: 40,
-				completed_tasks: 10,
-				thumbnail: '',
-			},
-		],
+		default: () => [],
 	},
 	activities: {
 		type: Array,
-		default: () => [
-			{
-				id: 1,
-				judul: 'Lomba Desain Inovasi Hasil Hutan Non-Kayu 2026',
-				deskripsi: 'Kompetisi karya inovasi hilirisasi produk hasil hutan untuk meningkatkan nilai tambah komoditas lokal.',
-				deadline: '21 Agustus 2026',
-				peserta: 67,
-				gambar: '123.jpg',
-				jenis: 'Lomba',
-				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
-			},
-			{
-				id: 2,
-				judul: 'First Meet MNH 2026: Sinergi dan Orientasi Mahasiswa',
-				deskripsi: 'Pertemuan perdana mahasiswa Manajemen Hutan untuk membahas roadmap dan pengembangan karir.',
-				deadline: '21 Agustus 2026',
-				peserta: 45,
-				gambar: '1234.jpg',
-				jenis: 'Umum',
-				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
-			},
-			{
-				id: 3,
-				judul: 'Workshop GIS & Pemetaan Satelit Hutan Tropis',
-				deskripsi: 'Pelatihan teknis pemetaan spasial dan pemantauan tutupan lahan hutan menggunakan citra satelit.',
-				deadline: '28 Agustus 2026',
-				peserta: 82,
-				gambar: '1235.jpg',
-				jenis: 'Umum',
-				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
-			},
-			{
-				id: 4,
-				judul: 'Hackathon Konservasi & Smart Forestry 2026',
-				deskripsi: 'Tantangan pembuatan prototype teknologi AI & IoT untuk monitoring keanekaragaman hayati.',
-				deadline: '05 September 2026',
-				peserta: 58,
-				gambar: '123.jpg',
-				jenis: 'Lomba',
-				tags: ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'],
-			},
-		],
+		default: () => [],
 	},
 });
 
@@ -102,19 +28,19 @@ const page = usePage();
 
 const userName = computed(() => {
 	const user = page.props.auth?.user;
-	return user?.nama || user?.name || 'Fauzan';
+	return user?.nama || user?.name || 'Mahasiswa';
 });
 
 // Stats Items Configuration
 const statCards = computed(() => [
 	{
 		label: 'Profesional',
-		value: props.stats?.profesional ?? 10,
+		value: props.stats?.profesional ?? 0,
 		icon: '/assets/icons/icon_profesional.svg',
 	},
 	{
 		label: 'Bisnis',
-		value: props.stats?.bisnis ?? 100,
+		value: props.stats?.bisnis ?? 0,
 		icon: '/assets/icons/icon_bisnis.svg',
 	},
 	{
@@ -124,12 +50,12 @@ const statCards = computed(() => [
 	},
 	{
 		label: 'Akademisi',
-		value: props.stats?.akademisi ?? 10,
+		value: props.stats?.akademisi ?? 0,
 		icon: '/assets/icons/icon_akademisi.svg',
 	},
 	{
 		label: 'Total Kegiatan',
-		value: props.stats?.totalKegiatan ?? props.stats?.total_kegiatan ?? 10,
+		value: props.stats?.totalKegiatan ?? props.stats?.total_kegiatan ?? 0,
 		icon: '/assets/icons/icon_total_kegiatan.svg',
 	},
 ]);
@@ -207,8 +133,8 @@ const getImageUrl = (img) => {
 };
 
 const formatDeadline = (val) => {
-	if (!val) return '21 Agustus 2026';
-	if (typeof val === 'string' && val.includes(' ')) return val;
+	if (!val) return '-';
+	if (typeof val === 'string' && val.includes(' ') && !val.includes('-')) return val;
 	const options = { day: 'numeric', month: 'long', year: 'numeric' };
 	const d = new Date(val);
 	return isNaN(d.getTime()) ? val : d.toLocaleDateString('id-ID', options);
@@ -216,22 +142,26 @@ const formatDeadline = (val) => {
 
 const getActivityTags = (item) => {
 	if (!item) return [];
-	if (Array.isArray(item.tags)) {
+	if (Array.isArray(item.tags) && item.tags.length > 0) {
 		return item.tags.map((t) => (typeof t === 'object' ? t.name : t));
 	}
-	if (Array.isArray(item.kategori)) return item.kategori;
-	if (typeof item.kategori === 'string') {
+	if (Array.isArray(item.kategori) && item.kategori.length > 0) return item.kategori;
+	if (typeof item.kategori === 'string' && item.kategori.trim()) {
 		return item.kategori.split(',').map((s) => s.trim()).filter(Boolean);
 	}
-	return ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
+	return [];
 };
 
 const handleRoadmapClick = (roadmap) => {
 	router.visit(`/mahasiswa/roadmap/${roadmap.id || 1}`);
 };
 
-const handleActivityClick = () => {
-	router.visit('/mahasiswa/aktivitas/pendaftaran');
+const handleActivityClick = (activity) => {
+	if (activity?.id) {
+		router.visit(`/mahasiswa/aktivitas/pendaftaran/${activity.id}`);
+	} else {
+		router.visit('/mahasiswa/aktivitas/list');
+	}
 };
 </script>
 
@@ -284,7 +214,7 @@ const handleActivityClick = () => {
 					<!-- Title & Link Header -->
 					<div class="flex items-center justify-between gap-2">
 						<h2 class="font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F] leading-tight">
-							Yuk Lihat Roadmap yang Sedang Kamu Ikuti!
+							Lihat kembali Roadmap yang terakhir kamu kunjungi!
 						</h2>
 						<Link
 							href="/mahasiswa/roadmap"
@@ -294,18 +224,18 @@ const handleActivityClick = () => {
 						</Link>
 					</div>
 
-					<!-- Roadmap Cards Grid (4 Columns Desktop, 2 Columns Tablet, 1 Column Mobile) -->
-					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+					<!-- Roadmap Cards Grid (Max 3 Cards, matches Roadmap.vue) -->
+					<div v-if="roadmaps && roadmaps.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
 						<div
-							v-for="item in roadmaps.slice(0, 4)"
+							v-for="item in roadmaps.slice(0, 3)"
 							:key="`roadmap-${item.id}`"
 							@click="handleRoadmapClick(item)"
-							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-all duration-200 sm:hover:bg-[#fafcff] sm:hover:border-[#a6b7cb] sm:hover:shadow-sm cursor-pointer"
+							class="group flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-4 sm:p-5 shadow-xs transition-colors duration-150 sm:hover:bg-[#fafcff] sm:hover:border-[#a6b7cb] cursor-pointer"
 							:title="`Buka detail ${item.title}`"
 						>
 							<div>
-								<!-- Cover Banner -->
-								<div class="relative flex h-[160px] sm:h-[175px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
+								<!-- Cover Banner (Rounded [10px], matches Roadmap.vue) -->
+								<div class="relative flex h-[175px] sm:h-[190px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
 									<img
 										v-if="item.thumbnail"
 										:src="item.thumbnail"
@@ -346,24 +276,27 @@ const handleActivityClick = () => {
 									</div>
 								</div>
 
-								<!-- Progress Bar Row -->
-								<div class="mt-3.5 sm:mt-4 flex items-center justify-between gap-3">
+								<!-- Progress Bar Row (Matches Roadmap.vue) -->
+								<div class="mt-4 flex items-center justify-between gap-3">
 									<span class="font-inter text-[12px] sm:text-[13px] font-semibold text-[#475569] shrink-0">
-										{{ item.completed_tasks ?? 0 }}/{{ item.task_count || 40 }} Task
+										{{ item.completed_tasks ?? 0 }}/{{ item.task_count || 1 }} Task
 									</span>
 									<div class="h-2 flex-1 rounded-full bg-[#e2e8f0] overflow-hidden">
 										<div
-											class="h-full rounded-full bg-[#183669] transition-all duration-300"
+											class="h-full rounded-full bg-[#416f65] transition-all duration-300"
 											:style="{
-												width: `${Math.min(100, Math.round(((item.completed_tasks ?? 0) / (item.task_count || 40)) * 100))}%`
+												width: `${Math.min(100, Math.round(((item.completed_tasks ?? 0) / (item.task_count || 1)) * 100))}%`
 											}"
 										></div>
 									</div>
+									<span class="font-inter text-[12px] sm:text-[13px] font-bold text-[#183669] shrink-0">
+										{{ Math.min(100, Math.round(((item.completed_tasks ?? 0) / (item.task_count || 1)) * 100)) }}%
+									</span>
 								</div>
 
 								<!-- Title -->
 								<h3
-									class="mt-2.5 line-clamp-2 text-[15px] sm:text-[16px] font-bold leading-snug text-[#17334F] transition sm:group-hover:text-[#183669]"
+									class="mt-2.5 line-clamp-2 text-[16px] sm:text-[17px] font-bold leading-snug text-[#17334F] transition sm:group-hover:text-[#183669]"
 									:title="item.title"
 								>
 									{{ item.title }}
@@ -385,6 +318,30 @@ const handleActivityClick = () => {
 							</div>
 						</div>
 					</div>
+
+					<!-- Empty State Roadmap -->
+					<div
+						v-else
+						class="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-[#d6e0ee] bg-white px-6 py-12 text-center"
+					>
+						<div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f4f9] text-[#183669] mb-3">
+							<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+							</svg>
+						</div>
+						<h3 class="font-poppins text-[15px] font-bold text-[#17334F]">
+							Belum Ada Roadmap yang Diikuti
+						</h3>
+						<p class="mt-1 font-inter text-[13px] text-[#64748b] max-w-sm">
+							Kamu belum mengikuti roadmap apapun. Yuk temukan dan ikuti roadmap yang cocok dengan talenta kamu!
+						</p>
+						<Link
+							href="/mahasiswa/roadmap"
+							class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#183669] px-4 py-2 font-poppins text-xs font-semibold text-white shadow-xs transition hover:bg-[#122b54] active:scale-95"
+						>
+							Jelajahi Roadmap
+						</Link>
+					</div>
 				</div>
 
 				<!-- Section: Aktivitas Terbaru Yang Bisa Kamu Ikuti Nih! -->
@@ -392,7 +349,7 @@ const handleActivityClick = () => {
 					<!-- Title & Link Header -->
 					<div class="flex items-center justify-between gap-2">
 						<h2 class="font-poppins text-[15px] sm:text-[16px] font-bold text-[#17334F] leading-tight">
-							Aktivitas Terbaru Yang Bisa Kamu Ikuti Nih!
+							Aktivitas terbaru yang bisa kamu ikuti!
 						</h2>
 						<Link
 							href="/mahasiswa/aktivitas/list"
@@ -403,11 +360,11 @@ const handleActivityClick = () => {
 					</div>
 
 					<!-- Activity Cards Grid (4 Columns on Desktop, 2 Columns on Tablet, 1 Column on Mobile) -->
-					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+					<div v-if="activities && activities.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
 						<div
 							v-for="item in activities.slice(0, 4)"
 							:key="`activity-${item.id}`"
-							@click="handleActivityClick"
+							@click="handleActivityClick(item)"
 							class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none"
 							:title="item.judul"
 						>
@@ -435,7 +392,7 @@ const handleActivityClick = () => {
 									<svg class="h-3.5 w-3.5 text-[#183669]" fill="currentColor" viewBox="0 0 20 20">
 										<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
 									</svg>
-									<span>{{ item.peserta || 67 }}</span>
+									<span>{{ item.peserta ?? 0 }}</span>
 								</div>
 							</div>
 
@@ -474,6 +431,24 @@ const handleActivityClick = () => {
 								</div>
 							</div>
 						</div>
+					</div>
+
+					<!-- Empty State Aktivitas -->
+					<div
+						v-else
+						class="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-[#d6e0ee] bg-white px-6 py-12 text-center"
+					>
+						<div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f4f9] text-[#183669] mb-3">
+							<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							</svg>
+						</div>
+						<h3 class="font-poppins text-[15px] font-bold text-[#17334F]">
+							Belum Ada Aktivitas Terbaru
+						</h3>
+						<p class="mt-1 font-inter text-[13px] text-[#64748b] max-w-sm">
+							Saat ini belum ada aktivitas yang tersedia. Cek kembali nanti ya!
+						</p>
 					</div>
 				</div>
 			</div>

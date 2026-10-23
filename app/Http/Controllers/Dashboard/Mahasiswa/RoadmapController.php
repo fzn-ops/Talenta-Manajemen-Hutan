@@ -61,6 +61,12 @@ class RoadmapController extends Controller
     public function show(Request $request, $id): Response
     {
         $userId = (int) Auth::id();
+
+        // Update timestamp terakhir diakses/dikunjungi oleh mahasiswa
+        \App\Models\PendaftaranRoadmap::where('id_user', $userId)
+            ->where('id_roadmap', (int) $id)
+            ->update(['updated_at' => now()]);
+
         $detailData = $this->detailService->getMahasiswaRoadmapDetail((int) $id, $userId);
 
         return Inertia::render('dashboard/mahasiswa/RoadmapDetail', [

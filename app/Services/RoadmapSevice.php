@@ -162,7 +162,18 @@ public function createRoadmap(array $data)
     // ==========================================
     public function getMahasiswaRoadmaps(int $userId, array $filters = []): array
     {
-        $query = Roadmap::with([
+        $query = Roadmap::whereHas('pendaftaranRoadmap', function ($q) use ($userId) {
+            $q->where('id_user', $userId);
+        })
+        ->join('pendaftaran_roadmap', function ($join) use ($userId) {
+            $join->on('roadmap.id', '=', 'pendaftaran_roadmap.id_roadmap')
+                 ->where('pendaftaran_roadmap.id_user', '=', $userId);
+        })
+        ->select('roadmap.*')
+        ->orderByDesc('pendaftaran_roadmap.updated_at')
+        ->orderByDesc('pendaftaran_roadmap.created_at')
+        ->orderByDesc('pendaftaran_roadmap.id')
+        ->with([
             'bulanRoadmap.materiRoadmap',
             'pendaftaranRoadmap' => function ($q) use ($userId) {
                 $q->where('id_user', $userId);
@@ -179,7 +190,7 @@ public function createRoadmap(array $data)
             $query->whereIn('kategori', $kategoriArray);
         }
 
-        $roadmaps = $query->orderBy('id', 'asc')->get();
+        $roadmaps = $query->get();
 
         // Auto-sinkron semua tugas yang disetujui (HasilAktivitas status = disetujui) ke tabel Pencapaian
         $allApprovedMateriIds = \App\Models\HasilAktivitas::where('id_user', $userId)
