@@ -46,12 +46,24 @@ class AktivitasService
             }
         }
 
-        // --- (Kodingan filter lu sisanya tetep sama) ---
-        if (!empty($filters['sort']) && !empty($filters['direction'])) {
-            $allowedSorts = ['id', 'judul', 'deadline', 'created_at', 'updated_at'];
-            $sortColumn = in_array($filters['sort'], $allowedSorts) ? $filters['sort'] : 'updated_at';
-            $direction = strtolower($filters['direction']) === 'asc' ? 'asc' : 'desc';
-            $query->orderBy($sortColumn, $direction);
+        // Filter & Sorting Berdasarkan Deadline atau Field Lain
+        if (!empty($filters['sort'])) {
+            $sort = strtolower(trim($filters['sort']));
+            if ($sort === 'terdekat') {
+                $query->where('deadline', '>=', now()->startOfDay())
+                      ->orderBy('deadline', 'asc');
+            } elseif ($sort === 'terjauh') {
+                $query->where('deadline', '>=', now()->startOfDay())
+                      ->orderBy('deadline', 'desc');
+            } elseif ($sort === 'terlewat') {
+                $query->where('deadline', '<', now()->startOfDay())
+                      ->orderBy('deadline', 'desc');
+            } elseif (in_array($sort, ['id', 'judul', 'deadline', 'created_at', 'updated_at'])) {
+                $direction = strtolower($filters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+                $query->orderBy($sort, $direction);
+            } else {
+                $query->orderBy('updated_at', 'desc');
+            }
         } else {
              $query->orderBy('updated_at', 'desc');  
         }

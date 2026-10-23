@@ -131,6 +131,13 @@ const resetFilters = () => {
   filterDeadline.value = ''; filterBidang.value = ''; filterStatus.value = '';
 };
 
+const isFilterActive = computed(() => {
+  if (activeTab.value === 'dibuka') {
+    return Boolean(filterBidang.value || filterDeadline.value);
+  }
+  return Boolean(filterBidang.value || filterStatus.value);
+});
+
 const toast = ref({ show: false, message: '', type: 'success' });
 const showToast = (message, type = 'success') => {
   toast.value = { show: true, message, type };
@@ -256,13 +263,9 @@ const goToDetail = (id) => {
           </button>
         </div>
 
-        <!-- Main White Card Body (Top right corner dynamic; bottom corners 10px rounded) -->
+        <!-- Main White Card Body (Top right and bottom corners 10px rounded) -->
         <div
-          :class="[
-            'border border-[#d6e0ee] bg-white p-5 sm:p-7 lg:p-8 shadow-xs font-poppins relative z-0 min-h-[500px]',
-            isTopRightRounded ? 'rounded-tr-[10px]' : 'rounded-tr-none',
-            'rounded-b-[10px] rounded-tl-none'
-          ]"
+          class="border border-[#d6e0ee] bg-white p-5 sm:p-7 lg:p-8 shadow-xs font-poppins relative z-0 min-h-[500px] rounded-b-[10px] rounded-tr-[10px] rounded-tl-none"
         >
           
           <!-- TOOLBAR (Search & Filter Tanggal - Selalu 1 Baris di Mobile & Desktop) -->
