@@ -49,13 +49,14 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
         $exceptions->render(function (HttpException $e, $request) {
-            if (in_array($e->getStatusCode(), [403, 404, 500, 503])) {
-                return Inertia::render('Errors/' . $e->getStatusCode(), [
-                    'status' => $e->getStatusCode(),
+            $status = $e->getStatusCode();
+            if (in_array($status, [403, 404, 500, 503])) {
+                return Inertia::render('Errors/Error', [
+                    'status' => $status,
                     'message' => $e->getMessage(),
                 ])
                 ->toResponse($request)
-                ->setStatusCode($e->getStatusCode());
+                ->setStatusCode($status);
             }
         });
     })->create();
