@@ -388,22 +388,22 @@ const handleActivityClick = (activity) => {
 
 							<!-- Badge Umum / Lomba (Top Left) -->
 							<div class="absolute left-3.5 top-3.5 z-20 pointer-events-none">
-								<span
+								<div
 									:class="[
-										'inline-block rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider shadow-xs select-none antialiased transform-gpu backface-hidden',
+										'inline-flex h-[24px] sm:h-[26px] items-center justify-center rounded-full px-2.5 sm:px-3 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider shadow-xs select-none antialiased leading-none transform-gpu backface-hidden',
 										String(item.jenis || '').toLowerCase() === 'lomba'
 											? 'bg-amber-500 text-white border border-amber-400/40'
 											: 'bg-blue-600 text-white border border-blue-400/30'
 									]"
 								>
-									{{ String(item.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}
-								</span>
+									<span>{{ String(item.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}</span>
+								</div>
 							</div>
 
 							<!-- Participant Badge (Top Right) -->
-							<div class="absolute right-3.5 top-3.5 flex items-center gap-1.5 z-20 pointer-events-none">
-								<div class="flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased transform-gpu backface-hidden">
-									<svg class="h-3.5 w-3.5 text-[#183669]" fill="currentColor" viewBox="0 0 20 20">
+							<div class="absolute right-3.5 top-3.5 z-20 pointer-events-none">
+								<div class="inline-flex h-[24px] sm:h-[26px] items-center justify-center gap-1.5 rounded-full bg-white/95 px-2.5 sm:px-3 text-[10.5px] sm:text-[11px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased leading-none transform-gpu backface-hidden">
+									<svg class="h-3.5 w-3.5 text-[#183669] shrink-0" fill="currentColor" viewBox="0 0 20 20">
 										<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
 									</svg>
 									<span>{{ item.peserta ?? 0 }}</span>

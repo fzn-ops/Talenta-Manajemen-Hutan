@@ -79,6 +79,29 @@ class ListAktivitas extends Controller
             'peserta_ids'  => 'required|array',
             'bukti'        => 'required|file|image|max:10240', 
         ]);
+
+        $userId = $request->user()->id;
+
+        // Pastikan current user selalu ada di peserta_ids dan tidak ada duplikat
+        $pesertaIds = array_values(array_unique(array_filter(array_merge(
+            [$userId],
+            array_map('intval', (array) $request->peserta_ids)
+        ))));
+
+        // Cek apakah pendaftaran sudah ada untuk aktivitas ini bagi user ini
+        $existing = $this->PendaftaranAktivitasService->getDetailPendaftaranMahasiswa($request->id_aktivitas, $userId);
+        if ($existing) {
+            $data = [
+                'nama_tim'    => $request->nama_tim,
+                'peserta_ids' => $pesertaIds,
+                'status'      => 'Menunggu',
+            ];
+            if ($request->hasFile('bukti')) {
+                $data['bukti_pendaftaran'] = $request->file('bukti')->store('bukti_pendaftaran', 'public');
+            }
+            $this->PendaftaranAktivitasService->updateData($existing->id, $data);
+            return redirect()->back()->with('success', 'Data pendaftaran berhasil diperbarui!');
+        }
     
         $pathBukti = null;
         if ($request->hasFile('bukti')) {
@@ -88,7 +111,7 @@ class ListAktivitas extends Controller
         $data = [
             'id_aktivitas'      => $request->id_aktivitas,
             'nama_tim'          => $request->nama_tim,
-            'peserta_ids'       => $request->peserta_ids,
+            'peserta_ids'       => $pesertaIds,
             'bukti_pendaftaran' => $pathBukti, 
         ];
     
@@ -100,7 +123,7 @@ class ListAktivitas extends Controller
     // ==================================================
     // 3. FUNGSI UPDATE PENDAFTARAN
     // ==================================================
-public function update(Request $request, $id)
+    public function update(Request $request, $id)
     {
         // 1. Validasi namanya pakai 'bukti', BUKAN 'bukti_pendaftaran'
         $validatedData = $request->validate([
@@ -120,6 +143,14 @@ public function update(Request $request, $id)
 
         unset($validatedData['bukti']);
 
+        if (isset($validatedData['peserta_ids'])) {
+            $userId = $request->user()->id;
+            $validatedData['peserta_ids'] = array_values(array_unique(array_filter(array_merge(
+                [$userId],
+                array_map('intval', (array) $validatedData['peserta_ids'])
+            ))));
+        }
+
         $this->PendaftaranAktivitasService->updateData($id, $validatedData);
 
         return redirect()->back()->with('success', 'Data pendaftaran berhasil diperbarui!');
@@ -128,8 +159,21 @@ public function update(Request $request, $id)
     // ==================================================
     // 4. FUNGSI DELETE (BATALIN PENDAFTARAN)
     // ==================================================
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $userId = $request->user()->id;
+        $pendaftaran = \App\Models\PendaftaranAktivitas::with('peserta')->findOrFail($id);
+
+        // Pastikan user ini memang terdaftar sebagai peserta di pendaftaran ini
+        if (!$pendaftaran->peserta->contains('id', $userId)) {
+            abort(403, 'Anda tidak memiliki hak untuk membatalkan pendaftaran ini.');
+        }
+
+        // Pendaftaran yang sudah disetujui tidak boleh dihapus
+        if (in_array(strtolower($pendaftaran->status), ['disetujui', 'diterima'])) {
+            return redirect()->back()->with('error', 'Aktivitas yang telah disetujui tidak dapat dibatalkan.');
+        }
+
         $this->PendaftaranAktivitasService->delete($id);
 
         return redirect()->back()->with('success', 'Pendaftaran berhasil dibatalkan!');

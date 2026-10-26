@@ -163,20 +163,39 @@ const showToast = (message, type = 'success') => {
 // ==========================================
 const showDeleteModal = ref(false);
 const itemToDelete = ref(null);
+const isDeleting = ref(false);
+
+const canEditPendaftaran = (status) => {
+    const s = String(status || '').toLowerCase();
+    return s !== 'disetujui' && s !== 'diterima';
+};
+
+const canDeletePendaftaran = (status) => {
+    const s = String(status || '').toLowerCase();
+    return s === 'menunggu' || s === 'ditolak';
+};
+
 const openDeleteModal = (item) => { 
     itemToDelete.value = item; 
     showDeleteModal.value = true; 
 };
 
 const executeDelete = () => {
-    if(!itemToDelete.value) return;
+    if (!itemToDelete.value) return;
     
-    // Nembak ke route batalin pendaftaran yang udah kita bikin di backend
-    router.delete(route('batal', { id: itemToDelete.value.id }), {
+    isDeleting.value = true;
+    router.delete(`/mahasiswa/aktivitas/pendaftaran/${itemToDelete.value.id}/batal`, {
+        preserveScroll: true,
         onSuccess: () => {
             showDeleteModal.value = false;
             itemToDelete.value = null;
             showToast('Pendaftaran berhasil dibatalkan!', 'success');
+        },
+        onError: () => {
+            showToast('Gagal membatalkan pendaftaran.', 'error');
+        },
+        onFinish: () => {
+            isDeleting.value = false;
         }
     });
 };
@@ -198,9 +217,13 @@ const getImageUrl = (path) => {
 // ==========================================
 // FUNGSI BUAT PINDAH KE HALAMAN DETAIL
 // ==========================================
-const goToDetail = (id) => {
-    console.log("Mencoba pindah ke detail aktivitas ID:", id);
-    router.get(`/mahasiswa/aktivitas/pendaftaran/${id}`);
+const goToDetail = (id, edit = false) => {
+    console.log("Mencoba pindah ke detail aktivitas ID:", id, "edit:", edit);
+    if (edit) {
+        router.get(`/mahasiswa/aktivitas/pendaftaran/${id}?edit=true`);
+    } else {
+        router.get(`/mahasiswa/aktivitas/pendaftaran/${id}`);
+    }
 };
 
 // ==========================================
@@ -571,22 +594,22 @@ const formatCardDescription = (html) => {
 
                 <!-- BADGE UMUM / LOMBA -->
                 <div class="absolute left-3.5 top-3.5 z-20 pointer-events-none">
-                  <span
+                  <div
                     :class="[
-                      'inline-block rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider shadow-xs select-none antialiased transform-gpu backface-hidden',
+                      'inline-flex h-[24px] sm:h-[26px] items-center justify-center rounded-full px-2.5 sm:px-3 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider shadow-xs select-none antialiased leading-none transform-gpu backface-hidden',
                       String(item.jenis || '').toLowerCase() === 'lomba'
                         ? 'bg-amber-500 text-white border border-amber-400/40'
                         : 'bg-blue-600 text-white border border-blue-400/30'
                     ]"
                   >
-                    {{ String(item.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}
-                  </span>
+                    <span>{{ String(item.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}</span>
+                  </div>
                 </div>
 
                 <!-- BADGE PESERTA -->
-                <div class="absolute right-3.5 top-3.5 flex items-center gap-1.5 z-20 pointer-events-none">
-                  <div class="flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased transform-gpu backface-hidden">
-                    <svg class="h-3.5 w-3.5 text-[#183669]" fill="currentColor" viewBox="0 0 20 20">
+                <div class="absolute right-3.5 top-3.5 z-20 pointer-events-none">
+                  <div class="inline-flex h-[24px] sm:h-[26px] items-center justify-center gap-1.5 rounded-full bg-white/95 px-2.5 sm:px-3 text-[10.5px] sm:text-[11px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased leading-none transform-gpu backface-hidden">
+                    <svg class="h-3.5 w-3.5 text-[#183669] shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                     </svg>
                     <span>{{ item.partisipan || 0 }}</span>
@@ -671,27 +694,29 @@ const formatCardDescription = (html) => {
                   <!-- Badge Status -->
                   <div class="inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-2.5 py-1 font-inter text-[11px] font-semibold border shadow-xs"
                     :class="{
-                      'bg-gray-100 text-gray-600 border-gray-200': pendaftaran.status === 'menunggu',
-                      'bg-green-50 text-green-600 border-green-200': pendaftaran.status === 'diterima' || pendaftaran.status === 'disetujui',
-                      'bg-red-50 text-red-600 border-red-200': pendaftaran.status === 'ditolak'
+                      'bg-gray-100 text-gray-600 border-gray-200': String(pendaftaran.status || '').toLowerCase() === 'menunggu',
+                      'bg-green-50 text-green-600 border-green-200': ['diterima', 'disetujui'].includes(String(pendaftaran.status || '').toLowerCase()),
+                      'bg-red-50 text-red-600 border-red-200': String(pendaftaran.status || '').toLowerCase() === 'ditolak'
                     }">
-                    <svg v-if="pendaftaran.status === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 15" /></svg>
-                    <svg v-if="pendaftaran.status === 'diterima' || pendaftaran.status === 'disetujui'" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <svg v-if="pendaftaran.status === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <svg v-if="String(pendaftaran.status || '').toLowerCase() === 'menunggu'" class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 15" /></svg>
+                    <svg v-if="['diterima', 'disetujui'].includes(String(pendaftaran.status || '').toLowerCase())" class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <svg v-if="String(pendaftaran.status || '').toLowerCase() === 'ditolak'" class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span>{{ pendaftaran.status }}</span>
                   </div>
 
-                  <!-- Tombol Edit (Arahin kliknya ke halaman pendaftaran bawa ID aktivitas) -->
+                  <!-- Tombol Edit -->
                   <EditButtonTable 
-                    :disabled="pendaftaran.status === 'diterima' || pendaftaran.status === 'disetujui'"
-                    :label="pendaftaran.status === 'diterima' || pendaftaran.status === 'disetujui' ? 'Aktivitas yang telah disetujui tidak dapat diedit' : 'Edit Pengajuan'"
-                    @click="goToDetail(pendaftaran.id_aktivitas)"
+                    size="card"
+                    :disabled="!canEditPendaftaran(pendaftaran.status)"
+                    :title="!canEditPendaftaran(pendaftaran.status) ? 'Aktivitas yang telah disetujui tidak dapat diedit' : 'Edit Pendaftaran'"
+                    :label="!canEditPendaftaran(pendaftaran.status) ? 'Aktivitas yang telah disetujui tidak dapat diedit' : 'Edit Pendaftaran'"
+                    @click="goToDetail(pendaftaran.id_aktivitas, true)"
                   />
 
                   <!-- Tombol Delete -->
                   <DeleteButtonTable 
-                    :disabled="pendaftaran.status !== 'menunggu'"
-                    :label="pendaftaran.status !== 'menunggu' ? 'Hanya status menunggu yang dapat dihapus' : 'Hapus Pengajuan'"
+                    :disabled="!canDeletePendaftaran(pendaftaran.status)"
+                    :label="!canDeletePendaftaran(pendaftaran.status) ? 'Aktivitas yang telah disetujui tidak dapat dihapus' : 'Hapus Pendaftaran'"
                     @click="openDeleteModal(pendaftaran)"
                   />
                 </div>
@@ -753,8 +778,9 @@ const formatCardDescription = (html) => {
     <!-- Modals -->
     <DeleteModal 
       :show="showDeleteModal" 
-      title="Hapus Aktivitas?" 
-      :message="`Apakah Anda yakin ingin menghapus aktivitas '${itemToDelete?.judul}'? Data yang dihapus tidak dapat dikembalikan.`" 
+      :isLoading="isDeleting"
+      title="Batalkan Pendaftaran?" 
+      :message="`Apakah Anda yakin ingin membatalkan pendaftaran aktivitas '${itemToDelete?.activity?.judul || itemToDelete?.judul || 'ini'}'? Data pendaftaran yang dibatalkan tidak dapat dikembalikan.`" 
       @close="showDeleteModal = false" 
       @confirm="executeDelete" 
     />
