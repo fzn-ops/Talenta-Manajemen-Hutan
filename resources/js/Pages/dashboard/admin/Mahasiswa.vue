@@ -114,8 +114,8 @@ const hasActiveFilters = computed(() => {
 });
 
 // Sorting & Pagination State
-const sortKey = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'asc');
+const sortKey = ref(props.filters?.sort || 'created_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
 const currentPage = ref(props.mahasiswaData?.current_page || 1);
 const rowsPerPage = ref(Number(props.mahasiswaData?.per_page) || 10);
 

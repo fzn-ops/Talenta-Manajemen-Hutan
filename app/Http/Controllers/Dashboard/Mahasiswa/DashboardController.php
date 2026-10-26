@@ -159,17 +159,24 @@ class DashboardController extends Controller
 
         // =========================================================================
         // 3. KARTU AKTIVITAS TERBARU (MAX 4)
+        // Tampilkan 4 aktivitas terbaru dari seluruh kategori dan tipe
         // =========================================================================
-        $activitiesQuery = Aktivitas::with('gambarAktivitas');
-        if (Aktivitas::where('status', 1)->exists()) {
-            $activitiesQuery->where('status', 1);
-        }
-
-        $latestActivities = $activitiesQuery
+        $latestActivities = Aktivitas::with('gambarAktivitas')
+            ->where('status', 1)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->take(4)
-            ->get()
+            ->get();
+
+        if ($latestActivities->isEmpty()) {
+            $latestActivities = Aktivitas::with('gambarAktivitas')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->take(4)
+                ->get();
+        }
+
+        $latestActivities = $latestActivities
             ->map(function ($act) {
                 $firstGambar = $act->gambarAktivitas->firstWhere('utama', 1)?->gambar
                     ?? $act->gambarAktivitas->first()?->gambar;

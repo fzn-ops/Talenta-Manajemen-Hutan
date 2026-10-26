@@ -23,8 +23,8 @@ const props = defineProps({
 // 1. Inisialisasi Filter & Sort
 const searchQuery = ref(props.filters?.search || '');
 const filterStatus = ref(props.filters?.status || '');
-const sortColumn = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'asc');
+const sortColumn = ref(props.filters?.sort || 'updated_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
 const isLoading = ref(false);
 const showFilter = ref(false);
 

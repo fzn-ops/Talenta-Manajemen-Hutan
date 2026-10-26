@@ -32,11 +32,13 @@ class PendaftaranAktivitasService {
             $direction = strtolower($filters['direction']) === 'desc' ? 'desc' : 'asc';
             if ($filters['sort'] === 'nama_tim') {
                 $query->orderBy('nama_tim', $direction);
+            } elseif (in_array($filters['sort'], ['id', 'created_at', 'updated_at', 'status'])) {
+                $query->orderBy($filters['sort'], $direction);
             } else {
-                $query->orderBy('id', $direction);
+                $query->orderBy('updated_at', $direction);
             }
         } else {
-            $query->orderBy('id', 'asc');
+            $query->orderBy('updated_at', 'desc');
         }
 
         return $query->paginate($perPage)->withQueryString();

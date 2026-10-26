@@ -15,13 +15,13 @@ class DashboardController extends Controller
     {
         // 1. Ambil 5 pengajuan aktivitas teratas
         $pengajuanAktivitas = PengajuanAktivitas::with(['user', 'gambarPengajuanAktivitas'])
-            ->orderBy('id', 'asc')
+            ->orderBy('updated_at', 'desc')
             ->take(5)
             ->get();
 
         // 2. Ambil 5 pendaftaran aktivitas teratas
         $pendaftaranAktivitas = PendaftaranAktivitas::with(['activity', 'peserta'])
-            ->orderBy('id', 'asc')
+            ->orderBy('updated_at', 'desc')
             ->take(5)
             ->get();
 
@@ -31,7 +31,7 @@ class DashboardController extends Controller
             'materiRoadmap.bulanRoadmap.roadmap',
             'pendaftaranAktivitas.activity'
         ])
-            ->orderBy('id', 'asc')
+            ->orderBy('updated_at', 'desc')
             ->take(5)
             ->get();
 

@@ -25,8 +25,8 @@ class MahasiswaController extends Controller
             'search'         => $request->input('search'),
             'angkatan'       => $request->input('angkatan'),
             'talent_mapping' => $request->input('talent_mapping'),
-            'sort'           => $request->input('sort', 'id'),
-            'direction'      => $request->input('direction', 'asc'),
+            'sort'           => $request->input('sort', 'created_at'),
+            'direction'      => $request->input('direction', 'desc'),
             'per_page'       => (int) $request->input('per_page', 10),
             'page'           => (int) $request->input('page', 1),
         ];

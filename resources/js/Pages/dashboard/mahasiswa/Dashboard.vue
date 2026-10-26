@@ -154,6 +154,14 @@ const getActivityTags = (item) => {
 	return [];
 };
 
+const formatCardDescription = (html) => {
+	if (!html) return '';
+	let text = String(html).replace(/<\/?(p|div|h[1-6]|ul|ol|li|blockquote|br)[^>]*>/gi, ' ');
+	text = text.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '$1');
+	text = text.replace(/<(?!\/?(b|strong|i|em|u|s|span)\b)[^>]+>/gi, '');
+	return text.replace(/\s+/g, ' ').trim();
+};
+
 const handleRoadmapClick = (roadmap) => {
 	router.visit(`/mahasiswa/roadmap/${roadmap.id || 1}`);
 };
@@ -367,7 +375,7 @@ const handleActivityClick = (activity) => {
 							v-for="item in activities.slice(0, 4)"
 							:key="`activity-${item.id}`"
 							@click="handleActivityClick(item)"
-							class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-all duration-300 aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none"
+							class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-[transform,box-shadow] duration-300 ease-out aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none will-change-transform transform-gpu backface-hidden isolate"
 							:title="item.judul"
 						>
 							<!-- Background Image & Gradient -->
@@ -376,21 +384,25 @@ const handleActivityClick = (activity) => {
 								class="absolute inset-0 h-full w-full object-cover"
 								:alt="item.judul"
 							/>
-							<div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95"></div>
+							<div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95 pointer-events-none"></div>
 
 							<!-- Badge Umum / Lomba (Top Left) -->
-							<div class="absolute left-3.5 top-3.5 z-20">
-								<span :class="[
-									'rounded-full px-3 py-1 text-[10px] font-extrabold text-white shadow-sm uppercase tracking-wider',
-									(item.jenis || 'Lomba') === 'Lomba' ? 'bg-[#f59e0b]' : 'bg-[#2563eb]'
-								]">
-									{{ item.jenis || 'Lomba' }}
+							<div class="absolute left-3.5 top-3.5 z-20 pointer-events-none">
+								<span
+									:class="[
+										'inline-block rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider shadow-xs select-none antialiased transform-gpu backface-hidden',
+										String(item.jenis || '').toLowerCase() === 'lomba'
+											? 'bg-amber-500 text-white border border-amber-400/40'
+											: 'bg-blue-600 text-white border border-blue-400/30'
+									]"
+								>
+									{{ String(item.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}
 								</span>
 							</div>
 
 							<!-- Participant Badge (Top Right) -->
-							<div class="absolute right-3.5 top-3.5 flex items-center gap-1.5 z-20">
-								<div class="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-[#183669] shadow-sm backdrop-blur-sm">
+							<div class="absolute right-3.5 top-3.5 flex items-center gap-1.5 z-20 pointer-events-none">
+								<div class="flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[11px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased transform-gpu backface-hidden">
 									<svg class="h-3.5 w-3.5 text-[#183669]" fill="currentColor" viewBox="0 0 20 20">
 										<path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
 									</svg>
@@ -414,9 +426,10 @@ const handleActivityClick = (activity) => {
 								</h3>
 
 								<!-- Description -->
-								<p class="mb-2.5 font-inter text-[11px] sm:text-[12px] leading-relaxed line-clamp-2 text-slate-200/90">
-									{{ item.deskripsi }}
-								</p>
+								<p 
+									class="mb-2.5 font-inter text-[11px] sm:text-[12px] leading-relaxed line-clamp-2 text-slate-200/90 card-description"
+									v-html="formatCardDescription(item.deskripsi)"
+								></p>
 
 								<!-- Category Tags (Pill Badges) -->
 								<div class="flex flex-wrap gap-1.5">
@@ -457,3 +470,22 @@ const handleActivityClick = (activity) => {
 		</section>
 	</MahasiswaLayout>
 </template>
+
+<style scoped>
+.card-description :deep(b),
+.card-description :deep(strong) {
+	font-weight: 700;
+	color: #ffffff;
+}
+.card-description :deep(i),
+.card-description :deep(em) {
+	font-style: italic;
+	color: rgba(241, 245, 249, 0.95);
+}
+.card-description :deep(u) {
+	text-decoration: underline;
+}
+.card-description :deep(s) {
+	text-decoration: line-through;
+}
+</style>

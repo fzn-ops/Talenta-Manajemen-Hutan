@@ -28,8 +28,8 @@ const searchQuery = ref(props.filters?.search || '');
 const filterStatus = ref(props.filters?.status || '');
 const showFilter = ref(false);
 
-const sortColumn = ref(props.filters?.sort || 'id');
-const sortDirection = ref(props.filters?.direction || 'asc');
+const sortColumn = ref(props.filters?.sort || 'updated_at');
+const sortDirection = ref(props.filters?.direction || 'desc');
 
 // Pagination
 const currentPage = ref(props.hasilData?.current_page || 1);

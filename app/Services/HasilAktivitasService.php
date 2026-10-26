@@ -46,13 +46,21 @@ class HasilAktivitasService
                     $query->orderBy('hasil_aktivitas.status', $direction);
                     break;
 
+                case 'created_at':
+                    $query->orderBy('hasil_aktivitas.created_at', $direction);
+                    break;
+
+                case 'updated_at':
+                    $query->orderBy('hasil_aktivitas.updated_at', $direction);
+                    break;
+
                 case 'id':
                 default:
                     $query->orderBy('hasil_aktivitas.id', $direction);
                     break;
             }
         } else {
-            $query->orderBy('hasil_aktivitas.id', 'asc');
+            $query->orderBy('hasil_aktivitas.updated_at', 'desc');
         }
 
         // 2. Pencarian (Search)

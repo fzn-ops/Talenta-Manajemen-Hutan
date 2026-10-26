@@ -25,7 +25,7 @@ const deletedImageIds = ref([]);
 const searchQuery = ref(props.filters?.search || '');
 const showFilter = ref(false);
 
-const sortColumn = ref(props.filters?.sort || 'updated_at');
+const sortColumn = ref(props.filters?.sort || 'created_at');
 const sortDirection = ref(props.filters?.direction || 'desc');
 
 const filterState = ref({

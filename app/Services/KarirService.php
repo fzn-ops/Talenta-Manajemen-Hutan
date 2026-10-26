@@ -32,7 +32,7 @@ class KarirService
             $direction = strtolower($filters['direction']) === 'desc' ? 'desc' : 'asc';
             $query->orderBy($sortColumn, $direction);
         } else {
-            $query->orderBy('id', 'asc');
+            $query->orderBy('created_at', 'desc');
         }
 
         // 2. Pencarian (Search)

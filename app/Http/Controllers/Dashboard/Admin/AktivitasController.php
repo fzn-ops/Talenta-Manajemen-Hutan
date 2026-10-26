@@ -25,7 +25,7 @@ class AktivitasController extends Controller
             'kategori'=> $request->input('kategori'),
             'status'=> $request->input('status'),
             'waktu'     => $request->input('waktu'),
-            'sort'      => $request->input('sort', 'updated_at'),
+            'sort'      => $request->input('sort', 'created_at'),
             'direction' => $request->input('direction', 'desc'),
         ];
         
@@ -63,7 +63,7 @@ class AktivitasController extends Controller
 
         $validated['partisipan'] = $validated['partisipan'] ?? 0;
         $validated['jenis']      = $validated['jenis'] ?? 'umum';
-        $validated['status']     = $validated['status'] ?? 0;
+        $validated['status']     = $validated['status'] ?? 1;
 
         // 2. Lempar ke Service untuk disimpan ke DB & Upload File
         $this->aktivitasService->createAktivitas($validated);

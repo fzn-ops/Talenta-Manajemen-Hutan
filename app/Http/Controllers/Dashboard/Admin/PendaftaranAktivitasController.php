@@ -18,7 +18,12 @@ class PendaftaranAktivitasController extends Controller
     }
 
     public function index(Request $request){
-        $filters = $request->only(['search','status']);
+        $filters = [
+            'search'    => $request->input('search'),
+            'status'    => $request->input('status'),
+            'sort'      => $request->input('sort', 'updated_at'),
+            'direction' => $request->input('direction', 'desc'),
+        ];
         $perPage = $request->input('per_page', 10);
 
         $pendaftaranData = $this->PendaftaranAktivitasService->getDataPaginationAdmin($filters, $perPage);

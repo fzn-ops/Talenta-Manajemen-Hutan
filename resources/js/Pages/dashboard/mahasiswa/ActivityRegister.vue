@@ -339,26 +339,60 @@ const closeDropdown = () => {
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-[360px_1fr] xl:grid-cols-[400px_1fr] xl:gap-12 items-start w-full">
           
           <!-- KOLOM KIRI (POSTER & THUMBNAILS) -->
-          <div class="flex flex-col gap-4 w-full max-w-[380px] mx-auto lg:mx-0 lg:max-w-none">
-            <div class="aspect-[3/4] w-full overflow-hidden rounded-[14px] bg-slate-100 shadow-sm border border-[#d6e0ee] relative">
+          <div class="flex flex-col gap-3.5 sm:gap-4 w-full max-w-[380px] mx-auto lg:mx-0 lg:max-w-none">
+            <!-- MAIN POSTER WITH ZOOM AND TYPE BADGE -->
+            <div 
+              @click="openImagePreview(mainPosterUrl)"
+              class="group aspect-[3/4] w-full overflow-hidden rounded-[14px] bg-slate-100 shadow-sm border border-[#d6e0ee] relative cursor-pointer select-none"
+              title="Klik untuk memperbesar gambar"
+            >
+              <!-- Badge Lomba / Umum on Poster (Top Left) -->
+              <div class="absolute left-3.5 top-3.5 z-10 pointer-events-none">
+                <span
+                  :class="[
+                    'inline-block rounded-full px-2.5 py-0.5 text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider shadow-sm select-none antialiased',
+                    String(aktivitas.jenis || '').toLowerCase() === 'lomba'
+                      ? 'bg-amber-500 text-white border border-amber-400/40'
+                      : 'bg-blue-600 text-white border border-blue-400/30'
+                  ]"
+                >
+                  {{ String(aktivitas.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}
+                </span>
+              </div>
+
+              <!-- Main Poster Image -->
               <img 
                 :src="mainPosterUrl" 
-                class="h-full w-full object-cover transition-all duration-300" 
+                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" 
                 alt="Poster Aktivitas" 
               />
+
+              <!-- Hover Zoom Hint Overlay -->
+              <div class="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center pointer-events-none">
+                <div class="flex items-center gap-1.5 rounded-full bg-black/65 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-xs">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                  </svg>
+                  <span>Lihat Poster Penuh</span>
+                </div>
+              </div>
             </div>
+
+            <!-- THUMBNAILS (NO BLUE OUTLINE!) -->
             <div v-if="allActivityImages.length > 1" class="grid grid-cols-3 gap-2.5 sm:gap-3">
               <div 
                 v-for="(imgObj, index) in allActivityImages" 
                 :key="index" 
                 @click="activePosterUrl = getImageUrl(imgObj?.gambar)"
-                class="aspect-square w-full rounded-[10px] bg-[#e2e8f0] shadow-xs border overflow-hidden cursor-pointer hover:opacity-95 transition-all"
-                :class="mainPosterUrl === getImageUrl(imgObj?.gambar) ? 'border-[#183669] ring-2 ring-[#183669]/30' : 'border-[#d6e0ee]/50 opacity-75 hover:opacity-100'"
+                class="aspect-square w-full rounded-[10px] bg-[#e2e8f0] shadow-xs overflow-hidden cursor-pointer transition-all"
+                :class="mainPosterUrl === getImageUrl(imgObj?.gambar) 
+                  ? 'border-2 border-slate-700 opacity-100 ring-1 ring-slate-400/30' 
+                  : 'border border-slate-200/90 opacity-60 hover:opacity-100'"
               >
                 <img 
                   :src="getImageUrl(imgObj?.gambar)" 
                   class="h-full w-full object-cover" 
-                  alt="Thumbnail Aktivitas"
+                  alt="Thumbnail Aktivitas" 
                 />
               </div>
             </div>
@@ -393,26 +427,43 @@ const closeDropdown = () => {
             <div class="mb-5 sm:mb-6 border-b border-[#e2e8f0] pb-5 sm:pb-6 w-full">
               <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-3">
                 
-                <!-- 1. Judul di Kiri -->
-                <h1 class="font-poppins text-2xl sm:text-[32px] lg:text-[36px] font-bold text-[#17334F] leading-tight">
-                  {{ aktivitas.judul }}
-                </h1>
+                <!-- 1. Eyebrow Badge & Judul di Kiri -->
+                <div class="flex-1 min-w-0">
+                  <div class="mb-2 flex items-center gap-2">
+                    <span
+                      :class="[
+                        'inline-block rounded-full px-2.5 py-0.5 font-poppins text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider shadow-xs select-none',
+                        String(aktivitas.jenis || '').toLowerCase() === 'lomba'
+                          ? 'bg-amber-500 text-white border border-amber-400/40'
+                          : 'bg-blue-600 text-white border border-blue-400/30'
+                      ]"
+                    >
+                      {{ String(aktivitas.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}
+                    </span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-[11px] sm:text-[11.5px] font-medium text-slate-500">Tipe Aktivitas</span>
+                  </div>
+
+                  <h1 class="font-poppins text-2xl sm:text-[30px] lg:text-[34px] font-bold text-[#17334F] leading-tight">
+                    {{ aktivitas.judul }}
+                  </h1>
+                </div>
                 
-                <!-- 2. Wadah Baru (Biar Deadline & Status Numpuk Rapi di Kanan) -->
-                <div class="flex flex-col gap-2 shrink-0 sm:mt-1 self-start sm:self-auto sm:items-end">
+                <!-- 2. Wadah Deadline & Status di Kanan (Responsive Flex) -->
+                <div class="flex flex-row sm:flex-col flex-wrap gap-2 shrink-0 sm:mt-1 self-start sm:self-auto sm:items-end">
                   
-                  <!-- Badge Deadline (Asli punya lu) -->
-                  <div class="inline-flex items-center gap-2 text-[12.5px] sm:text-[13.5px] font-semibold text-[#183669] font-poppins bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full shadow-xs">
+                  <!-- Badge Deadline -->
+                  <div class="inline-flex items-center gap-2 text-[12px] sm:text-[13.5px] font-semibold text-[#183669] font-poppins bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full shadow-xs">
                     <svg class="h-4 w-4 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
                     <span>Deadline: {{ aktivitas.deadline }}</span>
                   </div>
 
-                  <!-- Badge Status (Baru) -->
+                  <!-- Badge Status -->
                   <div 
                     v-if="props.pendaftaranDetail"
-                    class="inline-flex items-center gap-2 text-[12.5px] sm:text-[13.5px] font-semibold font-poppins border px-3 py-1.5 rounded-full shadow-xs"
+                    class="inline-flex items-center gap-2 text-[12px] sm:text-[13.5px] font-semibold font-poppins border px-3 py-1.5 rounded-full shadow-xs"
                     :class="{
                       'bg-yellow-50 text-yellow-700 border-yellow-200': props.pendaftaranDetail.status === 'menunggu',
                       'bg-green-50 text-green-700 border-green-200': props.pendaftaranDetail.status === 'disetujui',
@@ -429,7 +480,7 @@ const closeDropdown = () => {
                 </div>
               </div>
 
-              <!-- KATEGORI PILLS / CHIPS (MATCH aktivitasSUBMISSION.VUE) -->
+              <!-- KATEGORI PILLS / CHIPS (TARGET ROADMAP TRACKS) -->
               <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
                 <span
                   v-for="cat in aktivitas.kategori"
@@ -445,10 +496,10 @@ const closeDropdown = () => {
             </div>
 
             <!-- DESKRIPSI -->
-            <div class="mb-6 space-y-3 font-inter text-[13.5px] sm:text-[14px] leading-relaxed text-[#475569] w-full">
-              <!-- OPSI 1: Kalau deskripsi cuma 1 paragraf panjang, panggil langsung aja -->
-              <p>{{ aktivitas?.deskripsi }}</p>
-            </div>
+            <div 
+              class="mb-6 font-inter text-[13.5px] sm:text-[14px] leading-relaxed text-[#475569] w-full rich-text-content"
+              v-html="aktivitas?.deskripsi || 'Tidak ada deskripsi.'"
+            ></div>
 
             <!-- LINK PENDAFTARAN -->
             <div class="mb-7 w-full">
@@ -729,20 +780,22 @@ const closeDropdown = () => {
     <!-- LIGHTBOX PREVIEW MODAL -->
     <Teleport to="body">
       <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="previewingImage" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all" @click="closeImagePreview">
+        <div v-if="previewingImage" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/85 backdrop-blur-md p-3 sm:p-6 transition-all" @click="closeImagePreview">
+          <!-- Fixed Close Button -->
+          <button
+            type="button"
+            @click="closeImagePreview"
+            class="fixed top-4 right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-md shadow-lg transition hover:scale-105 active:scale-95 cursor-pointer focus:outline-none"
+            title="Tutup Preview (Esc)"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
           <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-            <div v-if="previewingImage" class="relative flex items-center justify-center bg-transparent" @click.stop>
-              <button
-                type="button"
-                @click="closeImagePreview"
-                class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
-                title="Tutup Preview"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <img :src="previewingImage" alt="Zoomed Preview" class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl" />
+            <div v-if="previewingImage" class="relative flex items-center justify-center max-h-[88vh] max-w-[92vw]" @click.stop>
+              <img :src="previewingImage" alt="Zoomed Preview" class="max-h-[86vh] max-w-[90vw] sm:max-w-[85vw] w-auto h-auto rounded-xl object-contain shadow-2xl select-none" />
             </div>
           </Transition>
         </div>
@@ -760,3 +813,79 @@ const closeDropdown = () => {
 
   </MahasiswaLayout>
 </template>
+
+<style scoped>
+.rich-text-content :deep(p) {
+  margin-bottom: 0.75rem;
+  line-height: 1.65;
+}
+.rich-text-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.rich-text-content :deep(b),
+.rich-text-content :deep(strong) {
+  font-weight: 700;
+  color: #0f2347;
+}
+.rich-text-content :deep(i),
+.rich-text-content :deep(em) {
+  font-style: italic;
+}
+.rich-text-content :deep(u) {
+  text-decoration: underline;
+}
+.rich-text-content :deep(s),
+.rich-text-content :deep(strike) {
+  text-decoration: line-through;
+}
+.rich-text-content :deep(ul) {
+  display: block;
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.rich-text-content :deep(ol) {
+  display: block;
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.rich-text-content :deep(li) {
+  display: list-item;
+  margin: 0.2rem 0;
+}
+.rich-text-content :deep(a) {
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 500;
+  word-break: break-all;
+  transition: color 0.15s ease;
+}
+.rich-text-content :deep(a:hover) {
+  color: #1d4ed8;
+}
+.rich-text-content :deep(blockquote) {
+  display: block;
+  border-left: 3.5px solid #183669;
+  background: #f1f5f9;
+  padding: 0.5rem 1rem;
+  margin: 0.65rem 0;
+  color: #334155;
+  font-style: italic;
+  border-radius: 0 6px 6px 0;
+}
+.rich-text-content :deep(code) {
+  background: #e2e8f0;
+  color: #b91c1c;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+}
+.rich-text-content :deep(hr) {
+  border: 0;
+  height: 1px;
+  background: #cbd5e1;
+  margin: 1rem 0;
+}
+</style>

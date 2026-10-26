@@ -21,8 +21,8 @@ class BeritaController extends Controller
         // 1. Tangkap semua parameter dari Vue
         $search = $request->input('search');
         $bulan = $request->input('bulan');
-        $sort = $request->input('sort');
-        $direction = $request->input('direction');
+        $sort = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
         $perPage = $request->input('per_page', 10);
 
         // 2. Lempar semuanya ke Service lu (Pastikan urutannya sesuai sama yang di Service ya!)

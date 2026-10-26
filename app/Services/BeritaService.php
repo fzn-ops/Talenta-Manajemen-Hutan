@@ -24,9 +24,9 @@ class BeritaService
                 }
             })
             ->when($sort, function ($query) use ($sort, $direction) {
-                $query->orderBy($sort, $direction ?? 'asc');
+                $query->orderBy($sort, $direction ?? 'desc');
             }, function ($query) {
-                $query->orderBy('id', 'asc');
+                $query->orderBy('created_at', 'desc');
             })
             ->paginate($perPage)
             ->withQueryString();

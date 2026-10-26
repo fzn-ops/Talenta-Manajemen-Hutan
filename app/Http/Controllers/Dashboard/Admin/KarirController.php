@@ -25,8 +25,8 @@ class KarirController extends Controller
             'search'    => $request->input('search'),
             'kategori'  => $request->input('kategori'),
             'waktu'     => $request->input('waktu'),
-            'sort'      => $request->input('sort'),
-            'direction' => $request->input('direction'),
+            'sort'      => $request->input('sort', 'created_at'),
+            'direction' => $request->input('direction', 'desc'),
             'per_page'  => (int) $request->input('per_page', 10),
             'page'      => (int) $request->input('page', 1),
         ];

@@ -24,8 +24,8 @@ class HasilAktivitasController extends Controller
         $filters = [
             'search'    => $request->input('search'),
             'status'    => $request->input('status'),
-            'sort'      => $request->input('sort'),
-            'direction' => $request->input('direction'),
+            'sort'      => $request->input('sort', 'updated_at'),
+            'direction' => $request->input('direction', 'desc'),
         ];
 
         $perPage = $request->input('per_page', 10);

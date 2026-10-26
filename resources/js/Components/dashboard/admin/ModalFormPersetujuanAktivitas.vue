@@ -316,13 +316,11 @@ onBeforeUnmount(() => {
 										Rincian lengkap aktivitas yang diajukan
 									</p>
 									<div class="relative flex flex-col rounded-[10px] border border-[#d6e0ee] bg-[#f8fafc] overflow-hidden">
-										<textarea
-											readonly
-											:value="data?.deskripsi || '-'"
+										<div
+											v-html="data?.deskripsi || '-'"
 											:style="{ height: `${deskripsiHeight}px` }"
-											class="w-full resize-none border-0 border-none bg-transparent p-3.5 pb-6 font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#1e3456] outline-none ring-0 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none focus-visible:ring-0 overflow-y-auto cursor-default select-text shadow-none"
-											style="border: none !important; outline: none !important; box-shadow: none !important;"
-										></textarea>
+											class="w-full bg-transparent p-3.5 pb-6 font-inter text-[13px] sm:text-[14px] leading-relaxed text-[#1e3456] overflow-y-auto cursor-default select-text rich-desc-preview"
+										></div>
 
 										<!-- Bottom Full-Width Resize Handle UI -->
 										<div
@@ -574,3 +572,58 @@ onBeforeUnmount(() => {
 		</Transition>
 	</Teleport>
 </template>
+
+<style scoped>
+.rich-desc-preview :deep(b),
+.rich-desc-preview :deep(strong) {
+	font-weight: 700;
+	color: #0f2347;
+}
+.rich-desc-preview :deep(i),
+.rich-desc-preview :deep(em) {
+	font-style: italic;
+}
+.rich-desc-preview :deep(u) {
+	text-decoration: underline;
+}
+.rich-desc-preview :deep(s),
+.rich-desc-preview :deep(strike) {
+	text-decoration: line-through;
+}
+.rich-desc-preview :deep(a) {
+	color: #2563eb;
+	text-decoration: underline;
+	font-weight: 500;
+}
+.rich-desc-preview :deep(p) {
+	margin-bottom: 0.5rem;
+}
+.rich-desc-preview :deep(p:last-child) {
+	margin-bottom: 0;
+}
+.rich-desc-preview :deep(ul) {
+	display: block;
+	list-style-type: disc;
+	padding-left: 1.25rem;
+	margin: 0.35rem 0;
+}
+.rich-desc-preview :deep(ol) {
+	display: block;
+	list-style-type: decimal;
+	padding-left: 1.25rem;
+	margin: 0.35rem 0;
+}
+.rich-desc-preview :deep(li) {
+	display: list-item;
+	margin: 0.15rem 0;
+}
+.rich-desc-preview :deep(blockquote) {
+	border-left: 3px solid #183669;
+	background: #f1f5f9;
+	padding: 0.35rem 0.75rem;
+	margin: 0.5rem 0;
+	font-style: italic;
+	color: #334155;
+	border-radius: 0 4px 4px 0;
+}
+</style>
