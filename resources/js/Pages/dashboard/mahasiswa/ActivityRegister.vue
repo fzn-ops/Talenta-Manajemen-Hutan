@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { router, useForm, usePage,Link } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage, Link } from '@inertiajs/vue3';
 import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import LoadingSuccessModal from '@/Components/dashboard/mahasiswa/LoadingSuccessModal.vue';
@@ -69,24 +69,35 @@ const errors = ref({
 });
 
 // ==========================================
-// 3. LOAD PREVIEW GAMBAR (BUKTI PENDAFTARAN LAMA)
+// 3. LOAD PREVIEW GAMBAR & POSTER
 // ==========================================
 const getImageUrl = (path) => {
-    // Kalau kosong, return null aja biar nampilin kotak upload default
     if (!path) return null; 
+    if (typeof path !== 'string') return null;
     
-    // Kalau path-nya udah berupa link utuh (misal dari Google), langsung pakai
-    if (typeof path === 'string' && path.startsWith('http')) return path;
-
-    // 🔥 Bersihin kata 'public/' kalau nggak sengaja kesimpen dari Controller
-    let cleanPath = path;
-    if (typeof path === 'string' && path.startsWith('public/')) {
-        cleanPath = path.replace('public/', '');
+    // Kalau path sudah berupa URL utuh (Google, Unsplash, blob preview, dll)
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
+        return path;
     }
 
-    // Tambahin /storage/ di depannya biar tembus ke folder Laravel
+    // Bersihkan prefix leading slash, public/, dan storage/ agar tidak jadi /storage/storage/...
+    const cleanPath = path.replace(/^\/?(public\/|storage\/)+/, '');
     return `/storage/${cleanPath}`;
 };
+
+const activePosterUrl = ref('');
+
+const allActivityImages = computed(() => {
+    return Array.isArray(props.aktivitas?.gambar_aktivitas) ? props.aktivitas.gambar_aktivitas : [];
+});
+
+const mainPosterUrl = computed(() => {
+    if (activePosterUrl.value) return activePosterUrl.value;
+    const list = allActivityImages.value;
+    if (list.length === 0) return 'https://ui-avatars.com/api/?name=Activity&background=random';
+    const utama = list.find(g => g.utama == 1 || g.utama === true) || list[0];
+    return getImageUrl(utama?.gambar) || 'https://ui-avatars.com/api/?name=Activity&background=random';
+});
 
 const imagePreview = ref(
     props.pendaftaranDetail?.bukti_pendaftaran 
@@ -331,16 +342,18 @@ const closeDropdown = () => {
           <div class="flex flex-col gap-4 w-full max-w-[380px] mx-auto lg:mx-0 lg:max-w-none">
             <div class="aspect-[3/4] w-full overflow-hidden rounded-[14px] bg-slate-100 shadow-sm border border-[#d6e0ee] relative">
               <img 
-                :src="getImageUrl(aktivitas?.gambar_aktivitas?.find(g => g.utama == 1)?.gambar)" 
-                class="h-full w-full object-cover" 
+                :src="mainPosterUrl" 
+                class="h-full w-full object-cover transition-all duration-300" 
                 alt="Poster Aktivitas" 
               />
             </div>
-            <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
+            <div v-if="allActivityImages.length > 1" class="grid grid-cols-3 gap-2.5 sm:gap-3">
               <div 
-                v-for="(imgObj, index) in aktivitas?.gambar_aktivitas?.filter(g => g.utama != 1)" 
+                v-for="(imgObj, index) in allActivityImages" 
                 :key="index" 
-                class="aspect-square w-full rounded-[10px] bg-[#e2e8f0] shadow-xs border border-[#d6e0ee]/50 overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+                @click="activePosterUrl = getImageUrl(imgObj?.gambar)"
+                class="aspect-square w-full rounded-[10px] bg-[#e2e8f0] shadow-xs border overflow-hidden cursor-pointer hover:opacity-95 transition-all"
+                :class="mainPosterUrl === getImageUrl(imgObj?.gambar) ? 'border-[#183669] ring-2 ring-[#183669]/30' : 'border-[#d6e0ee]/50 opacity-75 hover:opacity-100'"
               >
                 <img 
                   :src="getImageUrl(imgObj?.gambar)" 

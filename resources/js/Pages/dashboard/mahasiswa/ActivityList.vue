@@ -187,8 +187,12 @@ const getImageUrl = (path) => {
         return 'https://ui-avatars.com/api/?name=Activity&background=random'; 
     }
     
-    // 2. Kalau ada isinya, baru deh dicek
-    return String(path).startsWith('http') ? path : `/${path}`;
+    // 2. Kalau ada isinya, cek http atau bersihkan storage/
+    if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:'))) {
+        return path;
+    }
+    const clean = String(path).replace(/^\/?(public\/|storage\/)+/, '');
+    return `/storage/${clean}`;
 };
 
 // ==========================================
@@ -543,7 +547,7 @@ const goToDetail = (id) => {
 
                 <!-- BACKGROUND GAMBAR & GRADIENT -->
                 <img 
-                    :src="getImageUrl(item?.gambar_aktivitas?.find(g => g.utama == 1)?.gambar)" 
+                    :src="getImageUrl(item?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || item?.gambar_aktivitas?.[0]?.gambar)" 
                     class="absolute inset-0 h-full w-full object-cover" 
                     :alt="item?.judul" 
                 />
@@ -618,7 +622,7 @@ const goToDetail = (id) => {
               >
                 <!-- BACKGROUND GAMBAR (Nembus relasi activity) -->
                 <img 
-                    :src="getImageUrl(pendaftaran?.activity?.gambar_aktivitas?.find(g => g.utama === 1)?.gambar)" 
+                    :src="getImageUrl(pendaftaran?.activity?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || pendaftaran?.activity?.gambar_aktivitas?.[0]?.gambar)" 
                     class="absolute inset-0 h-full w-full object-cover" 
                     :alt="pendaftaran?.activity?.judul" 
                 />

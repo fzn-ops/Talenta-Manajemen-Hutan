@@ -128,8 +128,10 @@ const getCategoryChipClass = (cat) => {
 
 const getImageUrl = (img) => {
 	if (!img) return 'https://picsum.photos/seed/activity/400/600';
-	if (img.startsWith('http') || img.startsWith('/')) return img;
-	return `https://picsum.photos/seed/${img}/400/600`;
+	if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) return img;
+	if (typeof img === 'string' && img.startsWith('/storage/')) return img;
+	const clean = String(img).replace(/^\/?(public\/|storage\/)+/, '');
+	return `/storage/${clean}`;
 };
 
 const formatDeadline = (val) => {

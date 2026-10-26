@@ -176,9 +176,12 @@ class DashboardController extends Controller
 
                 $gambarUrl = '';
                 if ($firstGambar) {
-                    $gambarUrl = str_starts_with($firstGambar, 'http')
-                        ? $firstGambar
-                        : '/storage/' . ltrim($firstGambar, '/');
+                    if (str_starts_with($firstGambar, 'http')) {
+                        $gambarUrl = $firstGambar;
+                    } else {
+                        $clean = preg_replace('#^/?(public/|storage/)+#', '', $firstGambar);
+                        $gambarUrl = '/storage/' . $clean;
+                    }
                 }
 
                 $rawKategori = $act->kategori;

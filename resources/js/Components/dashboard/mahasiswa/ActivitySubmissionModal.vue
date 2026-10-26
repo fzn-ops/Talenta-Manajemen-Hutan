@@ -383,28 +383,29 @@ const executeRemoveImage = () => {
 const getImageSrc = (gambar) => {
     if (!gambar) return 'https://picsum.photos/seed/error/300/400';
 
+    const normalizePath = (p) => {
+        if (!p) return 'https://picsum.photos/seed/error/300/400';
+        if (typeof p === 'string' && (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('blob:') || p.startsWith('data:'))) {
+            return p;
+        }
+        const clean = String(p).replace(/^\/?(public\/|storage\/)+/, '');
+        return `/storage/${clean}`;
+    };
+
     // 1. JIKA BENTUKNYA ARRAY (Data relasi dari Laravel)
     if (Array.isArray(gambar) && gambar.length > 0) {
-        const dbPath = gambar[0].gambar; 
-        if (!dbPath) return 'https://picsum.photos/seed/error/300/400';
-        return dbPath.startsWith('http') ? dbPath : `/storage/${dbPath}`;
+        return normalizePath(gambar[0]?.gambar);
     }
 
     // 2. JIKA OBJECT TUNGGAL (Dari Modal pas dilooping)
     if (typeof gambar === 'object' && !Array.isArray(gambar)) {
         if (gambar.isNew && gambar.url) return gambar.url;
-        
-        if (gambar.gambar) {
-            return gambar.gambar.startsWith('http') ? gambar.gambar : `/storage/${gambar.gambar}`;
-        }
+        if (gambar.gambar) return normalizePath(gambar.gambar);
     }
 
     // 3. JIKA STRING BIASA
     if (typeof gambar === 'string') {
-        if (gambar.startsWith('http') || gambar.startsWith('blob:') || gambar.startsWith('/')) {
-            return gambar;
-        }
-        return `/storage/${gambar}`;
+        return normalizePath(gambar);
     }
 
     return 'https://picsum.photos/seed/error/300/400';
