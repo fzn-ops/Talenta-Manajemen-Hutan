@@ -7,6 +7,7 @@ import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import RejectModal from '@/Components/dashboard/RejectModal.vue';
+import ApproveModal from '@/Components/dashboard/ApproveModal.vue';
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
@@ -252,41 +253,67 @@ const onImageError = (e) => {
 // ==========================================
 // FUNGSI AKSI (APPROVE & REJECT) VIA INERTIA
 // ==========================================
-const handleApprove = (item) => {
+const showConfirmApproveModal = ref(false);
+const itemToApprove = ref(null);
+
+const promptApprove = (item) => {
   const target = item || selectedItem.value;
-  if (target) {
-    // Kirim request PATCH ke controller lu
-    router.patch(`/admin/aktivitas/bukti-pendaftaran/${target.id}/approve`, {}, {
-      preserveScroll: true,
-      onSuccess: () => {
-        showDetailModal.value = false;
-        showToast('Pendaftaran berhasil disetujui!', 'success');
-      },
-      onError: () => {
-        showToast('Gagal menyetujui pendaftaran.', 'error');
-      }
-    });
+  if (!target) return;
+
+  if (target.status === 'disetujui') {
+    showToast('Pendaftaran ini sudah disetujui sebelumnya.', 'error');
+    return;
   }
+
+  itemToApprove.value = target;
+  showConfirmApproveModal.value = true;
+};
+
+const executeApprove = () => {
+  if (!itemToApprove.value) return;
+  const targetId = itemToApprove.value.id;
+
+  isLoading.value = true;
+
+  router.patch(`/admin/aktivitas/bukti-pendaftaran/${targetId}/approve`, {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showConfirmApproveModal.value = false;
+      showDetailModal.value = false;
+      itemToApprove.value = null;
+      showToast('Pendaftaran berhasil disetujui!', 'success');
+    },
+    onError: () => {
+      showToast('Gagal menyetujui pendaftaran.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
 };
 
 const handleReject = (reason) => {
-  if (selectedItem.value) {
-    // Kirim request PATCH beserta alasan penolakan
-    router.patch(`/admin/aktivitas/bukti-pendaftaran/${selectedItem.value.id}/reject`, {
-      catatan_penolakan: reason // Nama field wajib sama kayak validasi di Controller
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        showRejectModal.value = false;
-        showDetailModal.value = false; 
-        showToast('Pendaftaran berhasil ditolak.', 'success'); // Success karena aksinya berhasil diproses
-      },
-      onError: (errors) => {
-        // Misal gagal karena alasan kosong (validasi Laravel jalan)
-        showToast(errors.catatan_penolakan || 'Gagal menolak pendaftaran.', 'error');
-      }
-    });
-  }
+  if (!selectedItem.value) return;
+  const targetId = selectedItem.value.id;
+
+  isLoading.value = true;
+
+  router.patch(`/admin/aktivitas/bukti-pendaftaran/${targetId}/reject`, {
+    catatan_penolakan: reason
+  }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showRejectModal.value = false;
+      showDetailModal.value = false; 
+      showToast('Pendaftaran berhasil ditolak.', 'success');
+    },
+    onError: (errors) => {
+      showToast(errors?.catatan_penolakan || 'Gagal menolak pendaftaran.', 'error');
+    },
+    onFinish: () => {
+      isLoading.value = false;
+    }
+  });
 };
 
 const showDeleteModal = ref(false);
@@ -464,7 +491,7 @@ const executeDelete = () => {
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-1.5 sm:gap-2">
-                      <AcceptButton :disabled="item.status === 'disetujui'" @click="handleApprove(item)" />
+                      <AcceptButton :disabled="item.status === 'disetujui'" @click="promptApprove(item)" />
                       <RejectButton :disabled="item.status === 'ditolak' || item.status === 'disetujui'" @click="openReject(item)" />
                       <PreviewButtonTable @click="openDetail(item)" />
                       <DeleteButtonTable
@@ -609,12 +636,26 @@ const executeDelete = () => {
       :show="showDetailModal"
       :data="selectedItem"
       @close="showDetailModal = false"
-      @approve="handleApprove"
+      @approve="promptApprove"
       @reject="openReject"
     />
 
+    <!-- MODAL KONFIRMASI SETUJUI -->
+    <ApproveModal
+      :show="showConfirmApproveModal"
+      title="Setujui Pendaftaran Aktivitas?"
+      info="Status pendaftaran tim ini akan diperbarui menjadi <strong>Disetujui</strong>."
+      :is-loading="isLoading"
+      @close="showConfirmApproveModal = false"
+      @confirm="executeApprove"
+    >
+      <p class="text-xs sm:text-sm text-[#4d6786] font-inter mb-4 leading-relaxed">
+        Apakah Anda yakin ingin menyetujui pendaftaran tim <span class="font-bold text-[#183669]">"{{ itemToApprove?.nama_tim }}"</span>?
+      </p>
+    </ApproveModal>
+
     <!-- MODAL REJECT -->
-    <RejectModal :show="showRejectModal" @close="showRejectModal = false" @submit="handleReject"/>
+    <RejectModal :show="showRejectModal" :is-loading="isLoading" @close="showRejectModal = false" @submit="handleReject"/>
 
     <!-- MODAL DELETE -->
     <DeleteModal

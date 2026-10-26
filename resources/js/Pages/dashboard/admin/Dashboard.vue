@@ -696,16 +696,14 @@ const executeApprove = () => {
 	const target = itemToApprove.value;
 	const type = approveType.value;
 
-	showConfirmApproveModal.value = false;
-	showDetailPengajuan.value = false;
-	showDetailPendaftaran.value = false;
-	showDetailHasil.value = false;
 	isActionLoading.value = true;
 
 	if (type === 'pengajuan') {
 		router.post(`/admin/aktivitas/persetujuan/${target.id}/approve`, {}, {
 			preserveScroll: true,
 			onSuccess: () => {
+				showConfirmApproveModal.value = false;
+				showDetailPengajuan.value = false;
 				itemToApprove.value = null;
 			},
 			onError: () => {
@@ -719,6 +717,8 @@ const executeApprove = () => {
 		router.patch(`/admin/aktivitas/bukti-pendaftaran/${target.id}/approve`, {}, {
 			preserveScroll: true,
 			onSuccess: () => {
+				showConfirmApproveModal.value = false;
+				showDetailPendaftaran.value = false;
 				itemToApprove.value = null;
 			},
 			onError: () => {
@@ -732,6 +732,8 @@ const executeApprove = () => {
 		router.post(`/admin/aktivitas/hasil/${target.id}/approve`, {}, {
 			preserveScroll: true,
 			onSuccess: () => {
+				showConfirmApproveModal.value = false;
+				showDetailHasil.value = false;
 				itemToApprove.value = null;
 			},
 			onError: () => {
@@ -750,10 +752,6 @@ const handleReject = (reason) => {
 	const target = itemToReject.value;
 	const type = rejectType.value;
 
-	showRejectModal.value = false;
-	showDetailPengajuan.value = false;
-	showDetailPendaftaran.value = false;
-	showDetailHasil.value = false;
 	isActionLoading.value = true;
 
 	if (type === 'pengajuan') {
@@ -761,6 +759,10 @@ const handleReject = (reason) => {
 			catatan: reason || '',
 		}, {
 			preserveScroll: true,
+			onSuccess: () => {
+				showRejectModal.value = false;
+				showDetailPengajuan.value = false;
+			},
 			onError: () => {
 				showToast('error', 'Gagal', 'Gagal menolak aktivitas.');
 			},
@@ -773,6 +775,10 @@ const handleReject = (reason) => {
 			catatan_penolakan: reason || '',
 		}, {
 			preserveScroll: true,
+			onSuccess: () => {
+				showRejectModal.value = false;
+				showDetailPendaftaran.value = false;
+			},
 			onError: () => {
 				showToast('error', 'Gagal', 'Gagal menolak pendaftaran aktivitas.');
 			},
@@ -785,6 +791,10 @@ const handleReject = (reason) => {
 			catatan: reason || '',
 		}, {
 			preserveScroll: true,
+			onSuccess: () => {
+				showRejectModal.value = false;
+				showDetailHasil.value = false;
+			},
 			onError: () => {
 				showToast('error', 'Gagal', 'Gagal menolak hasil aktivitas.');
 			},
@@ -1466,6 +1476,7 @@ const executeDelete = () => {
 		<RejectModal
 			:show="showRejectModal"
 			:is-approved="String(itemToReject?.status).toLowerCase() === 'disetujui'"
+			:is-loading="isActionLoading"
 			@close="showRejectModal = false"
 			@submit="handleReject"
 		/>
