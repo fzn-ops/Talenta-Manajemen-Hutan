@@ -4,6 +4,7 @@ import { Head, router, useForm, usePage, Link } from '@inertiajs/vue3';
 import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import LoadingSuccessModal from '@/Components/dashboard/mahasiswa/LoadingSuccessModal.vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 
 // ==========================================
@@ -325,20 +326,11 @@ const removeImage = () => {
     if (fileInput.value) fileInput.value.value = '';
 };
 
-const openImagePreview = (img) => previewingImage.value = img;
-const closeImagePreview = () => previewingImage.value = null;
-
-const handleKeyDown = (e) => {
-    if (e.key === 'Escape' && previewingImage.value) closeImagePreview();
-};
-
 onMounted(() => {
-    document.addEventListener('keydown', handleKeyDown);
     if (shouldStartInEdit.value) {
         isEditing.value = true;
     }
 });
-onBeforeUnmount(() => document.removeEventListener('keydown', handleKeyDown));
 
 // ==========================================
 // 5. TOAST & SUBMIT LOGIC KE LARAVEL
@@ -440,6 +432,32 @@ const closeDropdown = () => {
     setTimeout(() => {
         activeDropdown.value = null;
     }, 200);
+};  
+
+const showImageModal = ref(false);
+const previewImages = ref([]);
+const previewIndex = ref(0);
+const previewLabel = ref('Gambar');
+
+const openImagePreview = (target, label = 'Gambar') => {
+    if (!target) return;
+    previewLabel.value = label;
+    if (label === 'Poster' || (!label && allActivityImages.value.length > 0)) {
+        const list = allActivityImages.value.map(g => getImageUrl(g?.gambar)).filter(Boolean);
+        if (list.length > 0) {
+            previewImages.value = list;
+            const targetUrl = typeof target === 'string' ? target : getImageUrl(target);
+            const foundIdx = list.indexOf(targetUrl);
+            previewIndex.value = foundIdx >= 0 ? foundIdx : 0;
+            previewLabel.value = 'Poster';
+            showImageModal.value = true;
+            return;
+        }
+    }
+    const src = typeof target === 'string' ? target : getImageUrl(target);
+    previewImages.value = [src];
+    previewIndex.value = 0;
+    showImageModal.value = true;
 };  
 
 </script>
@@ -999,31 +1017,14 @@ const closeDropdown = () => {
       </div>
     </section>
     
-    <!-- LIGHTBOX PREVIEW MODAL -->
-    <Teleport to="body">
-      <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="previewingImage" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/85 backdrop-blur-md p-3 sm:p-6 transition-all" @click="closeImagePreview">
-          <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-            <div v-if="previewingImage" class="group/lightbox relative flex items-center justify-center max-h-[88vh] max-w-[92vw] overflow-hidden rounded-xl shadow-2xl" @click.stop>
-              <!-- Gambar Preview Penuh -->
-              <img :src="previewingImage" alt="Zoomed Preview" class="max-h-[86vh] max-w-[90vw] sm:max-w-[85vw] w-auto h-auto rounded-xl object-contain shadow-2xl select-none block" />
-
-              <!-- Tombol X DI DALAM GAMBAR: Muncul saat gambar dihover (Desktop), Selalu terlihat (Mobile) -->
-              <button
-                type="button"
-                @click.stop="closeImagePreview"
-                class="absolute top-3 right-3 z-30 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-black/65 text-white hover:bg-black/90 backdrop-blur-md shadow-md transition-all duration-200 opacity-100 sm:opacity-0 sm:group-hover/lightbox:opacity-100 sm:pointer-events-none sm:group-hover/lightbox:pointer-events-auto cursor-pointer focus:outline-none"
-                title="Tutup Preview (Esc)"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+    <ImagePreviewModal
+      :show="showImageModal"
+      :images="previewImages"
+      :initial-index="previewIndex"
+      :label="previewLabel"
+      @close="showImageModal = false"
+    />
 
     <!-- SUCCESS / FEEDBACK MODAL -->
     <LoadingSuccessModal 

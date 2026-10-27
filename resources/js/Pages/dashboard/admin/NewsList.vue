@@ -10,6 +10,7 @@ import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import ModalFormBerita from '@/Components/dashboard/admin/ModalFormBerita.vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 // ==========================================
 // 1. DATA DUMMY
@@ -239,35 +240,9 @@ const showImageModal = ref(false);
 const selectedImage = ref('');
 
 const openImage = (gambar) => {
-  if (gambar && typeof gambar === 'object' && gambar.name) {
-    selectedImage.value = URL.createObjectURL(gambar);
-  } else if (gambar && !gambar.startsWith('http') && !gambar.startsWith('/')) {
-    selectedImage.value = `https://picsum.photos/seed/${gambar}/800/600`;
-  } else {
-    selectedImage.value = gambar || 'https://picsum.photos/800/600';
-  }
+  selectedImage.value = gambar;
   showImageModal.value = true;
 };
-
-// Keyboard navigation (Esc to close)
-const handleModalKeyDown = (e) => {
-  if (!showImageModal.value) return;
-  if (e.key === 'Escape') {
-    showImageModal.value = false;
-  }
-};
-
-watch(showImageModal, (isOpen) => {
-  if (isOpen) {
-    window.addEventListener('keydown', handleModalKeyDown);
-  } else {
-    window.removeEventListener('keydown', handleModalKeyDown);
-  }
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleModalKeyDown);
-});
 
 // ==========================================
 // 5. LOGIC MODAL FORM BERITA
@@ -499,15 +474,21 @@ const handleModalSubmit = (formData) => {
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>
                   <td class="px-3 py-2.5 text-left truncate" :title="stripHtml(item.deskripsi)">{{ stripHtml(item.deskripsi) }}</td>
                   <td class="px-3 py-2.5 text-center">  
-                   <button 
-                     v-if="item.foto"
-                     @click="openImage('/' + item.foto)" 
-                     class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" 
-                     :title="'Lihat Gambar'"
-                   >
-                     Gambar
-                   </button>
-                  <span v-else class="font-inter text-[14px] text-gray-400">-</span>
+                    <button 
+                      v-if="item.foto"
+                      type="button"
+                      @click="openImage('/' + item.foto)" 
+                      class="group inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1 font-inter text-[11px] font-semibold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 transition-all duration-150 cursor-pointer select-none outline-none focus:outline-none" 
+                      title="Lihat Gambar"
+                    >
+                      <svg class="h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                        <path d="m21 15-5-5L5 21" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <span>Gambar</span>
+                    </button>
+                    <span v-else class="font-inter text-[13px] text-gray-400 italic">-</span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
                     <div class="flex items-center justify-center gap-2">
@@ -555,22 +536,12 @@ const handleModalSubmit = (formData) => {
 
   </AdminLayout>
 
-  <!-- ========================================== -->
-  <!-- MODAL GAMBAR (LIGHTBOX) -->
-  <!-- ========================================== -->
-  <Teleport to="body">
-    <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showImageModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all" @click="showImageModal = false">
-        <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-          <div v-if="showImageModal" class="relative flex items-center justify-center bg-transparent" @click.stop>
-            <button type="button" @click="showImageModal = false" class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer" title="Tutup Preview">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <img :src="selectedImage" alt="Zoomed Preview" class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl" />
-          </div>
-        </Transition>
-      </div>
-    </Transition>
-  </Teleport>
+  <!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+  <ImagePreviewModal
+    :show="showImageModal"
+    :images="selectedImage"
+    label="Gambar"
+    @close="showImageModal = false"
+  />
 
 </template>

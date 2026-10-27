@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import DatePicker from '@/Components/dashboard/DatePicker.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 import RichTextEditor from '@/Components/dashboard/RichTextEditor.vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 const props = defineProps({
 	show: {
@@ -256,8 +257,15 @@ const executeRemoveImage = () => {
 };
 
 const getImageSrc = (gbr) => {
+	if (!gbr) return '';
 	if (typeof gbr === 'object' && gbr.url) {
 		return gbr.url;
+	}
+	if (typeof gbr === 'object' && gbr.file) {
+		return URL.createObjectURL(gbr.file);
+	}
+	if (typeof gbr === 'object' && gbr.gambar) {
+		return getImageSrc(gbr.gambar);
 	}
 	if (typeof gbr === 'string') {
 		if (gbr.startsWith('http://') || gbr.startsWith('https://') || gbr.startsWith('blob:') || gbr.startsWith('data:')) return gbr;
@@ -266,62 +274,29 @@ const getImageSrc = (gbr) => {
 		if (gbr.startsWith('/')) return gbr;
 		return '/storage/' + gbr;
 	}
-	return `https://picsum.photos/seed/${gbr}/300/400`;
+	return `https://picsum.photos/seed/talenta/300/400`;
 };
 
 const getImageItemSrc = (item) => {
 	if (!item) return '';
 	if (typeof item === 'object' && item.url) return item.url;
 	if (typeof item === 'object' && item.file) return URL.createObjectURL(item.file);
+	if (typeof item === 'object' && item.gambar) return getImageSrc(item.gambar);
 	if (typeof item === 'string') return getImageSrc(item);
 	return `https://picsum.photos/seed/talenta/800/600`;
 };
 
 const openImage = (target, index = 0) => {
+	const list = form.value?.gambar || [];
 	if (typeof target === 'number') {
 		index = target;
 	} else if (typeof index === 'number' && index >= 0) {
 		// keep index
 	} else {
-		index = form.gambar.indexOf(target);
+		index = list.indexOf(target);
 	}
-	activeImageIndex.value = index >= 0 && index < form.gambar.length ? index : 0;
-	selectedImage.value = getImageItemSrc(form.gambar[activeImageIndex.value] || target);
+	activeImageIndex.value = index >= 0 && index < list.length ? index : 0;
 	showImageModal.value = true;
-};
-
-const prevImage = () => {
-	if (form.gambar.length <= 1) return;
-	activeImageIndex.value = (activeImageIndex.value - 1 + form.gambar.length) % form.gambar.length;
-	selectedImage.value = getImageItemSrc(form.gambar[activeImageIndex.value]);
-};
-
-const nextImage = () => {
-	if (form.gambar.length <= 1) return;
-	activeImageIndex.value = (activeImageIndex.value + 1) % form.gambar.length;
-	selectedImage.value = getImageItemSrc(form.gambar[activeImageIndex.value]);
-};
-
-// Touch swipe support on mobile
-const touchStartX = ref(0);
-const touchEndX = ref(0);
-
-const handleTouchStart = (e) => {
-	if (!e.changedTouches || e.changedTouches.length === 0) return;
-	touchStartX.value = e.changedTouches[0].clientX;
-};
-
-const handleTouchEnd = (e) => {
-	if (!e.changedTouches || e.changedTouches.length === 0) return;
-	touchEndX.value = e.changedTouches[0].clientX;
-	const diff = touchEndX.value - touchStartX.value;
-	if (Math.abs(diff) > 40 && form.gambar.length > 1) {
-		if (diff > 0) {
-			prevImage();
-		} else {
-			nextImage();
-		}
-	}
 };
 
 // ==========================================
@@ -806,113 +781,12 @@ const handleSubmit = () => {
 		<template #confirm-text>Hapus Gambar</template>
 	</DeleteModal>
 
-	<!-- MODAL GAMBAR (LIGHTBOX) -->
-	<Teleport to="body">
-		<Transition
-			enter-active-class="ease-out duration-200"
-			enter-from-class="opacity-0"
-			enter-to-class="opacity-100"
-			leave-active-class="ease-in duration-150"
-			leave-from-class="opacity-100"
-			leave-to-class="opacity-0"
-		>
-			<div
-				v-if="showImageModal"
-				class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all"
-				@click="showImageModal = false"
-			>
-				<Transition
-					enter-active-class="ease-out duration-200"
-					enter-from-class="opacity-0 scale-95"
-					enter-to-class="opacity-100 scale-100"
-					leave-active-class="ease-in duration-150"
-					leave-from-class="opacity-100 scale-100"
-					leave-to-class="opacity-0 scale-95"
-				>
-					<div
-						v-if="showImageModal"
-						class="relative flex flex-col items-center justify-center bg-transparent max-w-full max-h-full touch-pan-y select-none"
-						@click.stop
-						@touchstart="handleTouchStart"
-						@touchend="handleTouchEnd"
-						@mouseenter="isHoveringNav = true"
-						@mouseleave="isHoveringNav = false"
-					>
-						<!-- Close button -->
-						<button
-							type="button"
-							@click="showImageModal = false"
-							class="absolute top-3.5 right-3.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
-							title="Tutup Preview"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-
-						<!-- Prev button (slide in from left on image hover) -->
-						<button
-							v-if="form.gambar.length > 1"
-							type="button"
-							@click="prevImage"
-							:class="[
-								'absolute left-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
-								isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-6 pointer-events-none'
-							]"
-							title="Gambar Sebelumnya"
-						>
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-							</svg>
-						</button>
-
-						<!-- Next button (slide in from right on image hover) -->
-						<button
-							v-if="form.gambar.length > 1"
-							type="button"
-							@click="nextImage"
-							:class="[
-								'absolute right-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
-								isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-6 pointer-events-none'
-							]"
-							title="Gambar Berikutnya"
-						>
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-							</svg>
-						</button>
-
-						<!-- Image -->
-						<img
-							:src="selectedImage"
-							alt="Preview Gambar"
-							class="max-h-[85vh] max-w-[90vw] w-auto h-auto min-w-[280px] sm:min-w-[480px] rounded-xl object-contain shadow-2xl"
-						/>
-
-						<!-- Bottom Indicator (slide in from bottom on image hover on PC; always visible on mobile) -->
-						<div
-							v-if="form.gambar.length > 1"
-							:class="[
-								'absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-3.5 py-1.5 backdrop-blur-sm text-xs font-medium text-white shadow-lg transition-all duration-300 ease-out',
-								isHoveringNav ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-100 sm:opacity-0 sm:translate-y-6 sm:pointer-events-none'
-							]"
-						>
-							<span>Gambar {{ activeImageIndex + 1 }} dari {{ form.gambar.length }}</span>
-							<div class="flex items-center gap-1.5 ml-1">
-								<button
-									v-for="(_, dotIdx) in form.gambar"
-									:key="dotIdx"
-									type="button"
-									@click="activeImageIndex = dotIdx; selectedImage = getImageItemSrc(form.gambar[dotIdx])"
-									class="h-2 rounded-full transition-all cursor-pointer"
-									:class="activeImageIndex === dotIdx ? 'w-4 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'"
-									:title="'Buka Gambar ' + (dotIdx + 1)"
-								/>
-							</div>
-						</div>
-					</div>
-				</Transition>
-			</div>
-		</Transition>
-	</Teleport>
+	<!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+	<ImagePreviewModal
+		:show="showImageModal"
+		:images="form.gambar"
+		:initial-index="activeImageIndex"
+		label="Gambar"
+		@close="showImageModal = false"
+	/>
 </template>

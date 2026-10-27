@@ -11,6 +11,7 @@ import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 
 import ActivitySubmissionModal from '@/Components/dashboard/mahasiswa/ActivitySubmissionModal.vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 const props = defineProps({
   pengajuanData: Object,
@@ -165,11 +166,7 @@ const executeDelete = () => {
   }
 };
 
-// ==============================
-// 6. LIGHTBOX MODAL (GAMBAR BACKEND)
-// ==============================
-const showImageModal = ref(false);
-const selectedImage = ref('');
+
 
 // ==============================
 // 7. FORM MODAL (INERTIA POST CREATE & UPDATE)
@@ -258,14 +255,11 @@ const getCategories = (kategori) => {
   return kategori.split(',').map((s) => s.trim()).filter(Boolean);
 };
 
-const getGambarName = (item) => {
+const getImages = (item) => {
+  if (!item) return [];
   const images = item.gambar_pengajuan_aktivitas || (item.gambar ? [item.gambar] : []);
-  if (!images || images.length === 0) return '-';
-  const first = images[0];
-  const rawPath = typeof first === 'object' && first.gambar ? first.gambar : (typeof first === 'string' ? first : (first.name || 'gambar.jpg'));
-  const cleanPath = rawPath.split('?')[0];
-  const fileName = cleanPath.split('/').pop() || 'gambar.jpg';
-  return images.length > 1 ? `${fileName} (+${images.length - 1})` : fileName;
+  if (!Array.isArray(images)) return [images].filter(Boolean);
+  return images.filter(Boolean);
 };
 
 const getImageSrc = (val) => {
@@ -283,33 +277,17 @@ const getImageSrc = (val) => {
   return `https://picsum.photos/seed/aktivitas/800/600`;
 };
 
+const showImageModal = ref(false);
+const activeImageList = ref([]);
+const activeImageIndex = ref(0);
+
 const openImage = (item) => {
-  const images = item?.gambar_pengajuan_aktivitas || (item?.gambar ? [item.gambar] : []);
+  const images = getImages(item);
   if (!images || images.length === 0) return;
-  const first = images[0];
-  selectedImage.value = getImageSrc(first);
+  activeImageList.value = images;
+  activeImageIndex.value = 0;
   showImageModal.value = true;
 };
-
-// Keyboard navigation (Esc to close)
-const handleModalKeyDown = (e) => {
-  if (!showImageModal.value) return;
-  if (e.key === 'Escape') {
-    showImageModal.value = false;
-  }
-};
-
-watch(showImageModal, (isOpen) => {
-  if (isOpen) {
-    window.addEventListener('keydown', handleModalKeyDown);
-  } else {
-    window.removeEventListener('keydown', handleModalKeyDown);
-  }
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleModalKeyDown);
-});
 </script>
 
 <template>
@@ -521,13 +499,34 @@ onUnmounted(() => {
                   </td>
                   <td class="px-3 py-2.5 text-center">{{ formatDate(item.deadline) }}</td>
                   <td class="px-3 py-2.5 text-center">
+                    <span v-if="getImages(item).length === 0" class="font-inter text-[13px] text-gray-400 italic">-</span>
                     <button 
+                      v-else
                       type="button"
                       @click="openImage(item)" 
-                      class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer truncate max-w-[110px] inline-block align-middle" 
-                      :title="getGambarName(item)"
+                      class="group inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1 font-inter text-[11px] font-semibold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 transition-all duration-150 cursor-pointer select-none outline-none focus:outline-none" 
+                      :title="getImages(item).length > 1 ? `Lihat ${getImages(item).length} Gambar` : 'Lihat Gambar'"
                     >
-                      {{ getGambarName(item) }}
+                      <svg v-if="getImages(item).length > 1" class="h-3.5 w-3.5 shrink-0 text-slate-600 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="2" y="3" width="14" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M6 21h12a2 2 0 0 0 2-2V7" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="6.5" cy="7.5" r="1" fill="currentColor" />
+                        <path d="m2 14 3.5-3.5 3.5 3.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <svg v-else class="h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                        <path d="m21 15-5-5L5 21" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+
+                      <span>Gambar</span>
+
+                      <span 
+                        v-if="getImages(item).length > 1" 
+                        class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold border border-slate-300/80 group-hover:bg-slate-300 transition-colors"
+                      >
+                        {{ getImages(item).length }}
+                      </span>
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
@@ -612,28 +611,14 @@ onUnmounted(() => {
       @submit="handleModalSubmit" 
     />
 
-    <!-- MODAL GAMBAR (LIGHTBOX) -->
-    <Teleport to="body">
-      <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="showImageModal" class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all" @click="showImageModal = false">
-          <Transition enter-active-class="ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-            <div v-if="showImageModal" class="relative flex items-center justify-center bg-transparent" @click.stop>
-              <button
-                type="button"
-                @click="showImageModal = false"
-                class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
-                title="Tutup Preview"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <img :src="selectedImage" alt="Zoomed Preview" class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl" />
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+    <ImagePreviewModal
+      :show="showImageModal"
+      :images="activeImageList"
+      :initial-index="activeImageIndex"
+      label="Gambar"
+      @close="showImageModal = false"
+    />
 
   </MahasiswaLayout>
 </template>

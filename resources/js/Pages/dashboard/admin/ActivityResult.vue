@@ -9,6 +9,7 @@ import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import RejectModal from '@/Components/dashboard/RejectModal.vue';
 import ApproveModal from '@/Components/dashboard/ApproveModal.vue';
 import ModalFormHasilAktivitas from '@/Components/dashboard/admin/ModalFormHasilAktivitas.vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
@@ -211,77 +212,13 @@ const openImage = (target, index = 0) => {
   if (list.length > 0) {
     activeImageList.value = list;
     activeImageIndex.value = index >= 0 && index < list.length ? index : 0;
-    selectedImage.value = getImageSrc(list[activeImageIndex.value]);
     showImageModal.value = true;
     return;
   }
-  selectedImage.value = getImageSrc(target);
   activeImageList.value = [target];
   activeImageIndex.value = 0;
   showImageModal.value = true;
 };
-
-const prevImage = () => {
-  if (activeImageList.value.length <= 1) return;
-  activeImageIndex.value = (activeImageIndex.value - 1 + activeImageList.value.length) % activeImageList.value.length;
-  selectedImage.value = getImageSrc(activeImageList.value[activeImageIndex.value]);
-};
-
-const nextImage = () => {
-  if (activeImageList.value.length <= 1) return;
-  activeImageIndex.value = (activeImageIndex.value + 1) % activeImageList.value.length;
-  selectedImage.value = getImageSrc(activeImageList.value[activeImageIndex.value]);
-};
-
-// Touch swipe support on mobile
-const touchStartX = ref(0);
-const touchEndX = ref(0);
-
-const handleTouchStart = (e) => {
-  if (!e.changedTouches || e.changedTouches.length === 0) return;
-  touchStartX.value = e.changedTouches[0].clientX;
-};
-
-const handleTouchEnd = (e) => {
-  if (!e.changedTouches || e.changedTouches.length === 0) return;
-  touchEndX.value = e.changedTouches[0].clientX;
-  const diff = touchEndX.value - touchStartX.value;
-  if (Math.abs(diff) > 40 && activeImageList.value.length > 1) {
-    if (diff > 0) {
-      prevImage();
-    } else {
-      nextImage();
-    }
-  }
-};
-
-// Hover state for navigation arrows & indicator on desktop
-const isHoveringNav = ref(false);
-
-// Keyboard navigation (Esc to close, Arrow keys to slide)
-const handleModalKeyDown = (e) => {
-  if (!showImageModal.value) return;
-  if (e.key === 'Escape') {
-    showImageModal.value = false;
-  } else if (e.key === 'ArrowLeft') {
-    prevImage();
-  } else if (e.key === 'ArrowRight') {
-    nextImage();
-  }
-};
-
-watch(showImageModal, (isOpen) => {
-  if (isOpen) {
-    window.addEventListener('keydown', handleModalKeyDown);
-  } else {
-    window.removeEventListener('keydown', handleModalKeyDown);
-    isHoveringNav.value = false;
-  }
-});
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleModalKeyDown);
-});
 
 // ==============================
 // 6. ACTION HANDLERS
@@ -509,16 +446,34 @@ const executeDelete = () => {
                     </span>
                   </td>
                   <td class="px-3 py-2.5 text-center">
-                    <span v-if="getBuktiList(item).length === 0" class="font-inter text-[14px] text-gray-400">-</span>
+                    <span v-if="getBuktiList(item).length === 0" class="font-inter text-[13px] text-gray-400 italic">-</span>
                     <button 
                       v-else
                       type="button"
                       @click="openImage(item)" 
-                      class="font-inter text-[14px] font-medium text-[#3b82f6] hover:text-blue-700 hover:underline transition-colors cursor-pointer inline-flex items-center justify-center gap-1 align-middle whitespace-nowrap" 
+                      class="group inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1 font-inter text-[11px] font-semibold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900 transition-all duration-150 cursor-pointer select-none outline-none focus:outline-none" 
                       :title="getBuktiList(item).length > 1 ? `Lihat ${getBuktiList(item).length} Bukti` : 'Lihat Bukti'"
                     >
+                      <svg v-if="getBuktiList(item).length > 1" class="h-3.5 w-3.5 shrink-0 text-slate-600 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="2" y="3" width="14" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M6 21h12a2 2 0 0 0 2-2V7" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="6.5" cy="7.5" r="1" fill="currentColor" />
+                        <path d="m2 14 3.5-3.5 3.5 3.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <svg v-else class="h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                        <path d="m21 15-5-5L5 21" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+
                       <span>Bukti</span>
-                      <span v-if="getBuktiList(item).length > 1" class="text-xs font-semibold text-[#3b82f6]">({{ getBuktiList(item).length }})</span>
+
+                      <span 
+                        v-if="getBuktiList(item).length > 1" 
+                        class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold border border-slate-300/80 group-hover:bg-slate-300 transition-colors"
+                      >
+                        {{ getBuktiList(item).length }}
+                      </span>
                     </button>
                   </td>
                   <td class="px-3 py-2.5 text-center">
@@ -581,116 +536,14 @@ const executeDelete = () => {
       @reject="openReject(selectedItem)"
     />
 
-    <!-- MODAL GAMBAR (LIGHTBOX) DARI TABEL -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="ease-out duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="ease-in duration-150"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showImageModal"
-          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all"
-          @click="showImageModal = false"
-        >
-          <Transition
-            enter-active-class="ease-out duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="ease-in duration-150"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showImageModal"
-              class="relative flex flex-col items-center justify-center bg-transparent max-w-full max-h-full touch-pan-y select-none"
-              @click.stop
-              @touchstart="handleTouchStart"
-              @touchend="handleTouchEnd"
-              @mouseenter="isHoveringNav = true"
-              @mouseleave="isHoveringNav = false"
-            >
-              <!-- Close button -->
-              <button
-                type="button"
-                @click="showImageModal = false"
-                class="absolute top-3.5 right-3.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none cursor-pointer"
-                title="Tutup Preview"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <!-- Prev button (slide in from left on image hover) -->
-              <button
-                v-if="activeImageList.length > 1"
-                type="button"
-                @click="prevImage"
-                :class="[
-                  'absolute left-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
-                  isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-6 pointer-events-none'
-                ]"
-                title="Bukti Sebelumnya"
-              >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              <!-- Next button (slide in from right on image hover) -->
-              <button
-                v-if="activeImageList.length > 1"
-                type="button"
-                @click="nextImage"
-                :class="[
-                  'absolute right-3.5 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-lg transition-all duration-300 ease-out hover:scale-110 active:scale-95 focus:outline-none cursor-pointer',
-                  isHoveringNav ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-6 pointer-events-none'
-                ]"
-                title="Bukti Berikutnya"
-              >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              <!-- Image -->
-              <img
-                :src="selectedImage"
-                alt="Zoomed Preview"
-                @error="onImageError"
-                class="max-h-[82vh] max-w-[88vw] w-auto h-auto min-w-[280px] sm:min-w-[460px] rounded-xl object-contain shadow-2xl"
-              />
-
-              <!-- Bottom Indicator (slide in from bottom on image hover on PC; always visible on mobile) -->
-              <div
-                v-if="activeImageList.length > 1"
-                :class="[
-                  'absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/70 px-3.5 py-1.5 backdrop-blur-sm text-xs font-medium text-white shadow-lg transition-all duration-300 ease-out',
-                  isHoveringNav ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-100 sm:opacity-0 sm:translate-y-6 sm:pointer-events-none'
-                ]"
-              >
-                <span>Bukti {{ activeImageIndex + 1 }} dari {{ activeImageList.length }}</span>
-                <div class="flex items-center gap-1.5 ml-1">
-                  <button
-                    v-for="(_, dotIdx) in activeImageList"
-                    :key="dotIdx"
-                    type="button"
-                    @click="activeImageIndex = dotIdx; selectedImage = getImageSrc(activeImageList[dotIdx])"
-                    class="h-2 rounded-full transition-all cursor-pointer"
-                    :class="activeImageIndex === dotIdx ? 'w-4 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'"
-                    :title="'Buka Bukti ' + (dotIdx + 1)"
-                  />
-                </div>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+    <ImagePreviewModal
+      :show="showImageModal"
+      :images="activeImageList"
+      :initial-index="activeImageIndex"
+      label="Bukti"
+      @close="showImageModal = false"
+    />
 
     <!-- Modal Konfirmasi Setujui Hasil Aktivitas (Dengan penanganan tombol Escape) -->
     <ApproveModal

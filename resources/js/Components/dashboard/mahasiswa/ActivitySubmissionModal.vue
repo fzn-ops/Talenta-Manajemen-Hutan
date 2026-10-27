@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import DatePicker from '@/Components/dashboard/DatePicker.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 import RichTextEditor from '@/Components/dashboard/RichTextEditor.vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 const props = defineProps({
     show: {
@@ -84,7 +85,7 @@ const imageIndexToReplace = ref(null);
 const showDeleteImageModal = ref(false);
 
 const showImageModal = ref(false);
-const selectedImage = ref('');
+const activeImageIndex = ref(0);
 
 const isBackdropClick = ref(false);
 
@@ -411,8 +412,14 @@ const getImageSrc = (gambar) => {
     return 'https://picsum.photos/seed/error/300/400';
 };
 
-const openImage = (gambar) => {
-    selectedImage.value = getImageSrc(gambar);
+const openImage = (gambar, index = 0) => {
+    const list = form.value?.gambar || [];
+    if (typeof index === 'number' && index >= 0) {
+        activeImageIndex.value = index;
+    } else {
+        const found = list.indexOf(gambar);
+        activeImageIndex.value = found >= 0 ? found : 0;
+    }
     showImageModal.value = true;
 };
 
@@ -911,7 +918,7 @@ const submit = () => {
                                                                 <!-- PREVIEW -->
                                                                 <button
                                                                     type="button"
-                                                                    @click.stop.prevent="openImage(gambar)"
+                                                                    @click.stop.prevent="openImage(gambar, index)"
                                                                     class="flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white shadow-sm hover:bg-black/85 hover:scale-110 active:scale-95 transition cursor-pointer"
                                                                     title="Lihat Gambar"
                                                                 >
@@ -1163,53 +1170,12 @@ const submit = () => {
         </template>
     </DeleteModal>
 
-    <!-- IMAGE LIGHTBOX -->
-    <Teleport to="body">
-        <Transition
-            enter-active-class="ease-out duration-200"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="ease-in duration-150"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div
-                v-if="showImageModal"
-                class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4"
-                @click="showImageModal = false"
-            >
-                <div
-                    class="relative flex items-center justify-center"
-                    @click.stop
-                >
-                    <button
-                        type="button"
-                        @click="showImageModal = false"
-                        class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                        title="Tutup Preview"
-                    >
-                        <svg
-                            class="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-
-                    <img
-                        :src="selectedImage"
-                        alt="Preview Gambar"
-                        class="max-h-[85vh] max-w-[90vw] w-auto h-auto min-w-[280px] sm:min-w-[480px] rounded-xl object-contain shadow-2xl"
-                    />
-                </div>
-            </div>
-        </Transition>
-    </Teleport>
+    <!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+    <ImagePreviewModal
+        :show="showImageModal"
+        :images="form.gambar"
+        :initial-index="activeImageIndex"
+        label="Gambar"
+        @close="showImageModal = false"
+    />
 </template>

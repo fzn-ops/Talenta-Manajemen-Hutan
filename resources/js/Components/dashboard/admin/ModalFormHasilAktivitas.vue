@@ -1,5 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
 const props = defineProps({
 	show: {
@@ -68,10 +69,7 @@ const getImageSrc = (gambar) => {
 };
 
 const openImage = (gambar) => {
-	if (document.activeElement instanceof HTMLElement) {
-		document.activeElement.blur();
-	}
-	selectedImage.value = getImageSrc(gambar);
+	selectedImage.value = gambar;
 	showImageModal.value = true;
 };
 
@@ -343,54 +341,11 @@ onBeforeUnmount(() => {
 		</Transition>
 	</Teleport>
 
-	<!-- Lightbox Modal untuk Bukti Gambar -->
-	<Teleport to="body">
-		<Transition
-			enter-active-class="ease-out duration-200"
-			enter-from-class="opacity-0"
-			enter-to-class="opacity-100"
-			leave-active-class="ease-in duration-150"
-			leave-from-class="opacity-100"
-			leave-to-class="opacity-0"
-		>
-			<div
-				v-if="showImageModal"
-				class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 transition-all"
-				@click="showImageModal = false"
-			>
-				<Transition
-					enter-active-class="ease-out duration-200"
-					enter-from-class="opacity-0 scale-95"
-					enter-to-class="opacity-100 scale-100"
-					leave-active-class="ease-in duration-150"
-					leave-from-class="opacity-100 scale-100"
-					leave-to-class="opacity-0 scale-95"
-				>
-					<div
-						v-if="showImageModal"
-						class="relative flex items-center justify-center bg-transparent"
-						@click.stop
-					>
-						<button
-							type="button"
-							@click="showImageModal = false"
-							class="absolute top-3.5 right-3.5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/85 backdrop-blur-xs shadow-md transition hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 cursor-pointer outline-none"
-							style="outline: none !important; box-shadow: none !important;"
-							title="Tutup Preview"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-						<img
-							:src="selectedImage"
-							alt="Preview Bukti"
-							@error="(e) => { e.target.src = 'https://picsum.photos/seed/talenta/800/600'; }"
-							class="max-h-[85vh] max-w-[90vw] w-auto h-auto min-w-[280px] sm:min-w-[480px] rounded-xl object-contain shadow-2xl"
-						/>
-					</div>
-				</Transition>
-			</div>
-		</Transition>
-	</Teleport>
+	<!-- MODAL GAMBAR (LIGHTBOX) TERPUSAT -->
+	<ImagePreviewModal
+		:show="showImageModal"
+		:images="selectedImage"
+		label="Bukti"
+		@close="showImageModal = false"
+	/>
 </template>
