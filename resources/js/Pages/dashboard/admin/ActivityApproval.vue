@@ -313,13 +313,13 @@ const executeApprove = () => {
   if (!itemToApprove.value) return;
   const targetId = itemToApprove.value.id;
 
-  showConfirmApproveModal.value = false;
-  showDetailModal.value = false;
   isLoading.value = true;
 
   router.post(`/admin/aktivitas/persetujuan/${targetId}/approve`, {}, {
     preserveScroll: true,
     onSuccess: () => {
+      showConfirmApproveModal.value = false;
+      showDetailModal.value = false;
       itemToApprove.value = null;
     },
     onError: () => {
@@ -340,8 +340,6 @@ const handleReject = (reason) => {
   if (!selectedItem.value) return;
   const targetId = selectedItem.value.id;
 
-  showRejectModal.value = false;
-  showDetailModal.value = false;
   isLoading.value = true;
 
   router.post(`/admin/aktivitas/persetujuan/${targetId}/reject`, {
@@ -349,6 +347,8 @@ const handleReject = (reason) => {
   }, {
     preserveScroll: true,
     onSuccess: () => {
+      showRejectModal.value = false;
+      showDetailModal.value = false;
       // Toast ditangani otomatis oleh flash listener
     },
     onError: () => {
@@ -763,6 +763,7 @@ const executeDelete = () => {
     <RejectModal 
       :show="showRejectModal" 
       :is-approved="String(selectedItem?.status).toLowerCase() === 'disetujui'"
+      :is-loading="isLoading"
       @close="showRejectModal = false" 
       @submit="handleReject"
     />
