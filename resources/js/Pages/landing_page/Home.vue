@@ -8,6 +8,11 @@ import BeritaLanding from '@/Components/landing_page/BeritaLanding.vue';
 import QuoteLanding from '@/Components/landing_page/QuoteLanding.vue';
 import CtaSection from '@/Components/landing_page/Cta.vue';
 
+const props = defineProps({
+  aktivitasData:Object,
+  beritaData:Object
+});
+
 /* // 1. Buat variabel reaktif untuk melacak posisi scroll
 const scrollY = ref(0);
 
@@ -43,8 +48,8 @@ onUnmounted(() => {
         class="absolute -right-6 -bottom-10 z-10 w-32 pointer-events-none drop-shadow-lg sm:-right-8 sm:-bottom-32 sm:w-32 md:-right-6 md:-bottom-6 md:w-48 lg:-right-16 lg:-bottom-24 lg:w-60"
       />
     </div>
-    <ActivitySection />
-    <BeritaLanding />
+    <ActivitySection :data="aktivitasData" />
+    <BeritaLanding :beritaData="beritaData" />
     <QuoteLanding />
     <CtaSection />
   </MainLayout>

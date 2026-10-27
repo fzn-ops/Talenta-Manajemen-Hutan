@@ -7,10 +7,28 @@ use Illuminate\Support\Facades\Storage;
 
 class BeritaService
 {
+    public function getBeritaById($id){
+        return Berita::findOrFail($id);
+    }
+
+    public function getRelatedNews($id){
+        return Berita::where('id','!=', $id)
+                        ->inRandomOrder()
+                        ->take(3)
+                        ->get();
+    }
+
+    public function getLandingBerita($limits=4){
+        return Berita::latest()
+                    ->take($limits)
+                    ->get();
+    }
+
     // 1. READ (Pagination & Search)
-    public function getPaginatedBerita($search, $bulan = null, $sort = null, $direction = 'desc', $perPage = 10)
+
+   public function getPaginatedBerita($search = null, $bulan = null, $sort = null, $direction = 'desc', $perPage = 10)
     {
-        return Berita::when($search, function ($query, $search) {
+        return Berita::when(is_string($search) && !empty($search), function ($query) use ($search) {
                 $query->where(function($q) use ($search) {
                     $q->where('judul', 'like', "%{$search}%")
                       ->orWhere('deskripsi', 'like', "%{$search}%");

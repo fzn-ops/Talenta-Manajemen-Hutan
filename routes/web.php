@@ -19,12 +19,13 @@ use App\Http\Controllers\Dashboard\Admin\DashboardController as AdminDashboardCo
 use App\Http\Controllers\Dashboard\Mahasiswa\ListAktivitas as MahasiswaListAktivitas;
 use App\Http\Controllers\Dashboard\Mahasiswa\RoadmapController as MahasiswaRoadmapController;
 use App\Http\Controllers\Dashboard\Mahasiswa\DashboardController as MahasiswaDashboardController;
+use App\Http\Controllers\LandingPage\LandingController;
+use App\Http\Controllers\LandingPage\ActivityController as LandingActivityController;
+use App\Http\Controllers\LandingPage\BeritaController as LandingBeritaController;
 
 /* Route Landing dan Website Public*/
 
-Route::get('/', function () {
-    return Inertia::render('landing_page/Home');
-});
+Route::get('/',[LandingController::class, 'index'])->name('home');
 
 Route::get('/activities', function () {
     return Inertia::render('landing_page/activity/Activities');
@@ -36,9 +37,7 @@ Route::get('/activities', function () {
     ]);
 })->name('activity.detail'); */
 
-Route::get('/activities/{id}', function ($id) {
-    return Inertia::render('landing_page/activity/Show');
-})->name('activity.detail');
+Route::get('/activities/{id}',[LandingActivityController::class, 'show'])->name('activity.detail');
 
 Route::get('/careers', function () {
     return Inertia::render('landing_page/career/Careers');
@@ -52,9 +51,7 @@ Route::get('/news', function () {
     return Inertia::render('landing_page/news/News');
 })->name('news');
 
-Route::get('/news/{id}', function ($id) {
-    return Inertia::render('landing_page/news/Show');
-})->name('news.detail');
+Route::get('/news/{id}', [LandingBeritaController::class, 'show'])->name('news.detail');
 
 Route::get('/FAQ', function () {
     return Inertia::render('landing_page/Faq');
