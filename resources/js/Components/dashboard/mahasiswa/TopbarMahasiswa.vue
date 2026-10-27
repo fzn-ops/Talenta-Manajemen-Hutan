@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 
 defineEmits(['toggle', 'logout']);
@@ -11,7 +11,17 @@ const imageLoadError = ref(false);
 const userName = computed(() => page.props.auth?.user?.nama || page.props.auth?.user?.name || 'Mahasiswa');
 const userProfilePicture = computed(() => {
 	if (imageLoadError.value) return null;
-	return page.props.auth?.user?.profile_picture || page.props.auth?.user?.foto || null;
+	const pic = page.props.auth?.user?.profile_picture || page.props.auth?.user?.foto || null;
+	if (!pic) return null;
+	if (pic.startsWith('http://') || pic.startsWith('https://') || pic.startsWith('blob:') || pic.startsWith('data:')) {
+		return pic;
+	}
+	const clean = pic.replace(/^\/?(public\/|storage\/)+/, '');
+	return `/storage/${clean}`;
+});
+
+watch(() => page.props.auth?.user?.foto || page.props.auth?.user?.profile_picture, () => {
+	imageLoadError.value = false;
 });
 
 const onImageError = () => {

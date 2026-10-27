@@ -128,12 +128,21 @@ onMounted(() => {
     }
 });
 
+const getImageUrl = (path) => {
+	if (!path) return null;
+	if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
+		return path;
+	}
+	const clean = path.replace(/^\/?(public\/|storage\/)+/, '');
+	return `/storage/${clean}`;
+};
+
 // 1. State Data Diri
 const formPersonal = ref({
 	name: currentUser.value.nama || currentUser.value.name || '',
 	nim: currentUser.value.nim || currentUser.value.NIM || '',
 	angkatan: currentUser.value.angkatan || '',
-	photoPreview: currentUser.value.profile_picture || currentUser.value.foto || null,
+	photoPreview: getImageUrl(currentUser.value.profile_picture || currentUser.value.foto) || null,
 	photo: null,
 });
 
@@ -216,7 +225,7 @@ watch(
 			formPersonal.value.name = val.nama || val.name || '';
 			formPersonal.value.nim = val.nim || val.NIM || '';
 			formPersonal.value.angkatan = val.angkatan || '';
-			formPersonal.value.photoPreview = val.profile_picture || val.foto || null;
+			formPersonal.value.photoPreview = getImageUrl(val.profile_picture || val.foto) || null;
 
 			if (!isEditingEmail.value) {
 				formAccount.value.email = savedAccountData.value.email ?? (val.email && val.email !== '-' ? val.email : '');
@@ -369,11 +378,21 @@ const savePersonalData = () => {
 	if (!isPersonalChanged.value || isSavingPersonal.value) return;
 	isSavingPersonal.value = true;
 
-	setTimeout(() => {
-		showToast('success', 'Berhasil Disimpan', 'Foto profil berhasil diperbarui.');
-		formPersonal.value.photo = null;
-		isSavingPersonal.value = false;
-	}, 400);
+	const formData = new FormData();
+	formData.append('foto', formPersonal.value.photo);
+
+	router.post('/mahasiswa/profile/photo', formData, {
+		preserveScroll: true,
+		onSuccess: () => {
+			showToast('success', 'Berhasil Disimpan', 'Foto profil berhasil diperbarui.');
+			formPersonal.value.photo = null;
+			isSavingPersonal.value = false;
+		},
+		onError: (errors) => {
+			showToast('error', 'Gagal Menyimpan', errors?.foto || 'Terjadi kesalahan saat mengunggah foto profil.');
+			isSavingPersonal.value = false;
+		},
+	});
 };
 
 const validateEmail = (email) => {

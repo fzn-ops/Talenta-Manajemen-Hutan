@@ -167,6 +167,7 @@ Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mah
     });
 
     Route::get('/profile', [MahasiswaProfileController::class, 'index'])->name('profile');
+    Route::post('/profile/photo', [MahasiswaProfileController::class, 'updatePhoto'])->name('profile.photo');
     Route::post('/profile/account', [MahasiswaProfileController::class, 'updateAccount'])->name('profile.account');
     Route::post('/profile/password', [MahasiswaProfileController::class, 'updatePassword'])->name('profile.password');
 });

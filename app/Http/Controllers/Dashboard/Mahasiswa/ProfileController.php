@@ -117,4 +117,39 @@ class ProfileController extends Controller
 
         return back()->with('success', 'Password berhasil diubah!');
     }
+
+    /**
+     * Perbarui foto profil mahasiswa.
+     */
+    public function updatePhoto(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'foto' => ['required', 'image', 'mimes:jpeg,png,jpg', 'max:10240'],
+        ], [
+            'foto.required' => 'File foto profil wajib diunggah.',
+            'foto.image' => 'File harus berupa gambar.',
+            'foto.mimes' => 'Format foto harus berupa JPG, PNG, atau JPEG.',
+            'foto.max' => 'Ukuran foto maksimal adalah 10MB.',
+        ]);
+
+        $user = $request->user();
+
+        // Hapus foto lama jika ada di disk public
+        if (!empty($user->foto) && !str_starts_with($user->foto, 'http://') && !str_starts_with($user->foto, 'https://')) {
+            $cleanOld = ltrim(str_replace('storage/', '', $user->foto), '/');
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanOld)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($cleanOld);
+            }
+        }
+
+        $file = $request->file('foto');
+        $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('profile_pictures', $filename, 'public');
+
+        $user->update([
+            'foto' => 'storage/' . $path,
+        ]);
+
+        return back()->with('success', 'Foto profil berhasil diperbarui!');
+    }
 }
