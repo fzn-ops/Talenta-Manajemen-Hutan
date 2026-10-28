@@ -10,6 +10,7 @@ import AcceptButton from '@/Components/dashboard/admin/AcceptButton.vue';
 import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import TableSkeleton from '@/Components/dashboard/TableSkeleton.vue';
 
 // Detail Modals
 import ModalFormPersetujuanAktivitas from '@/Components/dashboard/admin/ModalFormPersetujuanAktivitas.vue';
@@ -972,7 +973,10 @@ const executeDelete = () => {
 								</th>
 							</tr>
 						</thead>
-						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable1Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+						<!-- Table 1 Body SKELETON / DATA -->
+						<TableSkeleton v-if="isTable1Loading" :columns="columnsPengajuan.length + 1" :rows="sortedPengajuan?.length || 5" />
+
+						<tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedPengajuan"
 								:key="`pengajuan-${item.id}-${idx}`"
@@ -1172,7 +1176,10 @@ const executeDelete = () => {
 								</th>
 							</tr>
 						</thead>
-						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable2Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+						<!-- Table 2 Body SKELETON / DATA -->
+						<TableSkeleton v-if="isTable2Loading" :columns="columnsPendaftaran.length + 1" :rows="sortedPendaftaran?.length || 5" />
+
+						<tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedPendaftaran"
 								:key="`pendaftaran-${item.id}-${idx}`"
@@ -1324,7 +1331,10 @@ const executeDelete = () => {
 								</th>
 							</tr>
 						</thead>
-						<tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isTable3Loading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+						<!-- Table 3 Body SKELETON / DATA -->
+						<TableSkeleton v-if="isTable3Loading" :columns="columnsHasil.length + 1" :rows="sortedHasil?.length || 5" />
+
+						<tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
 							<tr
 								v-for="(item, idx) in sortedHasil"
 								:key="`hasil-${item.id}-${idx}`"

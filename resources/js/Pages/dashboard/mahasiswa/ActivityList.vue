@@ -10,6 +10,7 @@ import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 import ActivitySubmissionModal from '@/Components/dashboard/mahasiswa/ActivitySubmissionModal.vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
 
 // ==========================================
 // 1. STATE & DATA DUMMY
@@ -44,6 +45,13 @@ const categories = ['Semua', 'umum', 'lomba'];
 const currentPage = ref(props.aktivitasData?.current_page || 1);
 const rowsPerPage = ref(props.filters?.per_page || 8);
 const isLoading = ref(false);
+
+const skeletonCount = computed(() => {
+    const count = activeTab.value === 'dibuka'
+        ? (props.aktivitasData?.data?.length || 0)
+        : (props.pendaftaranData?.data?.length || 0);
+    return count > 0 ? count : 4;
+});
 
 // ==========================================
 // FUNGSI REQUEST DATA KE SERVER
@@ -115,8 +123,13 @@ watch([activeCategory, filterDeadline, filterBidang, filterStatus], () => {
     }, 50);
 });
 
-// 4. Pindah tab otomatis refetch
+// 4. Pindah tab otomatis reset filter & search ke default awal, lalu refetch
 watch(activeTab, () => {
+    searchQuery.value = '';
+    activeCategory.value = 'Semua';
+    filterDeadline.value = '';
+    filterStatus.value = '';
+    filterBidang.value = '';
     handleFilterOrSearch();
 });
 
@@ -607,34 +620,15 @@ const formatCardDescription = (html) => {
           </div>
 
           <!-- ========================================================= -->
-          <!-- KONTEN KARTU AKTIVITAS (DENGAN EFEK LOADING TERPUSAT)    -->
+          <!-- KONTEN KARTU AKTIVITAS (DENGAN EFEK SKELETON LOADING 1:1) -->
           <!-- ========================================================= -->
           <div class="relative min-h-[360px]">
-            <!-- Loading Spinner Overlay (Senada dengan ActivityApproval & ActivityRegister) -->
-            <Transition
-              enter-active-class="transition duration-150 ease-out"
-              enter-from-class="opacity-0"
-              enter-to-class="opacity-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="opacity-100"
-              leave-to-class="opacity-0"
-            >
-              <div
-                v-if="isLoading"
-                class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1.5px] rounded-[12px] transition-all"
-              >
-                <div class="flex flex-col items-center justify-center gap-2.5 py-5 px-7 rounded-2xl bg-white shadow-lg border border-[#d6e0ee] select-none">
-                  <svg class="h-9 w-9 animate-spin text-[#183669]" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span class="font-poppins text-xs font-semibold text-[#183669] tracking-wide">Memuat aktivitas...</span>
-                </div>
-              </div>
-            </Transition>
+            <!-- SKELETON CARDS LOADING (1:1 Mirip Card Asli) -->
+            <!-- SKELETON LOADING MENGGUNAKAN KOMPONEN CARDSKELETON -->
+            <CardSkeleton v-if="isLoading" type="activity" :count="skeletonCount" />
 
-            <!-- Cards Container (Efek Blur & Opacity saat Loading) -->
-            <div :class="['transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+            <!-- Cards Container -->
+            <div v-else>
               <!-- ========================================================= -->
               <!-- KONTEN TAB 1: AKTIVITAS YANG DIBUKA                       -->
               <!-- ========================================================= -->

@@ -1,7 +1,10 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/landing_page/main.vue';
+import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
+import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
+import TablePagination from '@/Components/dashboard/TablePagination.vue';
 
 // ==========================================
 // 1. PROPS DARI BACKEND LARAVEL
@@ -14,167 +17,283 @@ const props = defineProps({
   news: {
     type: Object,
     default: () => ({
-      data: Array(6).fill({
-        id: 1,
-        date: '10 Juni 2029',
-        title: 'Lorem Ipsum Dolor Sit Amet',
-        description: 'Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit laborum consectetur ad laboris adipiscing nostrud in veniam anim. Et enim nostrud nisi Fauzan Fuadiansyah deserunt sunt eu sunt. Ut in aliquip in tempor consectetur deserunt culpa voluptate. Ad velit elit sed.....',
-        image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop' 
-      }),
-      links: [
-        { url: null, label: '&laquo; Sebelumnya', active: false },
-        { url: '/news?page=1', label: '1', active: true },
-        { url: '/news?page=2', label: '2', active: false },
-        { url: '/news?page=3', label: '3', active: false },
-        { url: '/news?page=2', label: 'Selanjutnya &raquo;', active: false },
-      ]
+      data: [],
+      links: [],
+      current_page: 1,
+      last_page: 1,
+      total: 0,
+      per_page: 6
     })
   }
 });
 
+// Helper format tanggal
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const options = { day: 'numeric', month: 'long', year: 'numeric' };
+  return new Date(dateString).toLocaleDateString('id-ID', options);
+};
+
+// Helper strip HTML untuk cuplikan deskripsi di kartu
+const stripHtml = (html) => {
+  if (!html) return '';
+  const tmp = document.createElement('DIV');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
+// Helper foto
+const getImageUrl = (path) => {
+  if (!path) return 'https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800&auto=format&fit=crop';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return path.startsWith('/') ? path : `/${path}`;
+};
+
 // ==========================================
-// 2. STATE FORM (Search & Date Filter)
+// 2. STATE FORM (Search, Date Filter, & Pagination)
 // ==========================================
 const searchQuery = ref(props.filters.search ?? '');
 const dateFilter = ref(props.filters.date ?? ''); 
-const isFilterOpen = ref(false);
+const showFilter = ref(false);
+const isLoading = ref(false);
+
+const currentPage = ref(props.news?.current_page || 1);
+const rowsPerPage = ref(Number(props.filters?.per_page) || props.news?.per_page || 6);
+
+watch(() => props.news?.current_page, (newPage) => {
+  if (newPage && newPage !== currentPage.value) {
+    currentPage.value = newPage;
+  }
+});
+
+const skeletonCount = computed(() => {
+  const currentCount = props.news?.data?.length || 0;
+  return currentCount > 0 ? currentCount : rowsPerPage.value;
+});
+
+const isFilterActive = computed(() => {
+  return dateFilter.value !== '';
+});
 
 // ==========================================
 // 3. LOGIC INERTIA (Hook ke Backend)
 // ==========================================
-const applyFilters = () => {
+const applyFilters = (targetPage = null) => {
+  isLoading.value = true;
+  const pageNum = targetPage !== null ? targetPage : currentPage.value;
+
   const params = {};
   if (searchQuery.value) params.search = searchQuery.value;
   if (dateFilter.value) params.date = dateFilter.value;
+  if (pageNum > 1) params.page = pageNum;
+  if (rowsPerPage.value) params.per_page = rowsPerPage.value;
 
   router.get('/news', params, {
     preserveState: true,
     preserveScroll: true,
-    replace: true
+    replace: true,
+    onFinish: () => {
+      isLoading.value = false;
+    }
   });
+};
+
+const handleFilterChange = () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1;
+  } else {
+    applyFilters(1);
+  }
 };
 
 const setDateFilter = (value) => {
   dateFilter.value = value;
-  isFilterOpen.value = false;
-  applyFilters();
+  showFilter.value = false;
+  handleFilterChange();
 };
+
+const resetFilters = () => {
+  dateFilter.value = '';
+  showFilter.value = false;
+  handleFilterChange();
+};
+
+watch([currentPage, rowsPerPage], ([newPage, newRows], [oldPage, oldRows]) => {
+  if (newRows !== oldRows) {
+    if (currentPage.value !== 1) {
+      currentPage.value = 1;
+      return;
+    }
+  }
+  applyFilters();
+});
 
 let searchTimeout;
 watch(searchQuery, () => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    applyFilters();
-  }, 500);
+    handleFilterChange();
+  }, 400);
+});
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout);
 });
 </script>
 
 <template>
   <MainLayout>
-    <div class="min-h-screen w-full bg-[#fcfcfb] py-12 font-sans text-[#152c5b] lg:py-16 mt-10 relative">
+    <div class="min-h-screen w-full bg-[#fcfcfb] py-12 font-poppins text-[#152c5b] lg:py-16 mt-6 sm:mt-10 relative">
       
       <!-- Overlay transparan untuk klik-di-luar-tutup-dropdown -->
-      <div v-if="isFilterOpen" @click="isFilterOpen = false" class="fixed inset-0 z-20"></div>
+      <div v-if="showFilter" @click="showFilter = false" class="fixed inset-0 z-20"></div>
 
       <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-10 relative z-30">
         
         <!-- HEADER -->
-        <div class="mb-8">
-          <h1 class="mb-2 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-[40px]">
+        <div class="mb-6 sm:mb-8">
+          <h1 class="mb-2 text-2xl font-extrabold tracking-tight sm:text-4xl md:text-[40px] text-[#17334F]">
             Kumpulan Berita
           </h1>
           <p class="text-sm font-medium text-gray-500 sm:text-base">
-            Yuk baca berita terbaru tentang manajemen hutan!
+            Yuk baca berita terbaru dari Talenta Manajemen Hutan!
           </p>
         </div>
 
-        <!-- SEARCH & FILTER TANGGAL (Dijamin sejajar pakai flex-row) -->
-        <div class="mb-10 flex w-full flex-row items-center gap-3">
-          
-          <!-- Input Search (Mengisi sisa ruang kiri) -->
-          <div class="relative flex-1">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4">
-              <svg class="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-            <input 
-              v-model="searchQuery"
-              @keyup.enter="applyFilters"
-              type="text" 
-              placeholder="Cari Berita disini" 
-              class="w-full rounded-xl border border-gray-300 py-2.5 sm:py-3 pl-10 sm:pl-11 pr-4 text-sm font-medium text-gray-700 outline-none transition-colors focus:border-[#152c5b] focus:ring-1 focus:ring-[#152c5b]"
-            >
-          </div>
+        <!-- SEARCH & FILTER BAR (PERSIS SEPERTI DASHBOARD) -->
+        <div class="mb-6 sm:mb-8 flex flex-row items-center gap-2 sm:gap-3 w-full">
+          <!-- Search Input Component -->
+          <SearchBarTable
+            class="w-full flex-1 min-w-0"
+            v-model="searchQuery"
+            placeholder="Cari Berita disini..."
+          />
 
-          <!-- Tombol Filter Tanggal (shrink-0 agar tidak kepotong) -->
+          <!-- Filter Dropdown Container -->
           <div class="relative shrink-0">
-            <button 
-              @click="isFilterOpen = !isFilterOpen"
-              class="flex h-[42px] w-[42px] sm:h-[46px] sm:w-[46px] items-center justify-center rounded-xl bg-[#4b857a] text-white transition-colors hover:bg-[#3a685e] shadow-sm"
+            <button
+              type="button"
+              @click="showFilter = !showFilter"
+              class="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[10px] border-2 bg-transparent text-[#183669] transition-colors focus:outline-none select-none cursor-pointer"
+              :class="showFilter || isFilterActive
+                ? 'border-[#183669]'
+                : 'border-[#d6e0ee] hover:border-[#8ea9cb]'"
+              title="Filter Berita"
             >
-              <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-              </svg>
+              <img
+                src="/assets/icons/filter.svg"
+                alt="Filter Icon"
+                class="h-5 w-5 shrink-0 object-contain pointer-events-none"
+              />
+              <!-- Red active indicator dot -->
+              <span
+                v-if="isFilterActive"
+                class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-[#ef4444] ring-2 ring-[#eef2f7]"
+              ></span>
             </button>
 
-            <!-- Dropdown Menu Filter Tanggal -->
-            <transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="opacity-0 -translate-y-2"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="opacity-100 translate-y-0"
-              leave-to-class="opacity-0 -translate-y-2"
+            <!-- Dropdown Menu Filter -->
+            <Transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="transform scale-95 opacity-0 translate-y-1"
+              enter-to-class="transform scale-100 opacity-100 translate-y-0"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="transform scale-100 opacity-100 translate-y-0"
+              leave-to-class="transform scale-95 opacity-0 translate-y-1"
             >
-              <div v-if="isFilterOpen" class="absolute right-0 top-[60px] z-40 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-xl">
-                <div class="px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-gray-400">
-                  Urutkan Berita
+              <div
+                v-if="showFilter"
+                class="absolute right-0 top-14 w-72 sm:w-80 rounded-[14px] border border-[#d6e0ee] bg-white p-4 shadow-2xl ring-1 ring-black/10 z-40 font-inter"
+              >
+                <div class="flex items-center justify-between border-b border-[#f0f4f9] pb-2 mb-3">
+                  <p class="font-poppins text-xs font-bold text-[#183669]">
+                    Filter Berita
+                  </p>
+                  <button
+                    v-if="isFilterActive"
+                    type="button"
+                    @click="resetFilters"
+                    class="font-inter text-[11px] font-semibold text-[#dc2626] hover:underline cursor-pointer"
+                  >
+                    Reset Semua
+                  </button>
                 </div>
-                <button 
-                  @click="setDateFilter('')" 
-                  :class="['w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors', dateFilter === '' ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-600 hover:bg-gray-50 hover:text-[#152c5b]']"
-                >
-                  Berita Terbaru
-                </button>
-                <button 
-                  @click="setDateFilter('terlama')" 
-                  :class="['w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors', dateFilter === 'terlama' ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-600 hover:bg-gray-50 hover:text-[#152c5b]']"
-                >
-                  Berita Terlama
-                </button>
+
+                <div class="mb-4">
+                  <div class="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      @click="setDateFilter('')"
+                      :class="dateFilter === '' ? 'bg-[#183669] text-white border-[#183669]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-[#183669] hover:text-[#183669]'"
+                      class="rounded-full px-3 py-1.5 text-[11px] font-semibold border cursor-pointer transition"
+                    >
+                      Terbaru
+                    </button>
+                    <button
+                      type="button"
+                      @click="setDateFilter('terlama')"
+                      :class="dateFilter === 'terlama' ? 'bg-[#183669] text-white border-[#183669]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-[#183669] hover:text-[#183669]'"
+                      class="rounded-full px-3 py-1.5 text-[11px] font-semibold border cursor-pointer transition"
+                    >
+                      Terlama
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end border-t border-[#f0f4f9] pt-3">
+                  <button 
+                    type="button"
+                    @click="showFilter = false" 
+                    class="rounded-lg bg-[#183669] px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-[#122b54] cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                </div>
               </div>
-            </transition>
+            </Transition>
           </div>
 
         </div>
 
+        <!-- SKELETON LOADING KARTU BERITA -->
+        <CardSkeleton v-if="isLoading" type="news" :count="skeletonCount" />
+
+        <!-- JIKA KOSONG -->
+        <div v-else-if="!news.data || news.data.length === 0" class="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-100 max-w-xl mx-auto my-10">
+          <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-[#152c5b] mb-1">Berita Tidak Ditemukan</h3>
+          <p class="text-slate-500 text-sm">Tidak ada berita yang sesuai dengan kata kunci atau filter yang Anda cari.</p>
+        </div>
+
         <!-- GRID KARTU BERITA -->
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           
           <Link 
             v-for="(item, index) in news.data" 
-            :key="index"
+            :key="item.id || index"
             :href="route('news.detail', item.id)" 
             class="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
           >
             <div class="aspect-[3/2] w-full overflow-hidden bg-[#d9d9d9]">
               <img 
-                v-if="item.image" 
-                :src="item.image" 
-                :alt="item.title" 
-                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                :src="getImageUrl(item.foto || item.image)" 
+                :alt="item.judul || item.title" 
+                class="h-full w-full object-cover"
               />
             </div>
             <div class="flex flex-col p-5 sm:p-6">
               <span class="mb-2 text-[11.5px] font-extrabold tracking-wide text-gray-400">
-                {{ item.date }}
+                {{ formatDate(item.created_at || item.date) }}
               </span>
-              <h3 class="mb-2.5 text-lg font-extrabold leading-snug text-[#152c5b] transition-colors group-hover:text-[#4b857a]">
-                {{ item.title }}
+              <h3 class="mb-2.5 text-lg font-extrabold leading-snug text-[#152c5b] transition-colors group-hover:text-[#4b857a] line-clamp-2">
+                {{ item.judul || item.title }}
               </h3>
               <p class="text-[13px] leading-relaxed text-[#5c6b89] line-clamp-4">
-                {{ item.description }}
+                {{ stripHtml(item.deskripsi || item.description) }}
               </p>
             </div>
           </Link>
@@ -182,26 +301,16 @@ watch(searchQuery, () => {
         </div>
 
         <!-- PAGINATION -->
-        <div v-if="news.links && news.links.length > 3" class="mt-12 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-          <template v-for="(link, index) in news.links" :key="index">
-            <div 
-              v-if="link.url === null" 
-              class="cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400 sm:text-sm"
-              v-html="link.label"
-            ></div>
-            <Link 
-              v-else 
-              :href="link.url" 
-              preserve-scroll
-              :class="[
-                'rounded-lg border px-3 py-2 text-xs font-semibold transition-colors sm:text-sm',
-                link.active 
-                  ? 'border-[#152c5b] bg-[#152c5b] text-white shadow-sm' 
-                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-[#152c5b]'
-              ]"
-              v-html="link.label" 
-            />
-          </template>
+        <div v-if="news.total > 0" class="mt-10 sm:mt-12 border-t border-[#d6e0ee] pt-4 pb-4">
+          <TablePagination
+            v-model:currentPage="currentPage"
+            v-model:rowsPerPage="rowsPerPage"
+            :totalPages="news.last_page"
+            :totalItems="news.total"
+            :rows-options="[3, 6, 9, 12, 18]"
+            :disabled="isLoading"
+            item-label="Berita"
+          />
         </div>
         
       </div>
