@@ -9,6 +9,7 @@ import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue'; 
+import TableSkeleton from '@/Components/dashboard/TableSkeleton.vue';
 import ModalFormListAktivitas from '@/Components/dashboard/admin/ModalFormListAktivitas.vue';
 import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 
@@ -43,6 +44,10 @@ const totalPages = computed(() => props.aktivitasData?.last_page || 1);
 const rowsPerPage = ref(props.aktivitasData?.per_page || 10);
 
 const getRowNumber = (index) => {
+  if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
+    const total = props.aktivitasData?.total || 0;
+    return total - ((currentPage.value - 1) * rowsPerPage.value + index);
+  }
   return (props.aktivitasData?.from || 1) + index;
 };
 
@@ -121,7 +126,7 @@ const handleSort = (column) => {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
   } else {
     sortColumn.value = column;
-    sortDirection.value = 'asc';
+    sortDirection.value = column === 'id' ? 'desc' : 'asc';
   }
   fetchAktivitas(currentPage.value);
 };
@@ -530,7 +535,10 @@ const formatFilename = (path) => {
                 </tr>
               </thead>
               
-              <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+              <!-- SKELETON TABLE LOADING -->
+              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="aktivitasData?.data?.length || 5" />
+
+              <tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item,index) in aktivitasData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
                   <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.judul">{{ item.judul }}</td>

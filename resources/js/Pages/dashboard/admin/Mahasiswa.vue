@@ -11,6 +11,7 @@ import ModalFormMahasiswa from '@/Components/dashboard/admin/ModalFormMahasiswa.
 import ModalImportMahasiswa from '@/Components/dashboard/admin/ModalImportMahasiswa.vue';
 import ModalBulkDeleteMahasiswa from '@/Components/dashboard/admin/ModalBulkDeleteMahasiswa.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import TableSkeleton from '@/Components/dashboard/TableSkeleton.vue';
 
 const props = defineProps({
 	mahasiswaData: {
@@ -303,7 +304,7 @@ const toggleSort = (key) => {
 		sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
 	} else {
 		sortKey.value = key;
-		sortDirection.value = 'asc';
+		sortDirection.value = key === 'id' ? 'desc' : 'asc';
 	}
 	fetchMahasiswa(currentPage.value);
 };
@@ -754,8 +755,10 @@ const confirmDeleteStudent = () => {
 							</tr>
 						</thead>
 
-						<!-- Table Body -->
-						<tbody :class="['divide-y divide-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-opacity duration-200', isLoading ? 'opacity-40 pointer-events-none select-none cursor-wait' : '']">
+						<!-- Table Body SKELETON / DATA -->
+						<TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="paginatedStudents?.length || 5" />
+
+						<tbody v-else class="divide-y divide-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
 							<tr
 								v-for="(student, idx) in paginatedStudents"
 								:key="`student-${student.id}`"

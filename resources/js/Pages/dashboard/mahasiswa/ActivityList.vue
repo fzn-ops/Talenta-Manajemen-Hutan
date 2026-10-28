@@ -45,6 +45,13 @@ const currentPage = ref(props.aktivitasData?.current_page || 1);
 const rowsPerPage = ref(props.filters?.per_page || 8);
 const isLoading = ref(false);
 
+const skeletonCount = computed(() => {
+    const count = activeTab.value === 'dibuka'
+        ? (props.aktivitasData?.data?.length || 0)
+        : (props.pendaftaranData?.data?.length || 0);
+    return count > 0 ? count : 4;
+});
+
 // ==========================================
 // FUNGSI REQUEST DATA KE SERVER
 // ==========================================
@@ -115,8 +122,13 @@ watch([activeCategory, filterDeadline, filterBidang, filterStatus], () => {
     }, 50);
 });
 
-// 4. Pindah tab otomatis refetch
+// 4. Pindah tab otomatis reset filter & search ke default awal, lalu refetch
 watch(activeTab, () => {
+    searchQuery.value = '';
+    activeCategory.value = 'Semua';
+    filterDeadline.value = '';
+    filterStatus.value = '';
+    filterBidang.value = '';
     handleFilterOrSearch();
 });
 
@@ -607,34 +619,55 @@ const formatCardDescription = (html) => {
           </div>
 
           <!-- ========================================================= -->
-          <!-- KONTEN KARTU AKTIVITAS (DENGAN EFEK LOADING TERPUSAT)    -->
+          <!-- KONTEN KARTU AKTIVITAS (DENGAN EFEK SKELETON LOADING 1:1) -->
           <!-- ========================================================= -->
           <div class="relative min-h-[360px]">
-            <!-- Loading Spinner Overlay (Senada dengan ActivityApproval & ActivityRegister) -->
-            <Transition
-              enter-active-class="transition duration-150 ease-out"
-              enter-from-class="opacity-0"
-              enter-to-class="opacity-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="opacity-100"
-              leave-to-class="opacity-0"
-            >
-              <div
-                v-if="isLoading"
-                class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1.5px] rounded-[12px] transition-all"
+            <!-- SKELETON CARDS LOADING (1:1 Mirip Card Asli) -->
+            <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 animate-pulse select-none">
+              <div 
+                v-for="n in skeletonCount" 
+                :key="'skeleton-' + n"
+                class="relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] aspect-[3/4] w-full border border-[#d6e0ee] bg-slate-200"
               >
-                <div class="flex flex-col items-center justify-center gap-2.5 py-5 px-7 rounded-2xl bg-white shadow-lg border border-[#d6e0ee] select-none">
-                  <svg class="h-9 w-9 animate-spin text-[#183669]" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span class="font-poppins text-xs font-semibold text-[#183669] tracking-wide">Memuat aktivitas...</span>
+                <!-- Shimmer Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-800/30 to-slate-200/40"></div>
+
+                <!-- Skeleton Top Badges -->
+                <div class="absolute left-3.5 top-3.5 z-20 flex gap-2">
+                  <div class="h-[24px] sm:h-[26px] w-14 rounded-full bg-slate-300/80"></div>
+                </div>
+                <div class="absolute right-3.5 top-3.5 z-20">
+                  <div class="h-[24px] sm:h-[26px] w-12 rounded-full bg-slate-300/80"></div>
+                </div>
+
+                <!-- Skeleton Bottom Content -->
+                <div class="relative z-10 p-4 sm:p-5 flex flex-col justify-end">
+                  <!-- Deadline row -->
+                  <div class="mb-2 flex items-center gap-2">
+                    <div class="h-3 w-3 rounded-sm bg-slate-300/70"></div>
+                    <div class="h-3 w-28 rounded-md bg-slate-300/70"></div>
+                  </div>
+                  <!-- Title rows -->
+                  <div class="space-y-1.5 mb-2">
+                    <div class="h-4 w-full rounded-md bg-slate-100/90"></div>
+                    <div class="h-4 w-3/4 rounded-md bg-slate-100/90"></div>
+                  </div>
+                  <!-- Description row -->
+                  <div class="space-y-1 mb-3">
+                    <div class="h-2.5 w-full rounded bg-slate-300/60"></div>
+                    <div class="h-2.5 w-4/5 rounded bg-slate-300/60"></div>
+                  </div>
+                  <!-- Category tags -->
+                  <div class="flex flex-wrap gap-1.5 pt-1">
+                    <div class="h-5 w-16 rounded-full bg-slate-300/70"></div>
+                    <div class="h-5 w-20 rounded-full bg-slate-300/70"></div>
+                  </div>
                 </div>
               </div>
-            </Transition>
+            </div>
 
-            <!-- Cards Container (Efek Blur & Opacity saat Loading) -->
-            <div :class="['transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+            <!-- Cards Container -->
+            <div v-else>
               <!-- ========================================================= -->
               <!-- KONTEN TAB 1: AKTIVITAS YANG DIBUKA                       -->
               <!-- ========================================================= -->

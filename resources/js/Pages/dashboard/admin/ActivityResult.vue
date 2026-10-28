@@ -16,6 +16,7 @@ import RejectButton from '@/Components/dashboard/admin/RejectButton.vue';
 import PreviewButtonTable from '@/Components/dashboard/PreviewButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import TableSkeleton from '@/Components/dashboard/TableSkeleton.vue';
 
 const props = defineProps({
   hasilData: Object,
@@ -115,7 +116,7 @@ const handleSort = (column) => {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
   } else {
     sortColumn.value = column;
-    sortDirection.value = 'asc';
+    sortDirection.value = column === 'id' ? 'desc' : 'asc';
   }
   fetchHasil(currentPage.value);
 };
@@ -427,7 +428,10 @@ const executeDelete = () => {
                 </tr>
               </thead>
               
-              <tbody :class="['[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76] transition-all duration-200', isLoading ? 'opacity-40 blur-[1px] pointer-events-none select-none cursor-wait' : '']">
+              <!-- SKELETON TABLE LOADING -->
+              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="hasilData?.data?.length || 5" />
+
+              <tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in hasilData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
                   <td class="px-3 py-2.5 text-center font-medium">{{ getRowNumber(index) }}</td>
                   <td class="px-3 py-2.5 text-left font-medium text-[#233547] truncate" :title="item.nama_mahasiswa">{{ item.nama_mahasiswa }}</td>
