@@ -27,9 +27,7 @@ use App\Http\Controllers\LandingPage\BeritaController as LandingBeritaController
 
 Route::get('/',[LandingController::class, 'index'])->name('home');
 
-Route::get('/activities', function () {
-    return Inertia::render('landing_page/activity/Activities');
-})->name('activities');
+Route::get('/activities', [LandingActivityController::class, 'index'])->name('activities');
 
 /* Route::get('/activities/{id}', function ($id) {
     return Inertia::render('landing_page/activity/ActivityDetail', [
@@ -47,9 +45,7 @@ Route::get('/careers/{id}', function ($id) {
     return Inertia::render('landing_page/career/Show');
 })->name('career.detail');
 
-Route::get('/news', function () {
-    return Inertia::render('landing_page/news/News');
-})->name('news');
+Route::get('/news', [LandingBeritaController::class, 'index'])->name('news');
 
 Route::get('/news/{id}', [LandingBeritaController::class, 'show'])->name('news.detail');
 

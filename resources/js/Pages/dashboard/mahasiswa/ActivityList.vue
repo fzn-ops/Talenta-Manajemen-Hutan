@@ -10,6 +10,7 @@ import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 import ActivitySubmissionModal from '@/Components/dashboard/mahasiswa/ActivitySubmissionModal.vue';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
 
 // ==========================================
 // 1. STATE & DATA DUMMY
@@ -623,48 +624,8 @@ const formatCardDescription = (html) => {
           <!-- ========================================================= -->
           <div class="relative min-h-[360px]">
             <!-- SKELETON CARDS LOADING (1:1 Mirip Card Asli) -->
-            <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 animate-pulse select-none">
-              <div 
-                v-for="n in skeletonCount" 
-                :key="'skeleton-' + n"
-                class="relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] aspect-[3/4] w-full border border-[#d6e0ee] bg-slate-200"
-              >
-                <!-- Shimmer Overlay -->
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-800/30 to-slate-200/40"></div>
-
-                <!-- Skeleton Top Badges -->
-                <div class="absolute left-3.5 top-3.5 z-20 flex gap-2">
-                  <div class="h-[24px] sm:h-[26px] w-14 rounded-full bg-slate-300/80"></div>
-                </div>
-                <div class="absolute right-3.5 top-3.5 z-20">
-                  <div class="h-[24px] sm:h-[26px] w-12 rounded-full bg-slate-300/80"></div>
-                </div>
-
-                <!-- Skeleton Bottom Content -->
-                <div class="relative z-10 p-4 sm:p-5 flex flex-col justify-end">
-                  <!-- Deadline row -->
-                  <div class="mb-2 flex items-center gap-2">
-                    <div class="h-3 w-3 rounded-sm bg-slate-300/70"></div>
-                    <div class="h-3 w-28 rounded-md bg-slate-300/70"></div>
-                  </div>
-                  <!-- Title rows -->
-                  <div class="space-y-1.5 mb-2">
-                    <div class="h-4 w-full rounded-md bg-slate-100/90"></div>
-                    <div class="h-4 w-3/4 rounded-md bg-slate-100/90"></div>
-                  </div>
-                  <!-- Description row -->
-                  <div class="space-y-1 mb-3">
-                    <div class="h-2.5 w-full rounded bg-slate-300/60"></div>
-                    <div class="h-2.5 w-4/5 rounded bg-slate-300/60"></div>
-                  </div>
-                  <!-- Category tags -->
-                  <div class="flex flex-wrap gap-1.5 pt-1">
-                    <div class="h-5 w-16 rounded-full bg-slate-300/70"></div>
-                    <div class="h-5 w-20 rounded-full bg-slate-300/70"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <!-- SKELETON LOADING MENGGUNAKAN KOMPONEN CARDSKELETON -->
+            <CardSkeleton v-if="isLoading" type="activity" :count="skeletonCount" />
 
             <!-- Cards Container -->
             <div v-else>
