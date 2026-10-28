@@ -11,25 +11,23 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   },
+
   posisiOptions: {
     type: Array,
-    default: () => ['Internship', 'Full Time', 'Part Time', 'Freelance']
+    default: () => ['internship', 'full time']
   },
-  industriOptions: {
-    type: Array,
-    default: () => ['Teknologi', 'Pertanian', 'Manajemen', 'Kesehatan']
-  },
-  careers: {
+
+  // Mengubah 'careers' menjadi 'karirData' (atau tetap 'careers' tapi disesuaikan dengan key dari controller)
+  karirData: {
     type: Object,
     default: () => ({
       data: Array(6).fill({
         id: 1,
-        title: 'Carpenter Internship',
-        company: 'PT Merah Putih',
-        major: 'S1 Manajemen Hutan',
-        address: 'Gedung Building, Jalan Street, Kota City, Provinsi 42067',
-        deadline: '21 Agustus 2029',
-        logo: '' 
+        posisi: 'Carpenter Internship',        
+        nama_instansi: 'PT Merah Putih',       
+        kategori: 'Internship',                
+        deadline: '21 Agustus 2029',         
+        foto: ''                             
       }),
       links: [
         { url: null, label: '&laquo; Sebelumnya', active: false },
@@ -45,25 +43,23 @@ const props = defineProps({
 // 2. STATE FORM (Sinkron dengan inputan UI)
 // ==========================================
 const search = ref(props.filters.search ?? '');
-const category_posisi = ref(props.filters.category_posisi ?? '');
-const bidang_industri = ref(props.filters.bidang_industri ?? '');
+const kategori = ref(props.filters.kategori ?? '');
 const sort = ref(props.filters.sort ?? '');
 
 // ==========================================
 // 3. STATE CUSTOM DROPDOWN
 // ==========================================
-const openDropdown = ref(null); // Menyimpan nama dropdown yang sedang terbuka
+const openDropdown = ref(null);
 
 const toggleDropdown = (name) => {
   openDropdown.value = openDropdown.value === name ? null : name;
 };
 
 const selectFilter = (type, value) => {
-  if (type === 'posisi') category_posisi.value = value;
-  if (type === 'industri') bidang_industri.value = value;
+  if (type === 'kategori') kategori.value = value;
   if (type === 'sort') sort.value = value;
   
-  openDropdown.value = null; // Tutup menu setelah memilih
+  openDropdown.value = null;
 };
 
 // ==========================================
@@ -72,8 +68,7 @@ const selectFilter = (type, value) => {
 const applyFilters = () => {
   const params = {};
   if (search.value) params.search = search.value;
-  if (category_posisi.value) params.category_posisi = category_posisi.value;
-  if (bidang_industri.value) params.bidang_industri = bidang_industri.value;
+  if (kategori.value) params.kategori = kategori.value;
   if (sort.value) params.sort = sort.value;
 
   router.get('/careers', params, {
@@ -85,10 +80,15 @@ const applyFilters = () => {
 
 const resetFilters = () => {
   search.value = '';
-  category_posisi.value = '';
-  bidang_industri.value = '';
+  kategori.value = '';
   sort.value = '';
   router.get('/careers');
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const options = { day: 'numeric', month: 'long', year: 'numeric' };
+  return new Date(dateString).toLocaleDateString('id-ID', options);
 };
 </script>
 
@@ -131,7 +131,7 @@ const resetFilters = () => {
           </div>
 
           <!-- Custom Dropdown Filters -->
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             
             <!-- 1. Dropdown Kategori Posisi -->
             <div class="relative">
@@ -139,8 +139,8 @@ const resetFilters = () => {
                 @click="toggleDropdown('posisi')"
                 class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3.5 text-sm shadow-sm transition-colors hover:border-[#152c5b]"
               >
-                <span :class="category_posisi ? 'font-bold text-[#152c5b]' : 'font-medium text-gray-500'">
-                  {{ category_posisi || 'Pilih Kategori Posisi' }}
+                <span :class="kategori ? 'font-bold text-[#152c5b]' : 'font-medium text-gray-500'">
+                  {{ kategori || 'Pilih Kategori Posisi' }}
                 </span>
                 <svg 
                   :class="['h-4 w-4 text-[#152c5b] transition-transform duration-300', openDropdown === 'posisi' ? 'rotate-180' : '']" 
@@ -166,50 +166,8 @@ const resetFilters = () => {
                     </li>
                     <li 
                       v-for="opsi in posisiOptions" :key="opsi" 
-                      @click="selectFilter('posisi', opsi)" 
-                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 hover:text-[#152c5b]', category_posisi === opsi ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-700']"
-                    >
-                      {{ opsi }}
-                    </li>
-                  </ul>
-                </div>
-              </transition>
-            </div>
-
-            <!-- 2. Dropdown Bidang Industri -->
-            <div class="relative">
-              <div 
-                @click="toggleDropdown('industri')"
-                class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3.5 text-sm shadow-sm transition-colors hover:border-[#152c5b]"
-              >
-                <span :class="bidang_industri ? 'font-bold text-[#152c5b]' : 'font-medium text-gray-500'">
-                  {{ bidang_industri || 'Pilih Bidang Industri' }}
-                </span>
-                <svg 
-                  :class="['h-4 w-4 text-[#152c5b] transition-transform duration-300', openDropdown === 'industri' ? 'rotate-180' : '']" 
-                  fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </div>
-              
-              <transition
-                enter-active-class="transition duration-200 ease-out"
-                enter-from-class="opacity-0 -translate-y-2"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition duration-150 ease-in"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-2"
-              >
-                <div v-if="openDropdown === 'industri'" class="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl">
-                  <ul class="max-h-60 overflow-auto py-1">
-                    <li @click="selectFilter('industri', '')" class="cursor-pointer px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#152c5b]">
-                      Semua Industri
-                    </li>
-                    <li 
-                      v-for="opsi in industriOptions" :key="opsi" 
-                      @click="selectFilter('industri', opsi)" 
-                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 hover:text-[#152c5b]', bidang_industri === opsi ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-700']"
+                      @click="selectFilter('kategori', opsi)" 
+                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 hover:text-[#152c5b]', kategori === opsi ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-700']"
                     >
                       {{ opsi }}
                     </li>
@@ -266,47 +224,67 @@ const resetFilters = () => {
 
         </div>
 
-        <!-- GRID KARTU KARIR (Tidak berubah) -->
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div v-for="(item, index) in careers.data" :key="index" class="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-md">
-            
-            <div class="mb-5 flex items-start gap-4">
-              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50">
-                <img v-if="item.logo" :src="item.logo" alt="Logo" class="h-full w-full object-cover p-1" />
-              </div>
-              <div class="flex flex-col">
-                <h3 class="text-base font-extrabold leading-tight text-[#152c5b]">{{ item.title }}</h3>
-                <p class="mt-1 text-[13px] font-semibold text-gray-600">{{ item.company }}</p>
-                <p class="mt-0.5 text-[12px] font-medium text-gray-500">{{ item.major }}</p>
-              </div>
-            </div>
+        <!-- GRID KARTU KARIR -->
+        <div v-if="karirData.data.length > 0">
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div v-for="(item, index) in karirData.data" :key="index" class="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-md">
 
-            <div class="mb-4 flex items-start gap-2.5">
-              <svg class="mt-0.5 h-4 w-4 shrink-0 text-[#152c5b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path>
-              </svg>
-              <p class="text-[12px] leading-snug text-gray-500 line-clamp-2">{{ item.address }}</p>
-            </div>
-
-            <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
-              <div class="flex items-center gap-2 text-gray-500">
-                <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"></path>
-                </svg>
-                <span class="text-[11px] font-semibold">Deadline : {{ item.deadline }}</span>
-              </div>
+              <!-- Bagian Atas -->
+              <div>
+                <div class="mb-5 flex items-start gap-4">
+                  <!-- Logo -->
+                  <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50">
+                    <img v-if="item.logo" :src="item.logo" alt="Logo" class="h-full w-full object-cover" />
+                  </div>
+                
+                  <div class="flex flex-col">
+                    <h3 class="text-base font-extrabold leading-tight text-[#152c5b] line-clamp-2">{{ item.posisi }}</h3>
+                    <p class="mt-1 text-[13px] font-semibold text-gray-600 line-clamp-1">{{ item.nama_instansi }}</p>
+                    <p class="mt-0.5 text-[12px] font-medium text-gray-500">{{ item.kategori }}</p>
+                  </div>
+                </div>
               
-              <Link :href="route('career.detail', item.id)" class="rounded-full bg-[#4b857a] px-6 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[#3a685e]">
-                Detail
-              </Link>
+                <!-- Bagian Alamat -->
+                <div class="mb-4 flex items-start gap-2.5">
+                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-[#152c5b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path>
+                  </svg>
+                  <p class="text-[12px] leading-snug text-gray-500 line-clamp-2">{{ item.lokasi }}</p>
+                </div>
+              </div>
+            
+              <!-- Bagian Bawah (Deadline & Tombol Detail) -->
+              <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
+                <div class="flex items-center gap-2 text-gray-500">
+                  <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"></path>
+                  </svg>
+                  <span class="text-[11px] font-semibold">Deadline : {{ formatDate(item.deadline) }}</span>
+                </div>
+
+                <Link :href="route('career.detail', item.id)" class="rounded-full bg-[#4b857a] px-6 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[#3a685e]">
+                  Detail
+                </Link>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- KONDISI JIKA DATA KOSONG / TIDAK DITEMUKAN -->
+        <div v-else class="py-16 text-center">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+            <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l3.375 3.375m0 0l3.375-3.375M13.5 15V3.75"></path>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-gray-700">Tidak ada lowongan karir</h3>
+          <p class="mt-1 text-sm text-gray-500">Maaf, tidak ditemukan lowongan yang sesuai dengan filter atau pencarian Anda.</p>
+        </div>
+
         <!-- PAGINATION -->
-        <div v-if="careers.links && careers.links.length > 3" class="mt-12 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-          <template v-for="(link, index) in careers.links" :key="index">
+        <div v-if="karirData.links && karirData.links.length > 3" class="mt-12 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+          <template v-for="(link, index) in karirData.links" :key="index">
             <div v-if="link.url === null" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs sm:text-sm text-gray-400 cursor-not-allowed" v-html="link.label"></div>
             <Link v-else :href="link.url" preserve-scroll :class="['rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold transition-colors border', link.active ? 'bg-[#152c5b] text-white border-[#152c5b] shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-[#152c5b]']" v-html="link.label" />
           </template>

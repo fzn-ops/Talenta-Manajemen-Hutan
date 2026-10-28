@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('nama_instansi');
             $table->text('deskripsi');
             $table->text('kualifikasi');
+            $table->string('kategori');
+            $table->string('lokasi');
             $table->dateTime('deadline');
             $table->string('tautan');
             $table->string('foto');

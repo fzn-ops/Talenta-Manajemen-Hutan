@@ -67,7 +67,7 @@ const formatDate = (dateString) => {
             <div class="mb-8 w-full overflow-hidden rounded-2xl bg-[#d9d9d9] aspect-[16/9] sm:aspect-[21/9] lg:aspect-[16/9]">
               <img 
                 v-if="beritaDetail?.foto" 
-                :src="'/'+beritaDetail.foto" 
+                :src="'/'+beritaDetail  .foto" 
                 :alt="beritaDetail?.judul" 
                 class="h-full w-full object-cover"
               />

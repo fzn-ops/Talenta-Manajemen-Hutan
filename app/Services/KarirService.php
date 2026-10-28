@@ -11,6 +11,11 @@ class KarirService
     /**
      * Ambil semua karir tanpa pagination.
      */
+
+    public function getKarirById($id){
+        return Karir::findOrFail($id);
+    }
+
     public function getAllKarir()
     {
         return Karir::orderBy('created_at', 'desc')->get();
@@ -23,7 +28,10 @@ class KarirService
     {
         $query = Karir::query();
 
-        // 1. Pengurutan (Sorting)
+    if (!empty($filters['sort']) && $filters['sort'] === 'segera_berakhir') {
+        $query->whereDate('deadline', '>=', now())
+              ->orderBy('deadline', 'asc');
+    } else {
         if (!empty($filters['sort']) && !empty($filters['direction'])) {
             $sortColumn = $filters['sort'];
             if ($sortColumn === 'instansi') {
@@ -34,6 +42,7 @@ class KarirService
         } else {
             $query->orderBy('created_at', 'desc');
         }
+    }
 
         // 2. Pencarian (Search)
         if (!empty($filters['search'])) {
@@ -46,17 +55,12 @@ class KarirService
             });
         }
 
-        // 3. Filter Kategori (Kualifikasi)
         if (!empty($filters['kategori'])) {
             $kategoriArray = is_array($filters['kategori']) ? $filters['kategori'] : explode(',', $filters['kategori']);
-            $query->where(function ($q) use ($kategoriArray) {
-                foreach ($kategoriArray as $kat) {
-                    $kat = trim($kat);
-                    if ($kat !== '') {
-                        $q->orWhere('kualifikasi', 'like', "%{$kat}%");
-                    }
-                }
-            });
+            $kategoriArray = array_filter(array_map('trim', $kategoriArray));
+            if (!empty($kategoriArray)) {
+                $query->whereIn('kategori', $kategoriArray);
+            }
         }
 
         // 4. Filter Waktu (Deadline)

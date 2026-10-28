@@ -16,6 +16,7 @@ class Karir extends Model
         'nama_instansi',
         'deskripsi',
         'kualifikasi',
+        'kategori',
         'deadline',
         'tautan',
         'foto',

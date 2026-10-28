@@ -22,6 +22,7 @@ use App\Http\Controllers\Dashboard\Mahasiswa\DashboardController as MahasiswaDas
 use App\Http\Controllers\LandingPage\LandingController;
 use App\Http\Controllers\LandingPage\ActivityController as LandingActivityController;
 use App\Http\Controllers\LandingPage\BeritaController as LandingBeritaController;
+use App\Http\Controllers\LandingPage\KarirController as LandingkarirController;
 
 /* Route Landing dan Website Public*/
 
@@ -39,13 +40,9 @@ Route::get('/activities', function () {
 
 Route::get('/activities/{id}',[LandingActivityController::class, 'show'])->name('activity.detail');
 
-Route::get('/careers', function () {
-    return Inertia::render('landing_page/career/Careers');
-})->name('careers');
+Route::get('/careers', [LandingkarirController::class, 'index'])->name('careers');
 
-Route::get('/careers/{id}', function ($id) {
-    return Inertia::render('landing_page/career/Show');
-})->name('career.detail');
+Route::get('/careers/{id}',[LandingkarirController::class, 'show'])->name('career.detail');
 
 Route::get('/news', function () {
     return Inertia::render('landing_page/news/News');
