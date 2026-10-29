@@ -14,6 +14,7 @@ class Karir extends Model
     protected $fillable = [
         'posisi',
         'nama_instansi',
+        'lokasi',
         'deskripsi',
         'kualifikasi',
         'kategori',

@@ -50,6 +50,7 @@ class KarirService
             $query->where(function ($q) use ($search) {
                 $q->where('posisi', 'like', "%{$search}%")
                   ->orWhere('nama_instansi', 'like', "%{$search}%")
+                  ->orWhere('lokasi', 'like', "%{$search}%")
                   ->orWhere('kualifikasi', 'like', "%{$search}%")
                   ->orWhere('deskripsi', 'like', "%{$search}%");
             });
