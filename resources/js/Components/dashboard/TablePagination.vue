@@ -171,7 +171,7 @@ onBeforeUnmount(() => document.removeEventListener('click', closeDropup));
 					<!-- Dropup Popover -->
 					<div
 						v-if="isRowsDropdownOpen && !disabled"
-						class="absolute bottom-full right-0 sm:left-0 z-30 mb-1.5 w-20 rounded-[8px] border border-[#d6e0ee] bg-white p-1 shadow-xl font-inter space-y-0.5"
+						class="absolute bottom-full right-0 sm:left-0 z-50 mb-1.5 w-20 rounded-[8px] border border-[#d6e0ee] bg-white p-1 shadow-xl font-inter space-y-0.5"
 					>
 						<button
 							v-for="r in rowsOptions"
