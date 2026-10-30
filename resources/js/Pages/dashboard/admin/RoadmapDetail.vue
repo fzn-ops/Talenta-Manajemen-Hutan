@@ -764,19 +764,6 @@ const executeDeleteItem = () => {
 										<h2 class="font-poppins text-[22px] sm:text-[26px] font-extrabold text-[#17334F] leading-tight break-words">
 											{{ currentItem?.judul || currentItem?.topic || 'Belum ada judul' }}
 										</h2>
-										<div class="mt-2.5 flex items-center gap-2">
-											<button
-												type="button"
-												@click="openParticipantsModal(currentItem?.id)"
-												class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[8px] border border-[#d6e0ee] bg-[#fafcff] text-[12px] font-semibold text-[#183669] hover:bg-white hover:border-[#183669] transition shadow-2xs cursor-pointer"
-												title="Lihat siapa mahasiswa yang sudah dan belum menyelesaikan materi/tugas ini"
-											>
-												<svg class="h-3.5 w-3.5 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-												</svg>
-												<span>Status Pengerjaan Mahasiswa</span>
-											</button>
-										</div>
 									</div>
 									<div class="shrink-0 pt-0.5">
 										<button

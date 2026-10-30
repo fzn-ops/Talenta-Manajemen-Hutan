@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as XLSX from 'xlsx';
 import EditButtonTable from '@/Components/dashboard/EditButtonTable.vue';
 import DeleteButtonTable from '@/Components/dashboard/DeleteButtonTable.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
 
 const props = defineProps({
 	show: {
@@ -37,6 +38,14 @@ const editRowForm = ref({ nim: '', name: '', angkatan: '', talent_mapping: '', p
 
 const talentMappingOptions = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
 
+// Helper normalisasi talent mapping (case-insensitive & whitespace tolerant)
+const normalizeTalentMapping = (val) => {
+	if (!val) return '';
+	const clean = String(val).trim().toLowerCase();
+	const matched = talentMappingOptions.find((opt) => opt.toLowerCase() === clean);
+	return matched || '';
+};
+
 // Reset state when modal is opened or closed
 watch(
 	() => props.show,
@@ -47,6 +56,7 @@ watch(
 			importErrorMessage.value = '';
 			editingRowIndex.value = null;
 			isDragging.value = false;
+			showCleanIssuesModal.value = false;
 		}
 	}
 );
@@ -95,6 +105,10 @@ const revalidateParsedData = () => {
 		const nameClean = (item.name || '').toString().trim();
 		const angkatanClean = (item.angkatan || '').toString().trim().replace(/\D/g, '');
 		const talentClean = (item.talent_mapping || '').toString().trim();
+		const normalizedTalent = normalizeTalentMapping(talentClean);
+		if (normalizedTalent) {
+			item.talent_mapping = normalizedTalent;
+		}
 		const passwordClean = (item.password || '').toString().trim();
 		const effectivePassword = passwordClean || nimClean;
 		const nimLower = nimClean.toLowerCase();
@@ -122,7 +136,7 @@ const revalidateParsedData = () => {
 		if (!angkatanClean || angkatanClean === '-') {
 			missingFields.push('Angkatan');
 		}
-		if (!talentClean || talentClean === '-' || !talentMappingOptions.includes(talentClean)) {
+		if (!talentClean || talentClean === '-' || !normalizedTalent) {
 			missingFields.push('Talent Mapping');
 		}
 		if (effectivePassword && effectivePassword.length < 6) {
@@ -328,6 +342,8 @@ const removeSelectedFile = () => {
 };
 
 // Preview Row Actions (Edit / Delete / Clean Issues)
+const showCleanIssuesModal = ref(false);
+
 const startEditPreviewRow = (idx) => {
 	editingRowIndex.value = idx;
 	const row = parsedData.value[idx];
@@ -369,9 +385,10 @@ const removePreviewRow = (idx) => {
 	revalidateParsedData();
 };
 
-const removeAllIssues = () => {
+const confirmRemoveAllIssues = () => {
 	parsedData.value = parsedData.value.filter((p) => p.isValid && !p.isDuplicate);
 	editingRowIndex.value = null;
+	showCleanIssuesModal.value = false;
 	revalidateParsedData();
 };
 
@@ -435,14 +452,26 @@ const handleBackdropMouseUp = (e) => {
 					<div
 						v-if="show"
 						:class="[
-							'w-full max-h-[92vh] overflow-y-auto transform rounded-[20px] bg-white p-6 sm:p-8 shadow-2xl font-poppins border border-[#e2e8f0] transition-all duration-250',
+							'relative w-full max-h-[90vh] my-auto overflow-y-auto transform rounded-[16px] sm:rounded-[20px] bg-white p-4 sm:p-7 shadow-2xl font-poppins border border-[#e2e8f0] transition-all duration-250',
 							selectedFile ? 'max-w-[880px]' : 'max-w-[560px]'
 						]"
 					>
+						<!-- Close Button (Top-Right) -->
+						<button
+							type="button"
+							@click="handleClose"
+							class="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 p-1.5 rounded-full text-[#7188a3] hover:text-[#183669] hover:bg-slate-100 transition-colors cursor-pointer focus:outline-none"
+							title="Tutup Modal"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+
 						<!-- Modal Header -->
-						<div class="text-center">
-							<h2 class="text-[22px] font-bold text-[#183669] tracking-tight">Import Data Mahasiswa</h2>
-							<p class="mt-1 font-inter text-[13px] text-[#7188a3]">
+						<div class="text-center px-4 sm:px-6">
+							<h2 class="text-[19px] sm:text-[22px] font-bold text-[#183669] tracking-tight">Import Data Mahasiswa</h2>
+							<p class="mt-1 font-inter text-[12px] sm:text-[13px] text-[#7188a3]">
 								Unggah file .xlsx, .xls, atau .csv untuk menambah banyak data mahasiswa.
 							</p>
 						</div>
@@ -559,7 +588,7 @@ const handleBackdropMouseUp = (e) => {
 								</div>
 								<button
 									type="button"
-									@click="removeAllIssues"
+									@click="showCleanIssuesModal = true"
 									class="inline-flex shrink-0 items-center justify-center rounded-[6px] bg-amber-200/80 px-2.5 py-1 font-semibold text-amber-900 transition hover:bg-amber-300 cursor-pointer"
 								>
 									Bersihkan Data Bermasalah
@@ -589,11 +618,10 @@ const handleBackdropMouseUp = (e) => {
 												<th class="min-w-[120px] px-3 py-2.5 text-center">NIM</th>
 												<th class="min-w-[85px] px-2.5 py-2.5 text-center">Angkatan</th>
 												<th class="min-w-[130px] px-2.5 py-2.5 text-center">Talent Mapping</th>
-												<th class="min-w-[110px] px-3 py-2.5">Password</th>
 												<th class="min-w-[160px] px-3.5 py-2.5">Email</th>
 												<th class="min-w-[145px] px-3.5 py-2.5 text-center whitespace-nowrap">No. HP</th>
-												<th class="min-w-[105px] px-2.5 py-2.5 text-center">Status</th>
-												<th class="sticky right-0 z-30 w-28 bg-[#183669] px-3 py-2.5 text-center shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.18)]">Aksi</th>
+												<th class="sticky right-[100px] z-30 w-[110px] min-w-[110px] max-w-[110px] bg-[#183669] px-2.5 py-2.5 text-center shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.18)]">Status</th>
+												<th class="sticky right-0 z-30 w-[100px] min-w-[100px] max-w-[100px] bg-[#183669] px-3 py-2.5 text-center">Aksi</th>
 											</tr>
 										</thead>
 										<tbody class="divide-y divide-[#d6e0ee] bg-white font-inter text-[#435b76]">
@@ -602,7 +630,11 @@ const handleBackdropMouseUp = (e) => {
 												:key="idx"
 												:class="[
 													'transition-colors',
-													item.isDuplicate ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-slate-50'
+													item.isDuplicate
+														? 'bg-red-50/60 hover:bg-red-50'
+														: !item.isValid
+															? 'bg-amber-50/50 hover:bg-amber-50/80'
+															: 'hover:bg-slate-50'
 												]"
 											>
 												<!-- Row In Normal Mode -->
@@ -633,16 +665,17 @@ const handleBackdropMouseUp = (e) => {
 														</span>
 														<span v-else class="text-[#7890a8]">-</span>
 													</td>
-													<td class="px-3 py-2 text-[#5a718d] border-b border-[#d6e0ee]" :title="item.password || item.nim">
-														<span class="block truncate max-w-[110px]">{{ item.password || item.nim }}</span>
-													</td>
 													<td class="px-3.5 py-2 text-[#5a718d] border-b border-[#d6e0ee]" :title="item.email">
 														<span class="block truncate max-w-[160px]">{{ item.email }}</span>
 													</td>
 													<td class="px-3.5 py-2 text-center text-[#5a718d] whitespace-nowrap border-b border-[#d6e0ee]">
 														{{ item.phone }}
 													</td>
-													<td class="px-2.5 py-2 text-center border-b border-[#d6e0ee]">
+													<!-- Sticky Status Column -->
+													<td
+														class="sticky right-[100px] z-10 w-[110px] min-w-[110px] max-w-[110px] px-2.5 py-2 text-center border-b border-[#d6e0ee] transition-colors shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]"
+														:class="item.isDuplicate ? 'bg-[#fff5f5]' : !item.isValid ? 'bg-[#fffbeb]' : 'bg-white'"
+													>
 														<span
 															v-if="item.isDuplicate"
 															:title="item.duplicateReason"
@@ -666,8 +699,8 @@ const handleBackdropMouseUp = (e) => {
 													</td>
 													<!-- Sticky Aksi Column -->
 													<td
-														class="sticky right-0 z-10 w-28 px-3 py-2 text-center border-b border-[#d6e0ee] transition-colors shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]"
-														:class="item.isDuplicate ? 'bg-[#fff5f5]' : 'bg-white'"
+														class="sticky right-0 z-10 w-[100px] min-w-[100px] max-w-[100px] px-3 py-2 text-center border-b border-[#d6e0ee] transition-colors"
+														:class="item.isDuplicate ? 'bg-[#fff5f5]' : !item.isValid ? 'bg-[#fffbeb]' : 'bg-white'"
 													>
 														<div class="flex items-center justify-center gap-1.5">
 															<!-- Edit Row Button -->
@@ -726,14 +759,6 @@ const handleBackdropMouseUp = (e) => {
 													</td>
 													<td class="px-2 py-1.5 border-b border-[#d6e0ee] bg-amber-50/40">
 														<input
-															v-model="editRowForm.password"
-															type="text"
-															placeholder="Password (opsional)"
-															class="h-8 w-full min-w-[95px] rounded-[6px] border border-[#d6e0ee] px-2 text-xs transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
-														/>
-													</td>
-													<td class="px-2 py-1.5 border-b border-[#d6e0ee] bg-amber-50/40">
-														<input
 															v-model="editRowForm.email"
 															type="text"
 															placeholder="Email (opsional)"
@@ -748,11 +773,11 @@ const handleBackdropMouseUp = (e) => {
 															class="h-8 w-full min-w-[120px] rounded-[6px] border border-[#d6e0ee] px-2 text-xs whitespace-nowrap transition-colors hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white focus:outline-none focus:ring-0"
 														/>
 													</td>
-													<td class="px-2.5 py-1.5 text-center text-[10px] font-semibold text-[#b57a00] border-b border-[#d6e0ee] bg-amber-50/40">
+													<td class="sticky right-[100px] z-10 w-[110px] min-w-[110px] max-w-[110px] px-2.5 py-1.5 text-center text-[10px] font-semibold text-[#b57a00] border-b border-[#d6e0ee] bg-amber-50/90 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]">
 														Mengedit...
 													</td>
 													<!-- Sticky Aksi Column Edit Mode -->
-													<td class="sticky right-0 z-10 w-28 px-2 py-1.5 text-center border-b border-[#d6e0ee] bg-amber-50/90 shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.06)]">
+													<td class="sticky right-0 z-10 w-[100px] min-w-[100px] max-w-[100px] px-2 py-1.5 text-center border-b border-[#d6e0ee] bg-amber-50/90">
 														<div class="flex items-center justify-center gap-1.5">
 															<!-- Save Button -->
 															<button
@@ -787,12 +812,12 @@ const handleBackdropMouseUp = (e) => {
 						</div>
 
 						<!-- Modal Footer Buttons -->
-						<div class="mt-7 flex items-center justify-center gap-3.5 pt-2">
+						<div class="mt-5 sm:mt-7 flex items-center justify-center gap-3 sm:gap-3.5 pt-1 sm:pt-2">
 							<button
 								type="button"
 								:disabled="loading"
 								@click="handleClose"
-								class="h-[44px] min-w-[130px] px-6 rounded-[10px] border border-[#d6e0ee] bg-white font-poppins text-[14px] font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 focus:border-[#183669] focus:outline-none active:scale-98 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+								class="h-[40px] sm:h-[44px] flex-1 sm:flex-initial sm:min-w-[130px] px-4 sm:px-6 rounded-[10px] border border-[#d6e0ee] bg-white font-poppins text-[13px] sm:text-[14px] font-bold text-[#183669] transition hover:border-[#183669] hover:bg-slate-50 focus:border-[#183669] focus:outline-none active:scale-98 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								Batal
 							</button>
@@ -800,7 +825,7 @@ const handleBackdropMouseUp = (e) => {
 								type="button"
 								@click="confirmImport"
 								:disabled="validCount === 0 || loading"
-								class="inline-flex items-center justify-center gap-2 h-[44px] min-w-[160px] px-6 rounded-[10px] bg-[#183669] font-poppins text-[14px] font-bold text-white transition hover:bg-[#122b54] disabled:cursor-not-allowed disabled:opacity-50 active:scale-98 cursor-pointer select-none"
+								class="inline-flex items-center justify-center gap-2 h-[40px] sm:h-[44px] flex-1 sm:flex-initial sm:min-w-[160px] px-4 sm:px-6 rounded-[10px] bg-[#183669] font-poppins text-[13px] sm:text-[14px] font-bold text-white transition hover:bg-[#122b54] disabled:cursor-not-allowed disabled:opacity-50 active:scale-98 cursor-pointer select-none"
 							>
 								<svg v-if="loading" class="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -814,4 +839,14 @@ const handleBackdropMouseUp = (e) => {
 			</div>
 		</Transition>
 	</Teleport>
+
+	<!-- Confirmation Modal for Cleaning Problematic Rows -->
+	<DeleteModal
+		:show="showCleanIssuesModal"
+		title="Bersihkan Data Bermasalah?"
+		:message="`Apakah Anda yakin ingin menghapus ${duplicateCount + incompleteCount} baris data bermasalah (duplikat & tidak lengkap)? Tindakan ini akan menyisakan data yang valid saja.`"
+		confirm-text="Ya, Bersihkan"
+		@close="showCleanIssuesModal = false"
+		@confirm="confirmRemoveAllIssues"
+	/>
 </template>

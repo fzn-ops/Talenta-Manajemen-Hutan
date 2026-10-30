@@ -222,6 +222,7 @@ class MahasiswaService
     public function importMahasiswa(array $students)
     {
         return DB::transaction(function () use ($students) {
+            $validTalents = ['Profesional', 'Bisnis', 'Birokrat', 'Akademisi'];
             $count = 0;
             foreach ($students as $item) {
                 $nim = trim($item['nim'] ?? '');
@@ -230,11 +231,21 @@ class MahasiswaService
                 $angkatan = !empty($item['angkatan']) && $item['angkatan'] !== '-' 
                     ? (int) preg_replace('/\D/', '', $item['angkatan']) 
                     : null;
-                $talentMapping = !empty($item['talent_mapping']) && $item['talent_mapping'] !== '-' 
+                $rawTalent = !empty($item['talent_mapping']) && $item['talent_mapping'] !== '-' 
                     ? trim($item['talent_mapping']) 
                     : null;
 
-                // NIM, Nama, Angkatan, dan Talent Mapping wajib diisi
+                $talentMapping = null;
+                if ($rawTalent) {
+                    foreach ($validTalents as $vt) {
+                        if (strcasecmp($vt, $rawTalent) === 0) {
+                            $talentMapping = $vt;
+                            break;
+                        }
+                    }
+                }
+
+                // NIM, Nama, Angkatan, dan Talent Mapping valid wajib diisi
                 if (!$nim || !$nama || !$angkatan || !$talentMapping) {
                     continue;
                 }
