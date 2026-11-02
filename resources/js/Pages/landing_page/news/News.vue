@@ -260,11 +260,7 @@ onUnmounted(() => {
 
         <!-- JIKA KOSONG -->
         <div v-else-if="!news.data || news.data.length === 0" class="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-100 max-w-xl mx-auto my-10">
-          <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6"></path>
-            </svg>
-          </div>
+          <img src="/assets/icons/notfound.svg" alt="Berita Tidak Ditemukan" class="h-16 w-16 mx-auto mb-4" />
           <h3 class="text-lg font-bold text-[#152c5b] mb-1">Berita Tidak Ditemukan</h3>
           <p class="text-slate-500 text-sm">Tidak ada berita yang sesuai dengan kata kunci atau filter yang Anda cari.</p>
         </div>

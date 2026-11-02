@@ -453,8 +453,10 @@ const formatCardDescription = (html) => {
             </div>
 
             <!-- Pesan Kosong -->
-            <div v-else class="col-span-full py-16 text-center text-slate-400 font-inter font-medium">
-              Data aktivitas tidak ditemukan.
+            <div v-else class="col-span-full py-16 text-center rounded-2xl border border-dashed border-[#d6e0ee] bg-white">
+              <img src="/assets/icons/notfound.svg" alt="Data Tidak Ditemukan" class="mx-auto mb-3.5 h-16 w-16" />
+              <h3 class="text-base font-bold text-[#17334F]">Data Aktivitas Tidak Ditemukan</h3>
+              <p class="mt-1 text-sm text-slate-500 font-inter">Maaf, tidak ada aktivitas yang sesuai dengan filter atau pencarian Anda.</p>
             </div>
           </div>
         </div>

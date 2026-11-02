@@ -574,7 +574,12 @@ const executeDelete = () => {
                   </td>
                 </tr>
                 <tr v-if="!pengajuanData?.data || pengajuanData?.data.length === 0">
-                  <td colspan="7" class="px-4 py-12 text-center text-gray-500 font-medium">Data pengajuan aktivitas tidak ditemukan sesuai filter/pencarian Anda.</td>
+                  <td colspan="7" class="px-4 py-12 text-center text-gray-500 font-medium">
+                    <div class="flex flex-col items-center justify-center">
+                      <img src="/assets/icons/notfound.svg" alt="Data Tidak Ditemukan" class="h-12 w-12 mb-2.5" />
+                      <span>Data pengajuan aktivitas tidak ditemukan sesuai filter/pencarian Anda.</span>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>

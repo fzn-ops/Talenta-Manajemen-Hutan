@@ -580,6 +580,7 @@ const handleModalSubmit = (selectedIds) => {
 						v-else
 						class="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[#d6e0ee] bg-white px-6 py-16 text-center"
 					>
+						<img src="/assets/icons/notfound.svg" alt="Roadmap Tidak Ditemukan" class="h-14 w-14 mb-3.5" />
 						<h3 class="font-poppins text-[16px] font-bold text-[#17334F]">
 							{{ roadmapsList.length === 0 ? 'Belum Ada Roadmap yang Diikuti' : 'Roadmap tidak ditemukan' }}
 						</h3>

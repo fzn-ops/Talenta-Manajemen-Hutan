@@ -835,7 +835,10 @@ const confirmDeleteStudent = () => {
 							<!-- Empty Search Results -->
 							<tr v-if="paginatedStudents.length === 0">
 								<td colspan="8" class="py-12 text-center text-[#7890a8] font-medium">
-									Data mahasiswa tidak ditemukan sesuai filter/pencarian Anda.
+									<div class="flex flex-col items-center justify-center">
+										<img src="/assets/icons/notfound.svg" alt="Data Tidak Ditemukan" class="h-12 w-12 mb-2.5" />
+										<span>Data mahasiswa tidak ditemukan sesuai filter/pencarian Anda.</span>
+									</div>
 								</td>
 							</tr>
 						</tbody>

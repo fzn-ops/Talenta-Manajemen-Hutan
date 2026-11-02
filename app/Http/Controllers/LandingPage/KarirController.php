@@ -28,7 +28,8 @@ class KarirController extends Controller
         $karirData = $this->karirService->getPaginationKarir($filters,9);
 
         return Inertia::render('landing_page/career/Careers',[
-            'karirData'=>$karirData
+            'karirData'=>$karirData,
+            'filters'=>$filters
         ]);
     }
 

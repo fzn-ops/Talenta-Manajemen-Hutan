@@ -3,7 +3,7 @@ defineProps({
   type: {
     type: String,
     default: 'activity',
-    validator: (val) => ['activity', 'news', 'participant'].includes(val)
+    validator: (val) => ['activity', 'activity-featured-layout', 'news', 'career', 'participant'].includes(val)
   },
   count: {
     type: Number,
@@ -91,6 +91,80 @@ defineProps({
     </template>
   </div>
 
+  <!-- SKELETON KARTU AKTIVITAS (FEATURED 1 BESAR + GRID KECIL DI LANDING PAGE) -->
+  <div 
+    v-else-if="type === 'activity-featured-layout'"
+    class="flex flex-col lg:flex-row gap-6 animate-pulse select-none w-full"
+  >
+    <!-- Featured Card Besar di Kiri (1/3) -->
+    <div class="lg:w-1/3">
+      <div class="relative flex flex-col justify-between overflow-hidden rounded-2xl h-full min-h-[500px] w-full border border-[#d6e0ee] bg-slate-200">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-800/40 to-slate-200/30 pointer-events-none"></div>
+
+        <!-- Top Badges -->
+        <div class="relative z-10 p-5 flex items-center justify-between w-full">
+          <div class="h-[28px] w-18 rounded-full bg-slate-300/80"></div>
+          <div class="h-[28px] w-14 rounded-full bg-slate-300/80"></div>
+        </div>
+
+        <!-- Bottom Content -->
+        <div class="relative z-10 p-6 flex flex-col justify-end">
+          <div class="mb-2.5 flex items-center gap-2">
+            <div class="h-4 w-4 rounded-sm bg-slate-300/70"></div>
+            <div class="h-3.5 w-32 rounded-md bg-slate-300/70"></div>
+          </div>
+          <div class="space-y-2 mb-3">
+            <div class="h-6 w-full rounded-md bg-slate-100/90"></div>
+            <div class="h-6 w-3/4 rounded-md bg-slate-100/90"></div>
+          </div>
+          <div class="space-y-1.5 mb-5">
+            <div class="h-3 w-full rounded bg-slate-300/60"></div>
+            <div class="h-3 w-full rounded bg-slate-300/60"></div>
+            <div class="h-3 w-2/3 rounded bg-slate-300/60"></div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <div class="h-6 w-20 rounded-full bg-slate-300/70"></div>
+            <div class="h-6 w-24 rounded-full bg-slate-300/70"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Small Cards Grid di Kanan (2/3) -->
+    <div class="lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div 
+        v-for="n in (count > 1 ? count - 1 : 6)" 
+        :key="'skeleton-small-act-' + n"
+        class="relative flex flex-col justify-between overflow-hidden rounded-2xl h-[280px] w-full border border-[#d6e0ee] bg-slate-200"
+      >
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-800/40 to-slate-200/30 pointer-events-none"></div>
+
+        <!-- Top Badges -->
+        <div class="relative z-10 p-4 flex items-center justify-between w-full">
+          <div class="h-[24px] w-14 rounded-full bg-slate-300/80"></div>
+          <div class="h-[24px] w-12 rounded-full bg-slate-300/80"></div>
+        </div>
+
+        <!-- Bottom Content -->
+        <div class="relative z-10 p-4 flex flex-col justify-end">
+          <div class="mb-1.5 flex items-center gap-1.5">
+            <div class="h-3 w-3 rounded-sm bg-slate-300/70"></div>
+            <div class="h-3 w-24 rounded-md bg-slate-300/70"></div>
+          </div>
+          <div class="h-4 w-4/5 rounded-md bg-slate-100/90 mb-2"></div>
+          <div class="space-y-1 mb-2.5">
+            <div class="h-2.5 w-full rounded bg-slate-300/60"></div>
+            <div class="h-2.5 w-3/4 rounded bg-slate-300/60"></div>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <div class="h-5 w-16 rounded-full bg-slate-300/70"></div>
+            <div class="h-5 w-18 rounded-full bg-slate-300/70"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SKELETON KARTU AKTIVITAS -->
   <div 
     v-else-if="type === 'activity'"
@@ -134,6 +208,40 @@ defineProps({
           <div class="h-5 w-16 rounded-full bg-slate-300/70"></div>
           <div class="h-5 w-20 rounded-full bg-slate-300/70"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SKELETON KARTU KARIR -->
+  <div 
+    v-else-if="type === 'career'"
+    class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 animate-pulse select-none"
+  >
+    <div 
+      v-for="n in count" 
+      :key="'skeleton-career-' + n"
+      class="flex flex-col justify-between rounded-xl border border-[#d6e0ee] bg-white p-5 shadow-xs"
+    >
+      <div>
+        <div class="mb-5 flex items-start gap-4">
+          <!-- Logo Skeleton -->
+          <div class="h-14 w-14 shrink-0 rounded-full bg-slate-200"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-4 w-4/5 rounded bg-slate-200"></div>
+            <div class="h-3 w-1/2 rounded bg-slate-200/80"></div>
+            <div class="h-3 w-1/3 rounded bg-slate-200/60"></div>
+          </div>
+        </div>
+        <!-- Lokasi Skeleton -->
+        <div class="mb-4 flex items-center gap-2">
+          <div class="h-4 w-4 rounded bg-slate-200 shrink-0"></div>
+          <div class="h-3 w-2/3 rounded bg-slate-200/80"></div>
+        </div>
+      </div>
+      <!-- Bagian Bawah Skeleton -->
+      <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+        <div class="h-3 w-32 rounded bg-slate-200/80"></div>
+        <div class="h-7 w-20 rounded-full bg-slate-200"></div>
       </div>
     </div>
   </div>

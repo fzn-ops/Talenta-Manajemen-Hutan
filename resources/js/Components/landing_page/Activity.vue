@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
+import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
 
 const tabs = ['Semua', 'Umum', 'Lomba'];
 
@@ -17,49 +18,68 @@ const props = defineProps({
 });
 
 const activeTab = ref(props.currentJenis);
+const isLoading = ref(false);
 
 const filterCategory = (tab) => {
+    if (activeTab.value === tab || isLoading.value) return;
     activeTab.value = tab;
+    isLoading.value = true;
     
     router.get('/', { 
         jenis: tab === 'Semua' ? undefined : tab
     }, { 
         preserveState: true, 
         preserveScroll: true,
-        replace: true 
+        replace: true,
+        onFinish: () => {
+            isLoading.value = false;
+        }
     });
 };
 
-const getTagColor = (tag) => {
-  const colors = {
-    'Profesional': 'text-teal-700',
-    'Bisnis': 'text-amber-500',
-    'Birokrat': 'text-red-500',
-    'Akademisi': 'text-blue-600'
+const formatTanggal = (dateString) => {
+  if (!dateString || dateString === '-') return '-';
+  const options = { day: 'numeric', month: 'long', year: 'numeric' };
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString('id-ID', options);
+  } catch {
+    return dateString;
   }
-  return colors[tag] || 'text-slate-700'
-}
+};
+
+const formatCardDescription = (html) => {
+  if (!html) return '';
+  let text = String(html).replace(/<\/?(p|div|h[1-6]|ul|ol|li|blockquote|br)[^>]*>/gi, ' ');
+  text = text.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '$1');
+  text = text.replace(/<(?!\/?(b|strong|i|em|u|s|span)\b)[^>]+>/gi, '');
+  return text.replace(/\s+/g, ' ').trim();
+};
+
+const getCategoryChipClass = (cat) => {
+  switch (cat) {
+    case 'Profesional': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    case 'Bisnis': return 'bg-amber-50 text-amber-700 border-amber-200';
+    case 'Birokrat': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'Akademisi': return 'bg-purple-50 text-purple-700 border-purple-200';
+    default: return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+};
 
 const featured = computed(() => {
-    return props.data.data && props.data.data.length > 0 ? props.data.data[0] : {
-        partisipan: 0,
-        deadline: '-',
-        judul: 'Belum ada aktivitas',
-        deskripsi: 'Data aktivitas belum tersedia saat ini untuk filter ini.',
-        kategori: []
-    }
-})
+    return props.data.data && props.data.data.length > 0 ? props.data.data[0] : null;
+});
 
 const cards = computed(() => {
-    return props.data.data && props.data.data.length > 1 ? props.data.data.slice(1) : []
-})
+    return props.data.data && props.data.data.length > 1 ? props.data.data.slice(1) : [];
+});
 
 const getImageUrl = (path) => {
     if (!path) {
         return 'https://ui-avatars.com/api/?name=Activity&background=random'; 
     }
     
-    // 2. Kalau ada isinya, cek http atau bersihkan storage/
     if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:'))) {
         return path;
     }
@@ -80,164 +100,208 @@ const getImageUrl = (path) => {
       
       <!-- Bagian Header & Tabs -->
       <div class="flex flex-col items-center mb-10">
-        <h1 class="text-4xl font-extrabold text-[#1e3856] mb-6">Kegiatan Terkini</h1>
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-[#17334F] mb-6">Kegiatan Terkini</h1>
         
-        <div class="flex gap-8 border-b-2 border-transparent">
+        <div class="flex gap-6 sm:gap-8 border-b-2 border-transparent">
           <button 
             v-for="tab in tabs" 
             :key="tab"
+            :disabled="isLoading"
             @click="filterCategory(tab)"
-            class="pb-2 text-sm font-semibold transition-all"
-            :class="activeTab === tab ? 'text-[#1e3856] border-b-2 border-[#1e3856]' : 'text-slate-500 hover:text-[#1e3856]'"
+            class="pb-2 text-sm sm:text-base font-semibold transition-all select-none"
+            :class="[
+              activeTab === tab ? 'text-[#183669] border-b-2 border-[#183669]' : 'text-slate-500 hover:text-[#183669]',
+              isLoading ? 'cursor-wait opacity-75' : 'cursor-pointer'
+            ]"
           >
             {{ tab }}
           </button>
         </div>
       </div>
 
-      <!-- Grid Konten Utama -->
-      <div class="flex flex-col lg:flex-row gap-6">
-        <div class="lg:w-1/3">
-          <!-- Bungkus dengan Link Inertia.js -->
-          <Link 
-            v-if="featured" 
-            :href="`/activities/${featured.id}`" 
-            class="relative block h-full min-h-[500px] rounded-2xl overflow-hidden group cursor-pointer shadow-sm hover:scale-[1.02] transition-all duration-300"
-          >
-            <!-- Ganti src dengan gambar aslinya -->
-            <img 
+      <!-- Container Konten dengan Loading State Skeleton -->
+      <div class="relative min-h-[500px]">
+        <!-- SKELETON LOADING -->
+        <CardSkeleton 
+          v-if="isLoading" 
+          type="activity-featured-layout" 
+          :count="props.data.data?.length || 7" 
+        />
+
+        <!-- Empty State jika tidak ada data -->
+        <div 
+          v-else-if="!featured" 
+          class="flex flex-col items-center justify-center py-20 px-4 text-center rounded-2xl border border-dashed border-[#d6e0ee] bg-white shadow-2xs"
+        >
+          <img src="/assets/icons/notfound.svg" alt="Data Tidak Ditemukan" class="h-16 w-16 mb-4" />
+          <h3 class="font-poppins text-lg font-bold text-[#17334F] mb-1">Belum Ada Aktivitas</h3>
+          <p class="font-inter text-sm text-slate-500 max-w-md">
+            Tidak ada aktivitas yang ditemukan untuk kategori ini saat ini.
+          </p>
+        </div>
+
+        <!-- Grid Konten Utama -->
+        <div v-else class="flex flex-col lg:flex-row gap-6">
+          <!-- Featured Card Besar di Kiri (1/3) -->
+          <div class="lg:w-1/3">
+            <Link 
+              :href="route('activity.detail', featured.id)" 
+              class="group relative flex flex-col justify-end overflow-hidden rounded-[14px] sm:rounded-[16px] shadow-sm transition-[transform,box-shadow] duration-300 ease-out h-full min-h-[500px] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none will-change-transform transform-gpu backface-hidden isolate"
+            >
+              <!-- Gambar Background -->
+              <img 
                 :src="getImageUrl(featured?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || featured.gambar_aktivitas?.[0]?.gambar)" 
                 :alt="featured?.judul" 
                 class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
-            />
+              />
 
-            <!-- Overlay Gradient Hijau -->
-            <div class="absolute inset-0 bg-gradient-to-t from-[#366c5a] via-[#366c5a]/50 to-transparent"></div>
+              <!-- Overlay Gradient Hijau Sesuai Activities.vue -->
+              <div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95 pointer-events-none"></div>
 
-            <div class="absolute inset-0 p-6 flex flex-col justify-between">
-              <!-- Badge Peserta -->
-              <div class="flex items-center justify-between w-full">
-                  <!-- Badge Jenis di Kiri -->
-                  <div 
-                    :class="[
-                      'px-3 py-1.5 rounded-full text-xs font-bold shadow-sm capitalize text-white',
-                      featured?.jenis?.toLowerCase() === 'lomba' 
-                        ? 'bg-amber-600'  
-                        : 'bg-[#4b857a]'  
-                    ]"
-                  >
-                    {{ featured?.jenis }}
-                  </div>
-                  <div class="bg-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold text-slate-700 shadow-sm">
-                      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
-                      </svg>
-                      {{ featured?.partisipan }}
-                  </div>
+              <!-- Top Badges (Umum/Lomba & Partisipan) -->
+              <div class="absolute inset-x-0 top-0 p-4 sm:p-5 flex items-center justify-between w-full pointer-events-none z-20">
+                <!-- Badge Jenis -->
+                <div 
+                  :class="[
+                    'inline-flex h-[26px] sm:h-[28px] items-center justify-center rounded-full px-3 text-[11px] sm:text-[11.5px] font-bold uppercase tracking-wider shadow-xs select-none antialiased leading-none transform-gpu backface-hidden',
+                    String(featured?.jenis || '').toLowerCase() === 'lomba' 
+                      ? 'bg-amber-500 text-white border border-amber-400/40'  
+                      : 'bg-blue-600 text-white border border-blue-400/30'  
+                  ]"
+                >
+                  <span>{{ String(featured?.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}</span>
+                </div>
+
+                <!-- Badge Partisipan -->
+                <div class="inline-flex h-[26px] sm:h-[28px] items-center justify-center gap-1.5 rounded-full bg-white/95 px-3 text-[11px] sm:text-[11.5px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased leading-none transform-gpu backface-hidden">
+                  <svg class="h-3.5 w-3.5 text-[#183669] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span>{{ featured?.partisipan || 0 }}</span>
+                </div>
               </div>
 
-              <!-- Info Bawah -->
-              <div class="text-white">
-                <div class="flex items-center gap-2 text-xs opacity-90 mb-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round"        stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                  Deadline : {{ featured.deadline }}
+              <!-- Konten Bawah -->
+              <div class="relative z-10 p-5 sm:p-6 flex flex-col justify-end">
+                <div class="mb-1.5 flex items-center gap-1.5 text-[11px] sm:text-[12px] font-semibold text-white">
+                  <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>Deadline: {{ formatTanggal(featured?.deadline) }}</span>
                 </div>
-                <h3 class="text-3xl font-bold mb-3">{{ featured.judul }}</h3>
-                <p class="text-sm opacity-90 mb-5 line-clamp-4 leading-relaxed">
-                  {{ featured.deskripsi }}
-                </p>
 
-                <!-- Tags -->
-                <div class="flex flex-wrap gap-2">
+                <h3 class="mb-2 font-poppins text-xl sm:text-2xl font-bold leading-tight text-white line-clamp-2">
+                  {{ featured?.judul }}
+                </h3>
+
+                <p 
+                  class="mb-4 font-inter text-[12.5px] sm:text-[13px] leading-relaxed text-slate-200/90 line-clamp-3 sm:line-clamp-4"
+                  v-html="formatCardDescription(featured?.deskripsi)"
+                ></p>
+
+                <!-- Tags / Kategori -->
+                <div class="flex flex-wrap gap-1.5">
                   <span 
-                    v-for="tag in featured.kategori" 
+                    v-for="tag in featured?.kategori" 
                     :key="tag" 
-                    class="bg-white px-2.5 py-1 rounded-full text-[10px] font-bold"
-                    :class="getTagColor(tag)"
+                    :class="[
+                      'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[10.5px] font-semibold border shadow-xs',
+                      getCategoryChipClass(tag)
+                    ]"
                   >
                     {{ tag }}
                   </span>
                 </div>
               </div>
-            </div>
-          </Link>
-        </div>
+            </Link>
+          </div>
 
-        <!-- Kolom Kanan: Grid Kartu Kecil -->
-        <div class="lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link 
-            v-for="card in cards"
-            :href="`/activities/${card.id}`"  
-            :key="card.id" 
-            class="relative h-[280px] rounded-2xl overflow-hidden group cursor-pointer shadow-sm hover:scale-105 transition-transform duration-300"
-          >
-            <!-- Ganti src dengan gambar aslinya -->
-            <img 
+          <!-- Kolom Kanan: Grid Kartu Kecil (2/3) -->
+          <div class="lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link 
+              v-for="card in cards"
+              :key="card.id" 
+              :href="route('activity.detail', card.id)"  
+              class="group relative flex flex-col justify-end overflow-hidden rounded-[14px] shadow-sm transition-[transform,box-shadow] duration-300 ease-out h-[280px] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none will-change-transform transform-gpu backface-hidden isolate"
+            >
+              <!-- Gambar Background -->
+              <img 
                 :src="getImageUrl(card?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || card.gambar_aktivitas?.[0]?.gambar)" 
-                :alt="featured?.judul" 
+                :alt="card?.judul" 
                 class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
-            />
-            
-            <!-- Overlay Gradient Hijau -->
-            <div class="absolute inset-0 bg-gradient-to-t from-[#366c5a] via-[#366c5a]/50 to-transparent"></div>
-            
-            <div class="absolute inset-0 p-4 flex flex-col justify-between">
-              <!-- Badge Peserta -->
-                <div class="flex items-center justify-between w-full">
-                    <div 
-                      :class="[
-                        'px-3 py-1.5 rounded-full text-xs font-bold shadow-sm capitalize text-white',
-                        card?.jenis?.toLowerCase() === 'lomba' 
-                          ? 'bg-amber-600'  
-                          : 'bg-[#4b857a]'
-                      ]"
-                    >
-                      {{ card?.jenis }}
-                    </div>
-                    <div class="bg-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-bold text-slate-700 shadow-sm">
-                      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
-                      </svg>
-                      {{ card?.partisipan }}
-                    </div>
-                  </div>
+              />
               
-              <!-- Info Bawah -->
-              <div class="text-white">
-                <div class="flex items-center gap-1.5 text-[10px] opacity-90 mb-1.5">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                  Deadline : {{ card.deadline }}
+              <!-- Overlay Gradient Hijau Sesuai Activities.vue -->
+              <div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95 pointer-events-none"></div>
+              
+              <!-- Top Badges -->
+              <div class="absolute inset-x-0 top-0 p-3.5 flex items-center justify-between w-full pointer-events-none z-20">
+                <div 
+                  :class="[
+                    'inline-flex h-[24px] items-center justify-center rounded-full px-2.5 text-[10.5px] font-bold uppercase tracking-wider shadow-xs select-none antialiased leading-none transform-gpu backface-hidden',
+                    String(card?.jenis || '').toLowerCase() === 'lomba' 
+                      ? 'bg-amber-500 text-white border border-amber-400/40'  
+                      : 'bg-blue-600 text-white border border-blue-400/30'
+                  ]"
+                >
+                  <span>{{ String(card?.jenis || '').toLowerCase() === 'lomba' ? 'Lomba' : 'Umum' }}</span>
                 </div>
-                <h3 class="text-base font-bold mb-1.5 line-clamp-1">{{ card.judul }}</h3>
-                <p class="text-[10px] opacity-90 mb-3 line-clamp-2 leading-tight">
-                  {{ card.deskripsi }}
-                </p>
+
+                <div class="inline-flex h-[24px] items-center justify-center gap-1.5 rounded-full bg-white/95 px-2.5 text-[10.5px] font-bold text-[#183669] border border-slate-200/90 shadow-xs backdrop-blur-sm select-none antialiased leading-none transform-gpu backface-hidden">
+                  <svg class="h-3.5 w-3.5 text-[#183669] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span>{{ card?.partisipan || 0 }}</span>
+                </div>
+              </div>
+                
+              <!-- Konten Teks Bawah -->
+              <div class="relative z-10 p-4 flex flex-col justify-end">
+                <div class="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold text-white">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>Deadline: {{ formatTanggal(card?.deadline) }}</span>
+                </div>
+
+                <h3 class="mb-1 font-poppins text-[15px] font-bold leading-snug text-white line-clamp-1">
+                  {{ card?.judul }}
+                </h3>
+
+                <p 
+                  class="mb-2.5 font-inter text-[11px] leading-relaxed line-clamp-2 text-slate-200/90"
+                  v-html="formatCardDescription(card?.deskripsi)"
+                ></p>
                 
                 <!-- Tags -->
                 <div class="flex flex-wrap gap-1.5">
                   <span 
-                    v-for="tag in card.kategori" 
+                    v-for="tag in card?.kategori" 
                     :key="tag" 
-                    class="bg-white px-2 py-0.5 rounded-full text-[8px] font-bold"
-                    :class="getTagColor(tag)"
+                    :class="[
+                      'inline-flex items-center justify-center rounded-full px-2 py-0.5 font-inter text-[9.5px] font-semibold border shadow-xs',
+                      getCategoryChipClass(tag)
+                    ]"
                   >
                     {{ tag }}
                   </span>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </div>
-
       </div>
 
       <!-- Tombol Lebih Banyak -->
       <div class="flex justify-center mt-12">
         <Link 
-        :href="'/activities'"
-        class="bg-[#1e3856] text-white px-6 py-2.5 rounded-full flex items-center gap-2 text-sm font-semibold hover:bg-slate-800 transition-colors shadow-md">
+          :href="route('activities')"
+          class="bg-[#183669] text-white px-7 py-3 rounded-full flex items-center gap-2 text-sm font-semibold hover:bg-[#122b54] transition-colors shadow-md select-none"
+        >
           Lebih Banyak
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+          </svg>
         </Link>
       </div>
 

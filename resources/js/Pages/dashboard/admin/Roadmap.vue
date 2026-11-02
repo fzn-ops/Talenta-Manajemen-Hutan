@@ -545,11 +545,7 @@ const formatUpdatedDate = (dateStr) => {
 						v-else
 						class="flex flex-col items-center justify-center rounded-[20px] border border-dashed border-[#d6e0ee] bg-white px-6 py-16 text-center"
 					>
-						<!-- <div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-[#7188a3] mb-3">
-							<svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.284a2.25 2.25 0 00-2.012 0L2.618 5.721A1.125 1.125 0 002 6.727v11.954c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-							</svg>
-						</div> -->
+						<img src="/assets/icons/notfound.svg" alt="Roadmap Tidak Ditemukan" class="h-14 w-14 mb-3.5" />
 						<h3 class="font-poppins text-[16px] font-bold text-[#17334F]">
 							Roadmap tidak ditemukan
 						</h3>

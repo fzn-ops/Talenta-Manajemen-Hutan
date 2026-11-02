@@ -1,7 +1,10 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, onUnmounted } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/landing_page/main.vue';
+import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
+import TablePagination from '@/Components/dashboard/TablePagination.vue';
+import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
 
 // ==========================================
 // 1. PROPS DARI BACKEND LARAVEL
@@ -11,70 +14,71 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   },
-
   posisiOptions: {
     type: Array,
-    default: () => ['internship', 'full time']
+    default: () => ['Internship', 'Full time', 'Part time', 'Volunteering']
   },
-
-  // Mengubah 'careers' menjadi 'karirData' (atau tetap 'careers' tapi disesuaikan dengan key dari controller)
   karirData: {
     type: Object,
     default: () => ({
-      data: Array(6).fill({
-        id: 1,
-        posisi: 'Carpenter Internship',        
-        nama_instansi: 'PT Merah Putih',       
-        kategori: 'Internship',                
-        deadline: '21 Agustus 2029',         
-        foto: ''                             
-      }),
-      links: [
-        { url: null, label: '&laquo; Sebelumnya', active: false },
-        { url: '/careers?page=1', label: '1', active: true },
-        { url: '/careers?page=2', label: '2', active: false },
-        { url: '/careers?page=2', label: 'Selanjutnya &raquo;', active: false },
-      ]
+      data: [],
+      total: 0,
+      current_page: 1,
+      last_page: 1,
+      per_page: 9
     })
   }
 });
 
 // ==========================================
-// 2. STATE FORM (Sinkron dengan inputan UI)
+// 2. STATE FORM & DROPDOWN
 // ==========================================
 const search = ref(props.filters.search ?? '');
 const kategori = ref(props.filters.kategori ?? '');
 const sort = ref(props.filters.sort ?? '');
+const isLoading = ref(false);
 
-// ==========================================
-// 3. STATE CUSTOM DROPDOWN
-// ==========================================
 const openDropdown = ref(null);
 
 const toggleDropdown = (name) => {
   openDropdown.value = openDropdown.value === name ? null : name;
 };
 
+const closeDropdown = () => {
+  openDropdown.value = null;
+};
+
 const selectFilter = (type, value) => {
   if (type === 'kategori') kategori.value = value;
   if (type === 'sort') sort.value = value;
-  
   openDropdown.value = null;
 };
 
 // ==========================================
-// 4. LOGIC INERTIA (Hook ke Backend)
+// 3. PAGINATION
 // ==========================================
-const applyFilters = () => {
+const currentPage = ref(props.karirData?.current_page || 1);
+const rowsPerPage = ref(Number(props.karirData?.per_page) || 9);
+
+// ==========================================
+// 4. ACTION SUBMIT (AUTO FILTER DEBOUNCE & WATCH)
+// ==========================================
+const applyFilters = (targetPage = 1) => {
+  isLoading.value = true;
   const params = {};
   if (search.value) params.search = search.value;
   if (kategori.value) params.kategori = kategori.value;
   if (sort.value) params.sort = sort.value;
+  if (targetPage > 1) params.page = targetPage;
+  if (rowsPerPage.value) params.per_page = rowsPerPage.value;
 
   router.get('/careers', params, {
     preserveState: true,
     preserveScroll: true,
-    replace: true 
+    replace: true,
+    onFinish: () => {
+      isLoading.value = false;
+    }
   });
 };
 
@@ -82,28 +86,63 @@ const resetFilters = () => {
   search.value = '';
   kategori.value = '';
   sort.value = '';
-  router.get('/careers');
+  applyFilters(1);
 };
 
+// Debounce otomatis saat user mengetik di search bar
+let searchTimeout = null;
+watch(search, () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    applyFilters(1);
+  }, 350);
+});
+
+// Otomatis filter seketika opsi kategori atau sort dipilih
+watch([kategori, sort], () => {
+  applyFilters(1);
+});
+
+const handlePageChange = (page) => {
+  currentPage.value = page;
+  applyFilters(page);
+};
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+});
+
 const formatDate = (dateString) => {
-  if (!dateString) return '';
+  if (!dateString) return '-';
   const options = { day: 'numeric', month: 'long', year: 'numeric' };
-  return new Date(dateString).toLocaleDateString('id-ID', options);
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString('id-ID', options);
+  } catch {
+    return dateString;
+  }
+};
+
+const getImageUrl = (path) => {
+  if (!path) return '';
+  if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:'))) {
+    return path;
+  }
+  const clean = String(path).replace(/^\/?(public\/|storage\/)+/, '');
+  return `/storage/${clean}`;
 };
 </script>
 
 <template>
   <MainLayout>
-    <div class="min-h-screen w-full bg-[#fcfcfb] py-12 font-sans text-[#152c5b] lg:py-16 mt-10 relative">
+    <div class="min-h-screen w-full bg-[#fcfcfb] py-12 font-poppins text-[#152c5b] lg:py-16 mt-6 sm:mt-10">
       
-      <!-- Overlay transparan untuk menutup dropdown kalau diklik di luar kotak -->
-      <div v-if="openDropdown" @click="openDropdown = null" class="fixed inset-0 z-30"></div>
-
-      <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-10 relative z-40">
+      <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-10">
         
         <!-- HEADER -->
-        <div class="mb-8">
-          <h1 class="mb-2 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-[40px]">
+        <div class="mb-6 sm:mb-8">
+          <h1 class="mb-2 text-2xl font-extrabold tracking-tight sm:text-4xl md:text-[40px] text-[#17334F]">
             Kumpulan Karir
           </h1>
           <p class="text-sm font-medium text-gray-500 sm:text-base">
@@ -111,183 +150,238 @@ const formatDate = (dateString) => {
           </p>
         </div>
 
-        <!-- SEARCH & FILTER FORM -->
+        <!-- SEARCH & DROPDOWN FILTER FORM -->
         <div class="mb-10 flex flex-col gap-4">
           
-          <!-- Search Bar -->
-          <div class="relative w-full">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <svg class="h-5 w-5 text-[#152c5b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-            <input 
-              v-model="search"
-              @keyup.enter="applyFilters"
-              type="text" 
-              placeholder="Cari Karir disini" 
-              class="w-full rounded-xl border border-gray-200 bg-white py-3.5 pl-11 pr-4 text-sm font-medium text-gray-700 shadow-sm outline-none transition-colors focus:border-[#152c5b] focus:ring-1 focus:ring-[#152c5b]"
-            >
+          <!-- Search Bar (Harmonis menggunakan SearchBarTable) -->
+          <div class="w-full">
+            <SearchBarTable 
+              v-model="search" 
+              placeholder="Cari Karir disini..." 
+            />
           </div>
 
           <!-- Custom Dropdown Filters -->
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             
             <!-- 1. Dropdown Kategori Posisi -->
-            <div class="relative">
+            <div :class="['relative', openDropdown === 'posisi' ? 'z-40' : 'z-20']">
               <div 
                 @click="toggleDropdown('posisi')"
-                class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3.5 text-sm shadow-sm transition-colors hover:border-[#152c5b]"
+                class="flex h-[46px] w-full cursor-pointer items-center justify-between rounded-[10px] border-2 border-[#d6e0ee] bg-white px-4 text-sm font-medium text-[#1e3456] shadow-xs transition-colors hover:border-[#8ea9cb]"
               >
-                <span :class="kategori ? 'font-bold text-[#152c5b]' : 'font-medium text-gray-500'">
+                <span :class="kategori ? 'font-bold text-[#183669] capitalize' : 'text-slate-400'">
                   {{ kategori || 'Pilih Kategori Posisi' }}
                 </span>
                 <svg 
-                  :class="['h-4 w-4 text-[#152c5b] transition-transform duration-300', openDropdown === 'posisi' ? 'rotate-180' : '']" 
+                  :class="['h-4 w-4 text-[#183669] transition-transform duration-300', openDropdown === 'posisi' ? 'rotate-180' : '']" 
                   fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
               
+              <!-- Backdrop lokal untuk menutup dropdown jika klik di luar -->
+              <div v-if="openDropdown === 'posisi'" @click="closeDropdown" class="fixed inset-0 z-40"></div>
+
               <!-- Menu Options -->
-              <transition
-                enter-active-class="transition duration-200 ease-out"
-                enter-from-class="opacity-0 -translate-y-2"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition duration-150 ease-in"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-2"
+              <Transition
+                enter-active-class="transition duration-150 ease-out"
+                enter-from-class="opacity-0 -translate-y-1 scale-95"
+                enter-to-class="opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition duration-100 ease-in"
+                leave-from-class="opacity-100 translate-y-0 scale-100"
+                leave-to-class="opacity-0 -translate-y-1 scale-95"
               >
-                <div v-if="openDropdown === 'posisi'" class="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl">
-                  <ul class="max-h-60 overflow-auto py-1">
-                    <li @click="selectFilter('posisi', '')" class="cursor-pointer px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#152c5b]">
+                <div v-if="openDropdown === 'posisi'" class="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-[12px] border border-[#d6e0ee] bg-white shadow-xl">
+                  <ul class="max-h-60 overflow-auto py-1 font-inter">
+                    <li 
+                      @click="selectFilter('kategori', '')" 
+                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-slate-50 hover:text-[#183669]', !kategori ? 'bg-slate-50 font-bold text-[#183669]' : 'text-slate-600']"
+                    >
                       Semua Posisi
                     </li>
                     <li 
-                      v-for="opsi in posisiOptions" :key="opsi" 
+                      v-for="opsi in posisiOptions" 
+                      :key="opsi" 
                       @click="selectFilter('kategori', opsi)" 
-                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 hover:text-[#152c5b]', kategori === opsi ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-700']"
+                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-slate-50 hover:text-[#183669] capitalize', kategori.toLowerCase() === opsi.toLowerCase() ? 'bg-slate-50 font-bold text-[#183669]' : 'text-slate-700']"
                     >
                       {{ opsi }}
                     </li>
                   </ul>
                 </div>
-              </transition>
+              </Transition>
             </div>
 
-            <!-- 3. Dropdown Sortir -->
-            <div class="relative">
+            <!-- 2. Dropdown Sortir -->
+            <div :class="['relative', openDropdown === 'sort' ? 'z-40' : 'z-10']">
               <div 
                 @click="toggleDropdown('sort')"
-                class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3.5 text-sm shadow-sm transition-colors hover:border-[#152c5b]"
+                class="flex h-[46px] w-full cursor-pointer items-center justify-between rounded-[10px] border-2 border-[#d6e0ee] bg-white px-4 text-sm font-medium text-[#1e3456] shadow-xs transition-colors hover:border-[#8ea9cb]"
               >
-                <span :class="sort ? 'font-bold text-[#152c5b]' : 'font-medium text-gray-500'">
+                <span :class="sort ? 'font-bold text-[#183669]' : 'text-slate-400'">
                   {{ sort === 'segera_berakhir' ? 'Segera Berakhir' : 'Upload Terbaru' }}
                 </span>
                 <svg 
-                  :class="['h-4 w-4 text-[#152c5b] transition-transform duration-300', openDropdown === 'sort' ? 'rotate-180' : '']" 
+                  :class="['h-4 w-4 text-[#183669] transition-transform duration-300', openDropdown === 'sort' ? 'rotate-180' : '']" 
                   fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
               
-              <transition
-                enter-active-class="transition duration-200 ease-out"
-                enter-from-class="opacity-0 -translate-y-2"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition duration-150 ease-in"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-2"
+              <!-- Backdrop lokal untuk menutup dropdown jika klik di luar -->
+              <div v-if="openDropdown === 'sort'" @click="closeDropdown" class="fixed inset-0 z-40"></div>
+
+              <Transition
+                enter-active-class="transition duration-150 ease-out"
+                enter-from-class="opacity-0 -translate-y-1 scale-95"
+                enter-to-class="opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition duration-100 ease-in"
+                leave-from-class="opacity-100 translate-y-0 scale-100"
+                leave-to-class="opacity-0 -translate-y-1 scale-95"
               >
-                <div v-if="openDropdown === 'sort'" class="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl">
-                  <ul class="max-h-60 overflow-auto py-1">
-                    <li @click="selectFilter('sort', '')" :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 hover:text-[#152c5b]', sort === '' ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-700']">Upload Terbaru</li>
-                    <li @click="selectFilter('sort', 'segera_berakhir')" :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 hover:text-[#152c5b]', sort === 'segera_berakhir' ? 'bg-gray-50 font-extrabold text-[#152c5b]' : 'font-medium text-gray-700']">Segera Berakhir</li>
+                <div v-if="openDropdown === 'sort'" class="absolute left-0 top-[110%] z-50 w-full overflow-hidden rounded-[12px] border border-[#d6e0ee] bg-white shadow-xl">
+                  <ul class="max-h-60 overflow-auto py-1 font-inter">
+                    <li 
+                      @click="selectFilter('sort', '')" 
+                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-slate-50 hover:text-[#183669]', sort === '' ? 'bg-slate-50 font-bold text-[#183669]' : 'text-slate-700']"
+                    >
+                      Upload Terbaru
+                    </li>
+                    <li 
+                      @click="selectFilter('sort', 'segera_berakhir')" 
+                      :class="['cursor-pointer px-4 py-2.5 text-sm transition-colors hover:bg-slate-50 hover:text-[#183669]', sort === 'segera_berakhir' ? 'bg-slate-50 font-bold text-[#183669]' : 'text-slate-700']"
+                    >
+                      Segera Berakhir
+                    </li>
                   </ul>
                 </div>
-              </transition>
+              </Transition>
             </div>
 
           </div>
 
-          <!-- Action Buttons -->
-          <div class="mt-2 flex w-full justify-end gap-3 sm:gap-4">
-            <button @click="resetFilters" type="button" class="w-full rounded-lg border border-gray-200 bg-white px-8 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 sm:w-auto">
-              Reset
-            </button>
-            <button @click="applyFilters" type="button" class="w-full rounded-lg bg-[#152c5b] px-10 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0f1f43] sm:w-auto">
-              Cari
+          <!-- Tombol Reset Filter jika ada filter/search yang aktif -->
+          <div v-if="search || kategori || sort" class="flex justify-end">
+            <button 
+              type="button"
+              :disabled="isLoading"
+              @click="resetFilters" 
+              class="inline-flex items-center gap-1.5 font-inter text-xs font-semibold text-red-600 hover:text-red-700 hover:underline cursor-pointer select-none disabled:opacity-50"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Reset Semua Filter</span>
             </button>
           </div>
 
         </div>
 
-        <!-- GRID KARTU KARIR -->
-        <div v-if="karirData.data.length > 0">
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div v-for="(item, index) in karirData.data" :key="index" class="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-md">
+        <!-- ========================================== -->
+        <!-- GRID KARTU KARIR & SKELETON               -->
+        <!-- ========================================== -->
+        <div class="relative min-h-[360px]">
+          <!-- SKELETON LOADING -->
+          <CardSkeleton 
+            v-if="isLoading" 
+            type="career" 
+            :count="karirData.data?.length || 6" 
+          />
 
-              <!-- Bagian Atas -->
-              <div>
-                <div class="mb-5 flex items-start gap-4">
-                  <!-- Logo -->
-                  <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50">
-                    <img v-if="item.logo" :src="item.logo" alt="Logo" class="h-full w-full object-cover" />
+          <!-- KONTEN KARTU KARIR -->
+          <div v-else>
+            <div v-if="karirData.data && karirData.data.length > 0" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <div 
+                v-for="item in karirData.data" 
+                :key="item.id" 
+                class="group relative flex flex-col justify-between rounded-[14px] border border-[#d6e0ee] bg-white p-5 shadow-xs transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-md"
+              >
+                <!-- Bagian Atas -->
+                <div>
+                  <div class="mb-4 flex items-start gap-3.5">
+                    <!-- Logo Perusahaan / Instansi -->
+                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#d6e0ee] bg-[#f8fafc]">
+                      <img 
+                        v-if="item.foto || item.logo" 
+                        :src="getImageUrl(item.foto || item.logo)" 
+                        :alt="item.nama_instansi || item.instansi" 
+                        class="h-full w-full object-cover" 
+                        @error="(e) => e.target.style.display = 'none'"
+                      />
+                      <svg v-else class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                      </svg>
+                    </div>
+                  
+                    <div class="flex flex-col min-w-0 flex-1">
+                      <h3 class="text-[15px] sm:text-[16px] font-bold leading-snug text-[#17334F] line-clamp-2" :title="item.posisi">
+                        {{ item.posisi }}
+                      </h3>
+                      <p class="mt-0.5 text-[12.5px] font-semibold text-slate-600 truncate" :title="item.nama_instansi || item.instansi">
+                        {{ item.nama_instansi || item.instansi }}
+                      </p>
+                      <div class="mt-1 flex items-center gap-1.5">
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10.5px] font-semibold text-slate-700 capitalize border border-slate-200">
+                          {{ item.kategori || 'Umum' }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 
-                  <div class="flex flex-col">
-                    <h3 class="text-base font-extrabold leading-tight text-[#152c5b] line-clamp-2">{{ item.posisi }}</h3>
-                    <p class="mt-1 text-[13px] font-semibold text-gray-600 line-clamp-1">{{ item.nama_instansi }}</p>
-                    <p class="mt-0.5 text-[12px] font-medium text-gray-500">{{ item.kategori }}</p>
+                  <!-- Bagian Alamat / Lokasi -->
+                  <div class="mb-3.5 flex items-start gap-2 text-slate-500 font-inter">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-[#183669]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path>
+                    </svg>
+                    <p class="text-[12px] leading-snug line-clamp-2">{{ item.lokasi || 'Lokasi tidak dicantumkan' }}</p>
                   </div>
                 </div>
               
-                <!-- Bagian Alamat -->
-                <div class="mb-4 flex items-start gap-2.5">
-                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-[#152c5b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path>
-                  </svg>
-                  <p class="text-[12px] leading-snug text-gray-500 line-clamp-2">{{ item.lokasi }}</p>
-                </div>
-              </div>
-            
-              <!-- Bagian Bawah (Deadline & Tombol Detail) -->
-              <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
-                <div class="flex items-center gap-2 text-gray-500">
-                  <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"></path>
-                  </svg>
-                  <span class="text-[11px] font-semibold">Deadline : {{ formatDate(item.deadline) }}</span>
-                </div>
+                <!-- Bagian Bawah (Deadline & Tombol Detail) -->
+                <div class="mt-auto flex items-center justify-between border-t border-[#f0f4f9] pt-3.5 font-inter">
+                  <div class="flex items-center gap-1.5 text-slate-500">
+                    <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-[11px] font-semibold">Deadline: {{ formatDate(item.deadline) }}</span>
+                  </div>
 
-                <Link :href="route('career.detail', item.id)" class="rounded-full bg-[#4b857a] px-6 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[#3a685e]">
-                  Detail
-                </Link>
+                  <Link 
+                    :href="route('career.detail', item.id)" 
+                    class="rounded-full bg-[#183669] px-5 py-1.5 text-[11.5px] font-bold text-white transition-colors hover:bg-[#122b54] shadow-xs select-none"
+                  >
+                    Detail
+                  </Link>
+                </div>
               </div>
+            </div>
+
+            <!-- KONDISI JIKA DATA KOSONG / TIDAK DITEMUKAN -->
+            <div v-else class="py-16 text-center rounded-2xl border border-dashed border-[#d6e0ee] bg-white">
+              <img src="/assets/icons/notfound.svg" alt="Tidak Ada Lowongan Karir" class="mx-auto mb-3.5 h-16 w-16" />
+              <h3 class="text-base font-bold text-[#17334F]">Tidak Ada Lowongan Karir</h3>
+              <p class="mt-1 text-sm text-slate-500 font-inter">Maaf, tidak ditemukan lowongan yang sesuai dengan filter atau pencarian Anda.</p>
             </div>
           </div>
         </div>
 
-        <!-- KONDISI JIKA DATA KOSONG / TIDAK DITEMUKAN -->
-        <div v-else class="py-16 text-center">
-          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-            <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l3.375 3.375m0 0l3.375-3.375M13.5 15V3.75"></path>
-            </svg>
-          </div>
-          <h3 class="text-base font-bold text-gray-700">Tidak ada lowongan karir</h3>
-          <p class="mt-1 text-sm text-gray-500">Maaf, tidak ditemukan lowongan yang sesuai dengan filter atau pencarian Anda.</p>
-        </div>
-
-        <!-- PAGINATION -->
-        <div v-if="karirData.links && karirData.links.length > 3" class="mt-12 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-          <template v-for="(link, index) in karirData.links" :key="index">
-            <div v-if="link.url === null" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs sm:text-sm text-gray-400 cursor-not-allowed" v-html="link.label"></div>
-            <Link v-else :href="link.url" preserve-scroll :class="['rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold transition-colors border', link.active ? 'bg-[#152c5b] text-white border-[#152c5b] shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-[#152c5b]']" v-html="link.label" />
-          </template>
+        <!-- ========================================== -->
+        <!-- PAGINATION (HARMONIS SEPERTI ACTIVITIES)  -->
+        <!-- ========================================== -->
+        <div v-if="karirData.total > 0" class="mt-10 sm:mt-12 border-t border-[#d6e0ee] pt-4 pb-4">
+          <TablePagination 
+            v-model:currentPage="currentPage" 
+            v-model:rowsPerPage="rowsPerPage"
+            :totalPages="karirData.last_page" 
+            :totalItems="karirData.total"
+            :rows-options="[6, 9, 12, 18, 24]"
+            :disabled="isLoading"
+            @update:currentPage="handlePageChange"
+          />
         </div>
         
       </div>
