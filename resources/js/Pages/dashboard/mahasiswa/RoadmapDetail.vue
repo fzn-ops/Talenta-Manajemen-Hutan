@@ -6,6 +6,7 @@ import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import RoadmapMaterialNavigation from '@/Components/dashboard/mahasiswa/RoadmapMaterialNavigation.vue';
 import SelectParticipatedActivityModal from '@/Components/dashboard/mahasiswa/SelectParticipatedActivityModal.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import ModalCertificatePreview from '@/Components/dashboard/mahasiswa/ModalCertificatePreview.vue';
 
 const props = defineProps({
 	roadmapId: {
@@ -118,6 +119,16 @@ const progressPercentage = computed(() => {
 
 const isCompleted = computed(() => completedTasks.value >= totalTasks.value && totalTasks.value > 0);
 
+const showCertificateModal = ref(false);
+
+const certificatePreviewUrl = computed(() => {
+	return route('mahasiswa.roadmap.certificate.preview', props.roadmapId);
+});
+
+const certificateDownloadUrl = computed(() => {
+	return route('mahasiswa.roadmap.certificate.download', props.roadmapId);
+});
+
 const handleDownloadCertificate = () => {
 	if (!isCompleted.value) {
 		showToast(
@@ -126,7 +137,7 @@ const handleDownloadCertificate = () => {
 			`Selesaikan semua ${totalTasks.value} task/materi untuk membuka dan mengunduh sertifikat.`
 		);
 	} else {
-		showToast('success', 'Mengunduh Sertifikat', 'Sertifikat Anda sedang diproses dan diunduh.');
+		showCertificateModal.value = true;
 	}
 };
 
@@ -524,11 +535,18 @@ const getPdfUrl = (content) => {
 						<button
 							type="button"
 							@click="handleDownloadCertificate"
-							class="flex items-center justify-center gap-2 rounded-[10px] bg-[#183669] px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#122b54] active:scale-95 cursor-pointer shadow-xs"
+							:class="[
+								'flex items-center justify-center gap-2 rounded-[10px] px-5 py-2.5 text-[13px] font-semibold text-white transition active:scale-95 cursor-pointer shadow-xs',
+								isCompleted ? 'bg-[#183669] hover:bg-[#122b54]' : 'bg-[#183669]/90 hover:bg-[#183669]'
+							]"
+							:title="isCompleted ? 'Pratinjau & Unduh Sertifikat' : 'Selesaikan semua task untuk membuka sertifikat'"
 						>
 							<span>Unduh Sertifikat</span>
-							<svg class="h-3.5 w-3.5 shrink-0 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+							<svg v-if="!isCompleted" class="h-3.5 w-3.5 shrink-0 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+							</svg>
+							<svg v-else class="h-3.5 w-3.5 shrink-0 text-white/90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
 							</svg>
 						</button>
 					</div>
@@ -1046,6 +1064,15 @@ const getPdfUrl = (content) => {
 				Hapus Kegiatan
 			</template>
 		</DeleteModal>
+
+		<!-- ================= MODAL: PRATINJAU & UNDUH SERTIFIKAT ================= -->
+		<ModalCertificatePreview
+			:show="showCertificateModal"
+			:roadmap-title="currentRoadmap.title"
+			:preview-url="certificatePreviewUrl"
+			:download-url="certificateDownloadUrl"
+			@close="showCertificateModal = false"
+		/>
 
 		<!-- Toast Notification -->
 		<ToastNotification

@@ -139,6 +139,8 @@ Route::middleware(['auth', 'role:mahasiswa', 'mahasiswa.password'])->prefix('mah
     Route::get('/roadmap', [MahasiswaRoadmapController::class, 'index'])->name('roadmap');
     Route::post('/roadmap/enroll', [MahasiswaRoadmapController::class, 'enroll'])->name('roadmap.enroll');
     Route::get('/roadmap/{id}', [MahasiswaRoadmapController::class, 'show'])->name('roadmap.detail');
+    Route::get('/roadmap/{id}/certificate/preview', [MahasiswaRoadmapController::class, 'previewCertificate'])->name('roadmap.certificate.preview');
+    Route::get('/roadmap/{id}/certificate/download', [MahasiswaRoadmapController::class, 'downloadCertificate'])->name('roadmap.certificate.download');
     Route::post('/roadmap/materi/{materiId}/toggle', [MahasiswaRoadmapController::class, 'toggleMateri'])->name('roadmap.materi.toggle');
     Route::post('/roadmap/materi/{materiId}/hasil', [MahasiswaRoadmapController::class, 'storeHasilAktivitas'])->name('roadmap.materi.hasil');
     Route::delete('/roadmap/hasil/{hasilId}', [MahasiswaRoadmapController::class, 'destroyHasilAktivitas'])->name('roadmap.hasil.destroy');

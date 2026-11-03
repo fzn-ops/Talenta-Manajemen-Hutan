@@ -9,6 +9,8 @@ use App\Models\Pencapaian;
 use App\Models\HasilAktivitas;
 use App\Models\PendaftaranAktivitas;
 use App\Models\PendaftaranRoadmap;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -781,6 +783,80 @@ class RoadmapDetailService
             'total_tasks'        => $totalTasks,
             'materials'          => $materials,
             'participants'       => $participants,
+        ];
+    }
+
+    /**
+     * Ambil data lengkap sertifikat penyelesaian roadmap mahasiswa
+     * dan validasi apakah seluruh task/materi sudah selesai.
+     */
+    public function getCertificateData(int $roadmapId, int $userId): array
+    {
+        $roadmap = Roadmap::with([
+            'bulanRoadmap' => function ($query) {
+                $query->orderBy('bulan_ke', 'asc');
+            },
+            'bulanRoadmap.materiRoadmap' => function ($query) {
+                $query->orderBy('id', 'asc');
+            }
+        ])->findOrFail($roadmapId);
+
+        $allMateriIds = $roadmap->bulanRoadmap->flatMap(function ($bulan) {
+            return $bulan->materiRoadmap->pluck('id');
+        })->all();
+
+        // 1. Auto-sinkron tugas yang telah disetujui (HasilAktivitas status = disetujui) ke tabel Pencapaian
+        $approvedTaskIds = HasilAktivitas::where('id_user', $userId)
+            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->where(DB::raw('LOWER(status)'), 'disetujui')
+            ->pluck('id_materi_roadmap')
+            ->unique()
+            ->all();
+
+        foreach ($approvedTaskIds as $tId) {
+            Pencapaian::firstOrCreate([
+                'id_user'           => $userId,
+                'id_materi_roadmap' => $tId,
+            ]);
+        }
+
+        // 2. Ambil data pencapaian
+        $completedPencapaian = Pencapaian::where('id_user', $userId)
+            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $completedCount = $completedPencapaian->pluck('id_materi_roadmap')->unique()->count();
+        $totalCount = count($allMateriIds);
+
+        $isCompleted = ($totalCount > 0 && $completedCount >= $totalCount);
+
+        $latestDate = $completedPencapaian->first()?->updated_at ?? now();
+
+        $user = User::findOrFail($userId);
+
+        // Format nomor sertifikat resmi
+        $year = $latestDate ? Carbon::parse($latestDate)->format('Y') : date('Y');
+        $certNo = sprintf(
+            'TALENTA/MNH/%s/%03d/%04d',
+            $year,
+            $roadmap->id,
+            $user->id
+        );
+
+        // Logo Departemen Manajemen Hutan Base64
+        $logoPath = public_path('assets/images/logo_manajemen_hutan.png');
+        $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
+
+        return [
+            'isCompleted'       => $isCompleted,
+            'completedTasks'    => $completedCount,
+            'totalTasks'        => $totalCount,
+            'roadmap'           => $roadmap,
+            'user'              => $user,
+            'completionDate'    => $latestDate,
+            'certificateNumber' => $certNo,
+            'logoBase64'        => $logoBase64,
         ];
     }
 }
