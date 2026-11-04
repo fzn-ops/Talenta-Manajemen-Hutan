@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
   rows: {
     type: Number,
     default: 5
@@ -9,11 +11,15 @@ defineProps({
     default: 6
   }
 });
+
+const skeletonRows = computed(() => {
+  return props.rows && props.rows > 0 ? props.rows : 5;
+});
 </script>
 
 <template>
   <tbody class="animate-pulse select-none [&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee]">
-    <tr v-for="r in rows" :key="'table-skel-' + r" class="h-[52px]">
+    <tr v-for="r in skeletonRows" :key="'table-skel-' + r" class="h-[52px]">
       <!-- Kolom No (selalu kolom pertama) -->
       <td class="px-3 py-2.5 text-center">
         <div class="h-4 w-6 mx-auto rounded bg-slate-200"></div>

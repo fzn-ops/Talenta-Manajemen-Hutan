@@ -32,7 +32,7 @@ class RoadmapController extends Controller
         $filters = $request->only(['search', 'kategori']);
 
         $roadmaps = $this->roadmapService->getMahasiswaRoadmaps($userId, $filters);
-        $availableRoadmaps = $this->roadmapService->getAvailableRoadmapsForUser($userId);
+        $availableRoadmaps = $this->roadmapService->getAvailableRoadmapsForUser($userId, $request->all());
 
         return Inertia::render('dashboard/mahasiswa/Roadmap', [
             'roadmaps'          => $roadmaps,

@@ -150,6 +150,11 @@ const allExistingStudents = computed(() => {
 // Loading state for fetching/filtering/sorting
 const isLoading = ref(false);
 
+const skeletonCount = computed(() => {
+	const count = paginatedStudents.value?.length || 0;
+	return count > 0 ? count : (rowsPerPage.value || 5);
+});
+
 const fetchMahasiswa = (page = null) => {
 	isLoading.value = true;
 	const targetPage = page !== null ? page : currentPage.value;
@@ -756,7 +761,7 @@ const confirmDeleteStudent = () => {
 						</thead>
 
 						<!-- Table Body SKELETON / DATA -->
-						<TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="paginatedStudents?.length || 5" />
+						<TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="skeletonCount" />
 
 						<tbody v-else class="divide-y divide-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
 							<tr

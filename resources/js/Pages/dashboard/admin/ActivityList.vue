@@ -60,6 +60,11 @@ onMounted(() => {
 // Loading state untuk efek blur dan mencegah spamming saat filtering/sorting
 const isLoading = ref(false);
 
+const skeletonCount = computed(() => {
+  const count = props.aktivitasData?.data?.length || 0;
+  return count > 0 ? count : (rowsPerPage.value || 5);
+});
+
 // ==============================
 // 2. LOGIKA FETCH KE BACKEND (PENTING)
 // ==============================
@@ -536,7 +541,7 @@ const formatFilename = (path) => {
               </thead>
               
               <!-- SKELETON TABLE LOADING -->
-              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="aktivitasData?.data?.length || 5" />
+              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="skeletonCount" />
 
               <tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item,index) in aktivitasData?.data" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">

@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
-import AddActivityModal from '@/Components/dashboard/mahasiswa/AddActivityModal.vue';
+import AddRoadmapModal from '@/Components/dashboard/mahasiswa/AddRoadmapModal.vue';
 
 const props = defineProps({
 	roadmaps: {
@@ -13,8 +13,8 @@ const props = defineProps({
 		default: () => [],
 	},
 	availableRoadmaps: {
-		type: Array,
-		default: () => [],
+		type: [Array, Object],
+		default: () => ({ data: [] }),
 	},
 });
 
@@ -629,8 +629,8 @@ const handleModalSubmit = (selectedIds) => {
 			@close="closeToast"
 		/>
 
-		<!-- Add Activity Modal -->
-		<AddActivityModal
+		<!-- Add Roadmap Modal -->
+		<AddRoadmapModal
 			v-model:show="isModalOpen"
 			:available-roadmaps="props.availableRoadmaps"
 			:selected-data="selectedData"

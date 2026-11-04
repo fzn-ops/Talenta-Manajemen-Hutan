@@ -52,6 +52,11 @@ const getRowNumber = (index) => {
 // Loading state untuk mencegah spamming klik filter/sort/pagination sebelum render tuntas
 const isLoading = ref(false);
 
+const skeletonCount = computed(() => {
+  const count = paginatedData.value?.length || 0;
+  return count > 0 ? count : (rowsPerPage.value || 5);
+});
+
 // ==========================================
 // 2. FETCH KE BACKEND LARAVEL
 // ==========================================
@@ -463,7 +468,7 @@ const handleModalSubmit = (formData) => {
               </thead>
               
               <!-- SKELETON TABLE LOADING -->
-              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="paginatedData?.length || 5" />
+              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="skeletonCount" />
 
               <tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in paginatedData" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">

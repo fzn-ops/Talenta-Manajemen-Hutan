@@ -165,14 +165,7 @@ public function createRoadmap(array $data)
         $query = Roadmap::whereHas('pendaftaranRoadmap', function ($q) use ($userId) {
             $q->where('id_user', $userId);
         })
-        ->join('pendaftaran_roadmap', function ($join) use ($userId) {
-            $join->on('roadmap.id', '=', 'pendaftaran_roadmap.id_roadmap')
-                 ->where('pendaftaran_roadmap.id_user', '=', $userId);
-        })
-        ->select('roadmap.*')
-        ->orderByDesc('pendaftaran_roadmap.updated_at')
-        ->orderByDesc('pendaftaran_roadmap.created_at')
-        ->orderByDesc('pendaftaran_roadmap.id')
+        ->orderBy('id', 'asc')
         ->with([
             'bulanRoadmap.materiRoadmap',
             'pendaftaranRoadmap' => function ($q) use ($userId) {
@@ -247,26 +240,63 @@ public function createRoadmap(array $data)
     /**
      * Dapatkan daftar roadmap yang tersedia untuk modal Tambah Roadmap
      */
-    public function getAvailableRoadmapsForUser(int $userId): array
+    public function getAvailableRoadmapsForUser(int $userId, array $params = [])
     {
         $enrolledIds = \App\Models\PendaftaranRoadmap::where('id_user', $userId)->pluck('id_roadmap')->toArray();
 
-        return Roadmap::with('bulanRoadmap.materiRoadmap')
-            ->withCount('pendaftaranRoadmap as partisipan')
-            ->orderBy('id', 'asc')
-            ->get()
-            ->map(function ($r) use ($enrolledIds) {
-                $totalTask = $r->bulanRoadmap->flatMap->materiRoadmap->count();
-                return [
-                    'id'          => $r->id,
-                    'judul'       => $r->nama_roadmap,
-                    'kategori'    => $r->kategori,
-                    'totalTask'   => $totalTask,
-                    'partisipan'  => $r->partisipan ?? 0,
-                    'is_enrolled' => in_array($r->id, $enrolledIds),
-                ];
-            })
-            ->all();
+        $query = Roadmap::with('bulanRoadmap.materiRoadmap')
+            ->withCount('pendaftaranRoadmap as partisipan');
+
+        // Search: nama_roadmap atau kategori
+        $search = $params['modal_search'] ?? null;
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_roadmap', 'like', "%{$search}%")
+                  ->orWhere('kategori', 'like', "%{$search}%");
+            });
+        }
+
+        // Kategori Filter
+        $kategori = $params['modal_kategori'] ?? null;
+        if (!empty($kategori) && $kategori !== 'Semua') {
+            $query->where('kategori', 'like', "%{$kategori}%");
+        }
+
+        // Sorting
+        $sortBy = $params['modal_sort'] ?? 'id';
+        $direction = strtolower($params['modal_direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+
+        if (in_array($sortBy, ['id', 'partisipan'])) {
+            $query->orderBy($sortBy, $direction);
+        } elseif ($sortBy === 'judul' || $sortBy === 'nama_roadmap') {
+            $query->orderBy('nama_roadmap', $direction);
+        } else {
+            $query->orderBy('id', 'asc');
+        }
+
+        $perPage = (int) ($params['modal_per_page'] ?? 5);
+        $page = (int) ($params['modal_page'] ?? 1);
+
+        $paginator = $query->paginate($perPage, ['*'], 'modal_page', $page)->withQueryString();
+
+        $paginator->getCollection()->transform(function ($r) use ($enrolledIds) {
+            $totalTask = $r->bulanRoadmap ? $r->bulanRoadmap->flatMap->materiRoadmap->count() : 0;
+            return [
+                'id'          => $r->id,
+                'judul'       => $r->nama_roadmap,
+                'kategori'    => $r->kategori,
+                'totalTask'   => $totalTask,
+                'partisipan'  => $r->partisipan ?? 0,
+                'is_enrolled' => in_array($r->id, $enrolledIds),
+            ];
+        });
+
+        if ($sortBy === 'totalTask') {
+            $sorted = $paginator->getCollection()->sortBy('totalTask', SORT_REGULAR, $direction === 'desc');
+            $paginator->setCollection($sorted->values());
+        }
+
+        return $paginator;
     }
 
     /**

@@ -55,6 +55,11 @@ const kegiatanList = computed(() => {
 const currentPage = ref(props.pendaftaranData?.current_page || 1);
 const rowsPerPage = ref(props.pendaftaranData?.per_page || 10);
 
+const skeletonCount = computed(() => {
+  const count = kegiatanList.value?.length || 0;
+  return count > 0 ? count : (rowsPerPage.value || 5);
+});
+
 const getRowNumber = (index) => {
   if (sortColumn.value === 'id' && sortDirection.value === 'desc') {
     const total = props.pendaftaranData?.total || 0;
@@ -383,7 +388,7 @@ const executeDelete = () => {
               </thead>
               
               <!-- SKELETON TABLE LOADING -->
-              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="kegiatanList?.length || 5" />
+              <TableSkeleton v-if="isLoading" :columns="columns.length + 1" :rows="skeletonCount" />
 
               <tbody v-else class="[&_tr:not(:first-child)_td]:border-t [&_tr:not(:first-child)_td]:border-[#d6e0ee] font-inter text-[14px] text-[#435b76]">
                 <tr v-for="(item, index) in kegiatanList" :key="item.id" class="h-[52px] transition-colors hover:bg-[#f7f9fd]">
