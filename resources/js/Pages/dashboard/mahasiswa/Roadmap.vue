@@ -6,6 +6,8 @@ import TablePagination from '@/Components/dashboard/TablePagination.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import AddRoadmapModal from '@/Components/dashboard/mahasiswa/AddRoadmapModal.vue';
+import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import ModalCertificatePreview from '@/Components/dashboard/mahasiswa/ModalCertificatePreview.vue';
 
 const props = defineProps({
 	roadmaps: {
@@ -85,12 +87,25 @@ onMounted(() => {
 		router.reload({ only: ['roadmaps', 'availableRoadmaps'] });
 	};
 
+	const handleGlobalClick = () => {
+		closeDropdown();
+	};
+	const handleGlobalKeydown = (e) => {
+		if (e.key === 'Escape') {
+			closeDropdown();
+		}
+	};
+
 	window.addEventListener('pageshow', handleWindowRestore);
 	window.addEventListener('popstate', handlePopState);
+	window.addEventListener('click', handleGlobalClick);
+	window.addEventListener('keydown', handleGlobalKeydown);
 
 	onBeforeUnmount(() => {
 		window.removeEventListener('pageshow', handleWindowRestore);
 		window.removeEventListener('popstate', handlePopState);
+		window.removeEventListener('click', handleGlobalClick);
+		window.removeEventListener('keydown', handleGlobalKeydown);
 	});
 });
 
@@ -332,6 +347,62 @@ const handleModalSubmit = (selectedIds) => {
 	});
 };
 
+// Dropdown Menu Titik Tiga
+const activeDropdownId = ref(null);
+
+const toggleDropdown = (id) => {
+	if (activeDropdownId.value === id) {
+		activeDropdownId.value = null;
+	} else {
+		activeDropdownId.value = id;
+	}
+};
+
+const closeDropdown = () => {
+	activeDropdownId.value = null;
+};
+
+// Sertifikat Modal State
+const showCertificateModal = ref(false);
+const selectedCertificateRoadmap = ref(null);
+
+const handleOpenCertificate = (item) => {
+	closeDropdown();
+	selectedCertificateRoadmap.value = item;
+	showCertificateModal.value = true;
+};
+
+// Unenroll Modal State
+const showUnenrollModal = ref(false);
+const roadmapToUnenroll = ref(null);
+const isUnenrolling = ref(false);
+
+const handleOpenUnenroll = (item) => {
+	closeDropdown();
+	roadmapToUnenroll.value = item;
+	showUnenrollModal.value = true;
+};
+
+const handleConfirmUnenroll = () => {
+	if (!roadmapToUnenroll.value) return;
+	isUnenrolling.value = true;
+
+	router.delete(`/mahasiswa/roadmap/${roadmapToUnenroll.value.id}/unenroll`, {
+		preserveScroll: true,
+		onSuccess: () => {
+			showUnenrollModal.value = false;
+			roadmapToUnenroll.value = null;
+			showToast('success', 'Berhasil', 'Berhasil berhenti mengikuti roadmap.');
+		},
+		onError: () => {
+			showToast('error', 'Gagal', 'Terjadi kesalahan saat berhenti mengikuti roadmap.');
+		},
+		onFinish: () => {
+			isUnenrolling.value = false;
+		}
+	});
+};
+
 </script>
 
 <template>
@@ -558,18 +629,105 @@ const handleModalSubmit = (selectedIds) => {
 									{{ item.title }}
 								</h3>
 
-								<!-- Category Badges -->
-								<div class="mt-2.5 flex flex-wrap items-center gap-1.5">
-									<span
-										v-for="(cat, catIdx) in getCategoryBadges(item)"
-										:key="catIdx"
-										:class="[
-											'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
-											getCategoryBadgeClass(cat)
-										]"
-									>
-										{{ cat }}
-									</span>
+								<!-- Footer: Category Badges & Bottom-Right Horizontal 3-Dots -->
+								<div class="mt-3.5 flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100">
+									<div class="flex flex-wrap items-center gap-1.5 min-w-0">
+										<span
+											v-for="(cat, catIdx) in getCategoryBadges(item)"
+											:key="catIdx"
+											:class="[
+												'inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-inter text-[11px] font-semibold border',
+												getCategoryBadgeClass(cat)
+											]"
+										>
+											{{ cat }}
+										</span>
+									</div>
+
+									<!-- Horizontal Three-Dots Menu (Kanan Bawah) -->
+									<div class="relative shrink-0" @click.stop>
+										<button
+											type="button"
+											@click.stop="toggleDropdown(item.id)"
+											class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-[#183669] hover:bg-slate-100 transition-colors focus:outline-none cursor-pointer"
+											:class="activeDropdownId === item.id ? 'bg-slate-100 text-[#183669] ring-1 ring-slate-200' : ''"
+											title="Menu Opsi Roadmap"
+										>
+											<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+												<circle cx="5" cy="12" r="2" />
+												<circle cx="12" cy="12" r="2" />
+												<circle cx="19" cy="12" r="2" />
+											</svg>
+										</button>
+
+										<!-- Dropdown Menu (Opens Upward to avoid screen cutoff) -->
+										<Transition
+											enter-active-class="transition duration-150 ease-out"
+											enter-from-class="opacity-0 scale-95 translate-y-1"
+											enter-to-class="opacity-100 scale-100 translate-y-0"
+											leave-active-class="transition duration-100 ease-in"
+											leave-from-class="opacity-100 scale-100 translate-y-0"
+											leave-to-class="opacity-0 scale-95 translate-y-1"
+										>
+											<div
+												v-if="activeDropdownId === item.id"
+												class="absolute right-0 bottom-full mb-1.5 z-30 w-52 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl font-inter text-left"
+												@click.stop
+											>
+												<!-- 1. Buka Roadmap -->
+												<button
+													type="button"
+													@click="router.visit(`/mahasiswa/roadmap/${item.id}`)"
+													class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 hover:text-[#183669] cursor-pointer"
+												>
+													<svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+													</svg>
+													<span>Buka Roadmap</span>
+												</button>
+
+												<!-- 2. Lihat Sertifikat -->
+												<button
+													v-if="(item.completed_tasks ?? 0) >= (item.task_count || 1)"
+													type="button"
+													@click="handleOpenCertificate(item)"
+													class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 cursor-pointer"
+												>
+													<svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z" />
+													</svg>
+													<span>Lihat Sertifikat</span>
+												</button>
+												<div
+													v-else
+													class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium text-gray-400 cursor-not-allowed select-none"
+													title="Selesaikan semua task untuk membuka sertifikat"
+												>
+													<div class="flex items-center gap-2.5">
+														<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+														</svg>
+														<span>Lihat Sertifikat</span>
+													</div>
+													<span class="text-[10px] text-gray-400 font-semibold bg-gray-100 px-1.5 py-0.5 rounded">Terkunci</span>
+												</div>
+
+												<div class="my-1 border-t border-gray-100"></div>
+
+												<!-- 3. Batal Ikuti Roadmap (Unenroll) -->
+												<button
+													type="button"
+													@click="handleOpenUnenroll(item)"
+													class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700 cursor-pointer"
+												>
+													<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+													</svg>
+													<span>Batal Ikuti Roadmap</span>
+												</button>
+											</div>
+										</Transition>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -636,6 +794,33 @@ const handleModalSubmit = (selectedIds) => {
 			:selected-data="selectedData"
 			@close="isModalOpen = false"
 			@submit="handleModalSubmit"
+		/>
+
+		<!-- Modal: Batal Ikuti (Unenroll) Confirmation -->
+		<DeleteModal
+			:show="showUnenrollModal"
+			:is-loading="isUnenrolling"
+			@close="showUnenrollModal = false"
+			@confirm="handleConfirmUnenroll"
+		>
+			<template #title>
+				Batal Ikuti Roadmap?
+			</template>
+			<template #message>
+				Apakah kamu yakin ingin berhenti mengikuti roadmap <span class="font-bold text-[#17334F]">"{{ roadmapToUnenroll?.title }}"</span>? Seluruh progres materi, checklist, dan tugas yang telah kamu kerjakan akan dihapus secara permanen.
+			</template>
+			<template #confirm-text>
+				{{ isUnenrolling ? 'Memproses...' : 'Batal Ikuti' }}
+			</template>
+		</DeleteModal>
+
+		<!-- Modal: Pratinjau & Unduh Sertifikat -->
+		<ModalCertificatePreview
+			:show="showCertificateModal"
+			:roadmap-title="selectedCertificateRoadmap?.title || ''"
+			:preview-url="selectedCertificateRoadmap ? `/mahasiswa/roadmap/${selectedCertificateRoadmap.id}/certificate/preview` : ''"
+			:download-url="selectedCertificateRoadmap ? `/mahasiswa/roadmap/${selectedCertificateRoadmap.id}/certificate/download` : ''"
+			@close="showCertificateModal = false"
 		/>
 	</MahasiswaLayout>
 </template>

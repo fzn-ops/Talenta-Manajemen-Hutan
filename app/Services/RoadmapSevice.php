@@ -319,4 +319,44 @@ public function createRoadmap(array $data)
             }
         });
     }
+
+    /**
+     * Berhenti mengikuti (unenroll) roadmap beserta menghapus progress tugas & pencapaiannya
+     */
+    public function unenrollRoadmap(int $userId, int $roadmapId): void
+    {
+        DB::transaction(function () use ($userId, $roadmapId) {
+            // 1. Ambil semua ID materi yang ada di dalam roadmap ini
+            $materiIds = \App\Models\MateriRoadmap::whereHas('bulanRoadmap', function ($q) use ($roadmapId) {
+                $q->where('id_roadmap', $roadmapId);
+            })->pluck('id')->all();
+
+            // 2. Hapus pendaftaran roadmap
+            \App\Models\PendaftaranRoadmap::where('id_user', $userId)
+                ->where('id_roadmap', $roadmapId)
+                ->delete();
+
+            if (!empty($materiIds)) {
+                // 3. Hapus pencapaian materi pada roadmap ini
+                \App\Models\Pencapaian::where('id_user', $userId)
+                    ->whereIn('id_materi_roadmap', $materiIds)
+                    ->delete();
+
+                // 4. Hapus hasil aktivitas / tugas submission pada roadmap ini beserta file lampirannya
+                $hasilList = \App\Models\HasilAktivitas::where('id_user', $userId)
+                    ->whereIn('id_materi_roadmap', $materiIds)
+                    ->get();
+
+                foreach ($hasilList as $hasil) {
+                    if (!empty($hasil->media)) {
+                        $clean = ltrim(preg_replace('#^/?storage/#', '', $hasil->media), '/');
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($clean)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($clean);
+                        }
+                    }
+                    $hasil->delete();
+                }
+            }
+        });
+    }
 }

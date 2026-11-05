@@ -58,6 +58,17 @@ class RoadmapController extends Controller
     }
 
     /**
+     * Berhenti mengikuti (unenroll) roadmap beserta menghapus progress tugas & pencapaiannya
+     */
+    public function unenroll(Request $request, $id)
+    {
+        $userId = (int) Auth::id();
+        $this->roadmapService->unenrollRoadmap($userId, (int) $id);
+
+        return redirect()->route('mahasiswa.roadmap')->with('success', 'Berhasil berhenti mengikuti roadmap. Seluruh progres dan tugas Anda telah dihapus.');
+    }
+
+    /**
      * Halaman Detail Roadmap Mahasiswa
      */
     public function show(Request $request, $id): Response
