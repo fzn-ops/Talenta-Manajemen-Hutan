@@ -86,7 +86,6 @@ const getImageUrl = (path) => {
             
           </article>
 
-
           <!-- ========================================== -->
           <!-- KANAN: BERITA LAINNYA (Mengambil 4 kolom)  -->
           <!-- ========================================== -->
