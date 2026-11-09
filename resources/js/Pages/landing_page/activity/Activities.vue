@@ -4,6 +4,7 @@ import { router, Link } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/landing_page/main.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 // ==========================================
 // 1. PROPS DARI BACKEND
@@ -389,10 +390,12 @@ const formatCardDescription = (html) => {
                 class="group relative flex flex-col justify-end overflow-hidden rounded-[12px] sm:rounded-[14px] shadow-sm transition-[transform,box-shadow] duration-300 ease-out aspect-[3/4] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none will-change-transform transform-gpu backface-hidden isolate"
               >
                 <!-- BACKGROUND GAMBAR & GRADIENT -->
-                <img 
-                  :src="getImageUrl(item?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || item?.gambar_aktivitas?.[0]?.gambar)" 
-                  class="absolute inset-0 h-full w-full object-cover" 
+                <CardImage 
+                  :src="item?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || item?.gambar_aktivitas?.[0]?.gambar" 
+                  class="absolute inset-0 h-full w-full"
+                  img-class="absolute inset-0 h-full w-full object-cover" 
                   :alt="item?.judul" 
+                  dark
                 />
                 
                 <div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95 pointer-events-none"></div>

@@ -9,6 +9,7 @@ import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import ModalFormRoadmap from '@/Components/dashboard/admin/ModalFormRoadmap.vue';
 import DeleteModal from '@/Components/dashboard/DeleteModal.vue';
+import RoadmapCover from '@/Components/dashboard/RoadmapCover.vue';
 
 const props = defineProps({
     roadmapData: Object,
@@ -444,51 +445,11 @@ const formatUpdatedDate = (dateStr) => {
 							<div>
 								<!-- Top Cover Banner (Rounded [10px] as in Figma) -->
 								<div class="relative flex h-[175px] sm:h-[190px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
-									<img
-										v-if="item.gambar"
-										:src="`/storage/${item.gambar}`"
+									<RoadmapCover
+										:src="item.gambar"
 										:alt="item.nama_roadmap"
-										class="h-full w-full object-cover"
+										:category="item.kategori"
 									/>
-									<!-- Soft Geometric Mural Banner Pattern -->
-									<div
-										v-else
-										:class="['relative h-full w-full bg-gradient-to-br flex items-center justify-center overflow-hidden select-none', getCardGradient(item.kategori)]"
-									>
-										<!-- Geometric Abstract SVG Mural Background -->
-										<svg
-											class="absolute inset-0 h-full w-full object-cover pointer-events-none opacity-40 mix-blend-screen"
-											viewBox="0 0 400 240"
-											fill="none"
-											xmlns="http://www.w3.org/2000/svg"
-										>
-											<!-- Ambient mesh shapes & geometric curves -->
-											<circle cx="360" cy="30" r="110" fill="white" fill-opacity="0.2" />
-											<circle cx="40" cy="220" r="90" fill="white" fill-opacity="0.15" />
-											
-											<!-- Modern geometric polygon facets -->
-											<path d="M-20 60 L120 -10 L180 90 L60 140 Z" fill="white" fill-opacity="0.08" />
-											<path d="M120 -10 L280 20 L240 130 L180 90 Z" fill="white" fill-opacity="0.12" />
-											<path d="M280 20 L420 -30 L380 90 L240 130 Z" fill="white" fill-opacity="0.06" />
-											<path d="M180 90 L240 130 L320 220 L160 200 Z" fill="white" fill-opacity="0.09" />
-											<path d="M60 140 L180 90 L160 200 L40 230 Z" fill="white" fill-opacity="0.05" />
-											<path d="M240 130 L380 90 L430 200 L320 220 Z" fill="white" fill-opacity="0.11" />
-
-											<!-- Soft wavy decorative contour lines -->
-											<path d="M-10 180 C80 140, 160 220, 260 170 C330 130, 380 180, 420 160" stroke="white" stroke-opacity="0.22" stroke-width="1.5" stroke-dasharray="4 4" fill="none" />
-											<path d="M-10 200 C90 160, 180 240, 280 190 C350 150, 390 200, 430 180" stroke="white" stroke-opacity="0.15" stroke-width="1.5" fill="none" />
-										</svg>
-
-										<!-- Clean Typography Content -->
-										<div class="relative z-10 flex flex-col items-center justify-center text-center px-4">
-											<span class="font-poppins text-[15px] sm:text-[16px] font-bold tracking-wide text-white drop-shadow-xs">
-												{{ item.kategori || 'Roadmap' }}
-											</span>
-											<p class="mt-0.5 font-inter text-[11px] sm:text-[12px] font-medium text-white/80">
-												Talenta Manajemen Hutan
-											</p>
-										</div>
-									</div>
 								</div>
 
 								<!-- Card Meta Bar: Tasks & Student Counter -->

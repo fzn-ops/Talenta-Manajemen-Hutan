@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/landing_page/main.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 // ==========================================
 // PROPS DARI BACKEND LARAVEL
@@ -108,11 +109,10 @@ const getImageUrl = (path) => {
                 >
                   <!-- Gambar Thumbnail (1/3 Lebar Kartu) -->
                   <div class="w-1/3 shrink-0 overflow-hidden bg-[#d9d9d9] aspect-[4/3]">
-                    <img 
-                      v-if="item.foto" 
-                      :src="getImageUrl(item.foto)" 
+                    <CardImage 
+                      :src="item.foto" 
                       :alt="item.judul" 
-                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      img-class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   </div>
                   

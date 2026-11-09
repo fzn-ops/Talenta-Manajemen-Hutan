@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 const tabs = ['Semua', 'Umum', 'Lomba'];
 
@@ -149,10 +150,12 @@ const getImageUrl = (path) => {
               class="group relative flex flex-col justify-end overflow-hidden rounded-[14px] sm:rounded-[16px] shadow-sm transition-[transform,box-shadow] duration-300 ease-out h-full min-h-[500px] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none will-change-transform transform-gpu backface-hidden isolate"
             >
               <!-- Gambar Background -->
-              <img 
-                :src="getImageUrl(featured?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || featured.gambar_aktivitas?.[0]?.gambar)" 
+              <CardImage 
+                :src="featured?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || featured.gambar_aktivitas?.[0]?.gambar" 
                 :alt="featured?.judul" 
-                class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                class="absolute inset-0 h-full w-full"
+                img-class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                dark
               />
 
               <!-- Overlay Gradient Hijau Sesuai Activities.vue -->
@@ -225,10 +228,12 @@ const getImageUrl = (path) => {
               class="group relative flex flex-col justify-end overflow-hidden rounded-[14px] shadow-sm transition-[transform,box-shadow] duration-300 ease-out h-[280px] w-full border border-[#d6e0ee] bg-[#1e293b] sm:hover:-translate-y-1.5 sm:hover:shadow-lg cursor-pointer select-none will-change-transform transform-gpu backface-hidden isolate"
             >
               <!-- Gambar Background -->
-              <img 
-                :src="getImageUrl(card?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || card.gambar_aktivitas?.[0]?.gambar)" 
+              <CardImage 
+                :src="card?.gambar_aktivitas?.find(g => g.utama == 1 || g.utama === true)?.gambar || card.gambar_aktivitas?.[0]?.gambar" 
                 :alt="card?.judul" 
-                class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                class="absolute inset-0 h-full w-full"
+                img-class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                dark
               />
               
               <!-- Overlay Gradient Hijau Sesuai Activities.vue -->

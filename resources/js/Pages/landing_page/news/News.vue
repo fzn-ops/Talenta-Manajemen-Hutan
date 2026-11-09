@@ -5,6 +5,7 @@ import MainLayout from '@/Layouts/landing_page/main.vue';
 import SearchBarTable from '@/Components/dashboard/SearchBarTable.vue';
 import CardSkeleton from '@/Components/dashboard/CardSkeleton.vue';
 import TablePagination from '@/Components/dashboard/TablePagination.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 // ==========================================
 // 1. PROPS DARI BACKEND LARAVEL
@@ -275,10 +276,10 @@ onUnmounted(() => {
             class="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
           >
             <div class="aspect-[3/2] w-full overflow-hidden bg-[#d9d9d9]">
-              <img 
-                :src="getImageUrl(item.foto || item.image)" 
+              <CardImage 
+                :src="item.foto || item.image" 
                 :alt="item.judul || item.title" 
-                class="h-full w-full object-cover"
+                img-class="h-full w-full object-cover"
               />
             </div>
             <div class="flex flex-col p-5 sm:p-6">

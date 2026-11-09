@@ -5,6 +5,7 @@ import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
 import LoadingSuccessModal from '@/Components/dashboard/mahasiswa/LoadingSuccessModal.vue';
 import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 
 // ==========================================
@@ -198,6 +199,7 @@ const getImageUrl = (path) => {
 };
 
 const activePosterUrl = ref('');
+const isPosterError = ref(false);
 
 const allActivityImages = computed(() => {
     return Array.isArray(props.aktivitas?.gambar_aktivitas) ? props.aktivitas.gambar_aktivitas : [];
@@ -206,9 +208,9 @@ const allActivityImages = computed(() => {
 const mainPosterUrl = computed(() => {
     if (activePosterUrl.value) return activePosterUrl.value;
     const list = allActivityImages.value;
-    if (list.length === 0) return 'https://ui-avatars.com/api/?name=Activity&background=random';
+    if (list.length === 0) return '';
     const utama = list.find(g => g.utama == 1 || g.utama === true) || list[0];
-    return getImageUrl(utama?.gambar) || 'https://ui-avatars.com/api/?name=Activity&background=random';
+    return utama?.gambar || '';
 });
 
 const imagePreview = ref(
@@ -216,6 +218,7 @@ const imagePreview = ref(
         ? getImageUrl(props.pendaftaranDetail.bukti_pendaftaran) 
         : null
 );
+const isBuktiError = ref(false);
 
 
 
@@ -311,6 +314,7 @@ const processFile = (file) => {
     }
     form.bukti = file;
     imagePreview.value = URL.createObjectURL(file);
+    isBuktiError.value = false;
     errors.value.bukti = ''; 
 };
 
@@ -323,6 +327,7 @@ const handleDrop = (event) => {
 const removeImage = () => {
     form.bukti = null;
     imagePreview.value = null;
+    isBuktiError.value = false;
     if (fileInput.value) fileInput.value.value = '';
 };
 
@@ -441,6 +446,8 @@ const previewLabel = ref('Gambar');
 
 const openImagePreview = (target, label = 'Gambar') => {
     if (!target) return;
+    if ((label === 'Poster' || target === mainPosterUrl.value) && isPosterError.value) return;
+    if ((label === 'Bukti' || target === imagePreview.value) && isBuktiError.value) return;
     previewLabel.value = label;
     if (label === 'Poster' || (!label && allActivityImages.value.length > 0)) {
         const list = allActivityImages.value.map(g => getImageUrl(g?.gambar)).filter(Boolean);
@@ -520,10 +527,13 @@ const openImagePreview = (target, label = 'Gambar') => {
               </div>
 
               <!-- Main Poster Image (Static) -->
-              <img 
+              <CardImage 
                 :src="mainPosterUrl" 
-                class="h-full w-full object-cover" 
+                class="h-full w-full"
+                img-class="h-full w-full object-cover" 
                 alt="Poster Aktivitas" 
+                @error="isPosterError = true"
+                @load="isPosterError = false"
               />
             </div>
 
@@ -538,10 +548,13 @@ const openImagePreview = (target, label = 'Gambar') => {
                   ? 'border-2 border-slate-700 opacity-100 ring-1 ring-slate-400/30' 
                   : 'border border-slate-200/90 opacity-60 hover:opacity-100'"
               >
-                <img 
-                  :src="getImageUrl(imgObj?.gambar)" 
-                  class="h-full w-full object-cover" 
+                <CardImage 
+                  :src="imgObj?.gambar" 
+                  class="h-full w-full"
+                  img-class="h-full w-full object-cover" 
                   alt="Thumbnail Aktivitas" 
+                  :show-label="false"
+                  icon-class="h-5 w-5"
                 />
               </div>
             </div>
@@ -862,19 +875,24 @@ const openImagePreview = (target, label = 'Gambar') => {
                     <!-- KONDISI A: MODE PREVIEW / TERKUNCI (isFormLocked) -->
                     <template v-if="isFormLocked">
                       <div 
-                        @click.stop="openImagePreview(imagePreview)"
+                        @click.stop="openImagePreview(imagePreview, 'Bukti')"
                         class="relative aspect-[4/3] h-36 sm:h-40 rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-xs cursor-pointer select-none"
                         title="Klik untuk melihat ukuran penuh"
                       >
-                        <img
+                        <CardImage
                           :src="imagePreview"
                           alt="Preview Bukti Pendaftaran"
-                          class="h-full w-full object-cover"
+                          class="h-full w-full"
+                          img-class="h-full w-full object-cover"
+                          label-text="Bukti tidak ditemukan"
+                          icon-class="h-6 w-6"
+                          @error="isBuktiError = true"
+                          @load="isBuktiError = false"
                         />
                       </div>
 
                       <!-- Petunjuk Ukuran Penuh (Senada dengan Poster di kolom kiri) -->
-                      <p class="mt-2 text-center font-inter text-[11px] sm:text-[11.5px] text-slate-400 italic select-none">
+                      <p v-if="!isBuktiError" class="mt-2 text-center font-inter text-[11px] sm:text-[11.5px] text-slate-400 italic select-none">
                         *Tekan gambar untuk melihat ukuran penuh
                       </p>
                     </template>
@@ -882,10 +900,15 @@ const openImagePreview = (target, label = 'Gambar') => {
                     <!-- KONDISI B: MODE EDIT (Bisa Ganti, Hapus, atau Pratinjau) -->
                     <template v-else>
                       <div class="relative aspect-[4/3] h-36 sm:h-40 rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-xs group">
-                        <img
+                        <CardImage
                           :src="imagePreview"
                           alt="Preview Bukti Pendaftaran"
-                          class="h-full w-full object-cover"
+                          class="h-full w-full"
+                          img-class="h-full w-full object-cover"
+                          label-text="Bukti tidak ditemukan"
+                          icon-class="h-6 w-6"
+                          @error="isBuktiError = true"
+                          @load="isBuktiError = false"
                         />
 
                         <!-- ACTION OVERLAY (DELETE, PREVIEW, REPLACE) -->
@@ -909,8 +932,9 @@ const openImagePreview = (target, label = 'Gambar') => {
                           <div class="flex items-center justify-center gap-2 w-full pb-0.5">
                             <!-- Tombol PREVIEW (Kaca Pembesar) -->
                             <button
+                              v-if="!isBuktiError"
                               type="button"
-                              @click.stop.prevent="openImagePreview(imagePreview)"
+                              @click.stop.prevent="openImagePreview(imagePreview, 'Bukti')"
                               class="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white shadow-sm hover:bg-black/85 hover:scale-110 active:scale-95 transition cursor-pointer"
                               title="Lihat Gambar Penuh"
                             >

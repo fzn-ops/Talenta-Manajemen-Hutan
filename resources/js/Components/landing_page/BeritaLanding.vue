@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 const props = defineProps({
     beritaData: {
@@ -96,10 +97,11 @@ const formatDate = (dateString) => {
           class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md">
               <div class="relative w-full pb-[45%]">
                   <div class="absolute inset-0 p-4">
-                    <img 
-                      :src="mainNews.foto || 'https://via.placeholder.com/800x450'" 
+                    <CardImage 
+                      :src="mainNews.foto" 
                       :alt="mainNews.judul" 
-                      class="h-full w-full object-cover rounded-xl"
+                      class="h-full w-full rounded-xl overflow-hidden"
+                      img-class="h-full w-full object-cover rounded-xl"
                     />
                   </div>
               </div>
@@ -126,11 +128,11 @@ const formatDate = (dateString) => {
               <!-- Gambar Thumbnail -->
               <div class="relative w-full pb-[40%] sm:w-[35%] sm:pb-0 sm:h-32">
                   <div class="absolute inset-0 p-3">
-                      <img 
-                          v-if="news.foto"
+                      <CardImage 
                           :src="news.foto" 
                           :alt="news.judul" 
-                          class="h-full w-full object-cover rounded-xl"
+                          class="h-full w-full rounded-xl overflow-hidden"
+                          img-class="h-full w-full object-cover rounded-xl"
                       />
                   </div>
               </div>

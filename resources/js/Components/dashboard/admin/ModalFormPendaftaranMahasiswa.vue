@@ -1,6 +1,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 const props = defineProps({
 	show: {
@@ -235,7 +236,14 @@ onBeforeUnmount(() => {
 										<div
 											class="relative aspect-[4/3] w-full max-w-[180px] sm:max-w-[200px] rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-xs group"
 										>
-											<img :src="getImageSrc(data?.gambar)" class="h-full w-full object-cover" />
+											<CardImage 
+												:src="data?.gambar" 
+												class="h-full w-full"
+												img-class="h-full w-full object-cover" 
+												alt="Bukti Pendaftaran"
+												label-text="Bukti tidak ditemukan"
+												icon-class="h-6 w-6"
+											/>
 											
 											<!-- Action Overlay with Preview Button Only -->
 											<div class="absolute inset-0 bg-black/40 flex items-center justify-center p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">

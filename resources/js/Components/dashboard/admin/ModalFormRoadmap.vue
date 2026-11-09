@@ -162,9 +162,6 @@ const handleSubmit = () => {
 	if (!inputCategory) {
 		errors.value.kategori = 'Kategori wajib dipilih.';
 	}
-	if (!form.value.gambar) {
-		errors.value.gambar = 'Thumbnail cover roadmap wajib diunggah.';
-	}
 
 	if (Object.keys(errors.value).length > 0) {
 		return;
@@ -355,7 +352,7 @@ const handleBackdropMouseUp = (e) => {
 							<div>
 								<div class="flex items-center justify-between">
 									<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-										Thumbnail Cover<span class="text-red-500">*</span>
+										Thumbnail Cover <span class="text-slate-400 font-normal text-[11.5px]">(Opsional)</span>
 									</label>
 								</div>
 								<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">

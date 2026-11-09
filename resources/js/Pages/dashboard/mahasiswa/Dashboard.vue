@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import MahasiswaLayout from '@/Layouts/dashboard/MahasiswaLayout.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
+import RoadmapCover from '@/Components/dashboard/RoadmapCover.vue';
 
 const props = defineProps({
 	stats: {
@@ -246,44 +248,11 @@ const handleActivityClick = (activity) => {
 							<div>
 								<!-- Cover Banner (Rounded [10px], matches Roadmap.vue) -->
 								<div class="relative flex h-[175px] sm:h-[190px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-slate-100 shadow-inner">
-									<img
-										v-if="item.thumbnail"
+									<RoadmapCover
 										:src="item.thumbnail"
 										:alt="item.title"
-										class="h-full w-full object-cover"
+										:category="item.category"
 									/>
-									<!-- Soft Geometric Mural Pattern Fallback -->
-									<div
-										v-else
-										:class="['relative h-full w-full bg-gradient-to-br flex items-center justify-center overflow-hidden select-none', getCardGradient(item.category)]"
-									>
-										<svg
-											class="absolute inset-0 h-full w-full object-cover pointer-events-none opacity-40 mix-blend-screen"
-											viewBox="0 0 400 240"
-											fill="none"
-											xmlns="http://www.w3.org/2000/svg"
-										>
-											<circle cx="360" cy="30" r="110" fill="white" fill-opacity="0.2" />
-											<circle cx="40" cy="220" r="90" fill="white" fill-opacity="0.15" />
-											<path d="M-20 60 L120 -10 L180 90 L60 140 Z" fill="white" fill-opacity="0.08" />
-											<path d="M120 -10 L280 20 L240 130 L180 90 Z" fill="white" fill-opacity="0.12" />
-											<path d="M280 20 L420 -30 L380 90 L240 130 Z" fill="white" fill-opacity="0.06" />
-											<path d="M180 90 L240 130 L320 220 L160 200 Z" fill="white" fill-opacity="0.09" />
-											<path d="M60 140 L180 90 L160 200 L40 230 Z" fill="white" fill-opacity="0.05" />
-											<path d="M240 130 L380 90 L430 200 L320 220 Z" fill="white" fill-opacity="0.11" />
-											<path d="M-10 180 C80 140, 160 220, 260 170 C330 130, 380 180, 420 160" stroke="white" stroke-opacity="0.22" stroke-width="1.5" stroke-dasharray="4 4" fill="none" />
-											<path d="M-10 200 C90 160, 180 240, 280 190 C350 150, 390 200, 430 180" stroke="white" stroke-opacity="0.15" stroke-width="1.5" fill="none" />
-										</svg>
-
-										<div class="relative z-10 flex flex-col items-center justify-center text-center px-4">
-											<span class="font-poppins text-[15px] sm:text-[16px] font-bold tracking-wide text-white drop-shadow-xs">
-												{{ item.category || 'Roadmap' }}
-											</span>
-											<p class="mt-0.5 font-inter text-[11px] sm:text-[12px] font-medium text-white/80">
-												Talenta Manajemen Hutan
-											</p>
-										</div>
-									</div>
 								</div>
 
 								<!-- Progress Bar Row (Matches Roadmap.vue) -->
@@ -379,10 +348,12 @@ const handleActivityClick = (activity) => {
 							:title="item.judul"
 						>
 							<!-- Background Image & Gradient -->
-							<img
-								:src="getImageUrl(item.gambar)"
-								class="absolute inset-0 h-full w-full object-cover"
+							<CardImage
+								:src="item.gambar"
 								:alt="item.judul"
+								dark
+								class="absolute inset-0 h-full w-full"
+								img-class="absolute inset-0 h-full w-full object-cover"
 							/>
 							<div class="absolute inset-0 bg-gradient-to-t from-[#091e1b] via-[#133830]/80 to-transparent opacity-95 pointer-events-none"></div>
 

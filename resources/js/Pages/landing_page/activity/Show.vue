@@ -4,6 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/landing_page/main.vue';
 import ImagePreviewModal from '@/Components/dashboard/ImagePreviewModal.vue';
 import ToastNotification from '@/Components/dashboard/ToastNotification.vue';
+import CardImage from '@/Components/dashboard/CardImage.vue';
 
 // Menerima props 'aktivitasDetail' yang dikirim dari ActivityController Laravel
 const props = defineProps({
@@ -44,13 +45,14 @@ const allActivityImages = computed(() => {
 
 // URL poster yang sedang aktif ditampilkan di flyer utama
 const activePosterUrl = ref('');
+const isPosterError = ref(false);
 
 const mainPosterUrl = computed(() => {
   if (activePosterUrl.value) return activePosterUrl.value;
   const list = allActivityImages.value;
-  if (list.length === 0) return 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=800&auto=format&fit=crop';
+  if (list.length === 0) return '';
   const utama = list.find(g => g.utama == 1 || g.utama === true) || list[0];
-  return getImageUrl(utama?.gambar);
+  return utama?.gambar || '';
 });
 
 // Helper modal preview gambar (lightbox)
@@ -60,7 +62,7 @@ const previewIndex = ref(0);
 const previewLabel = ref('Poster');
 
 const openImagePreview = (target, label = 'Poster') => {
-  if (!target) return;
+  if (!target || isPosterError.value) return;
   previewLabel.value = label;
   const list = allActivityImages.value.map(g => getImageUrl(g?.gambar)).filter(Boolean);
   if (list.length > 0) {
@@ -174,11 +176,14 @@ const handleShare = async () => {
               @click="openImagePreview(mainPosterUrl)"
               class="group aspect-[3/4] w-full overflow-hidden rounded-[14px] bg-slate-100 shadow-sm border border-[#d6e0ee] relative cursor-pointer select-none"
             >
-              <!-- Main Poster Image (Static - gausah animasi hover) -->
-              <img 
+              <!-- Main Poster Image with CardImage -->
+              <CardImage 
                 :src="mainPosterUrl" 
-                class="h-full w-full object-cover" 
+                class="h-full w-full"
+                img-class="h-full w-full object-cover" 
                 :alt="aktivitasDetail?.judul || 'Poster Aktivitas'" 
+                @error="isPosterError = true"
+                @load="isPosterError = false"
               />
               
               <!-- Badge Jenis di Kiri Atas -->
@@ -217,10 +222,13 @@ const handleShare = async () => {
                   ? 'border-2 border-slate-700 opacity-100 ring-1 ring-slate-400/30' 
                   : 'border border-slate-200/90 opacity-60 hover:opacity-100'"
               >
-                <img 
-                  :src="getImageUrl(imgObj?.gambar)" 
-                  class="h-full w-full object-cover" 
+                <CardImage 
+                  :src="imgObj?.gambar" 
+                  class="h-full w-full"
+                  img-class="h-full w-full object-cover" 
                   alt="Thumbnail Aktivitas" 
+                  :show-label="false"
+                  icon-class="h-5 w-5"
                 />
               </div>
             </div>
