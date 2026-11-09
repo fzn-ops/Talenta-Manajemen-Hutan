@@ -23,7 +23,17 @@ class Karir extends Model
         'foto',
     ];
 
-    protected $appends = ['instansi', 'logo'];
+    protected $appends = ['instansi', 'logo', 'tipe'];
+
+    public function getTipeAttribute()
+    {
+        return $this->attributes['kategori'] ?? null;
+    }
+
+    public function setTipeAttribute($value)
+    {
+        $this->attributes['kategori'] = $value;
+    }
 
     public function getInstansiAttribute()
     {

@@ -772,33 +772,41 @@ const getPdfUrl = (content) => {
 											</div>
 
 											<div class="flex items-center gap-2.5 shrink-0">
-												<!-- Status Badge -->
-												<span
-													v-if="activity.status === 'disetujui'"
-													class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200"
+												<!-- Status Badge (Sesuai Desain ActivitySubmission.vue) -->
+												<div
+													v-if="String(activity.status).toLowerCase() === 'disetujui' || String(activity.status).toLowerCase() === 'diterima'"
+													class="inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border bg-green-50 text-green-600 border-green-200"
 												>
-													<svg class="h-3.5 w-3.5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-													Disetujui
-												</span>
-												<span
-													v-else-if="activity.status === 'menunggu'"
-													class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200"
+													<svg class="h-3.5 w-3.5 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+													</svg>
+													<span>Disetujui</span>
+												</div>
+												<div
+													v-else-if="String(activity.status).toLowerCase() === 'menunggu'"
+													class="inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border bg-gray-100 text-gray-600 border-gray-200"
 												>
-													<svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-													Menunggu Verifikasi
-												</span>
-												<span
-													v-else-if="activity.status === 'ditolak'"
-													class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-700 border border-red-200"
+													<svg class="h-3.5 w-3.5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+														<circle cx="12" cy="12" r="9" />
+														<polyline points="12 7 12 12 15 15" />
+													</svg>
+													<span>Menunggu</span>
+												</div>
+												<div
+													v-else-if="String(activity.status).toLowerCase() === 'ditolak'"
+													class="inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border bg-red-50 text-red-600 border-red-200"
 												>
-													Ditolak
-												</span>
-												<span
+													<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+													</svg>
+													<span>Ditolak</span>
+												</div>
+												<div
 													v-else
-													class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200"
+													class="inline-flex w-fit items-center justify-center gap-1.5 rounded-full px-3 py-1 font-inter text-[11px] font-semibold border bg-slate-100 text-slate-600 border-slate-200"
 												>
-													Draft
-												</span>
+													<span>Draft</span>
+												</div>
 
 												<svg
 													class="h-5 w-5 text-[#17334F] transition-transform"

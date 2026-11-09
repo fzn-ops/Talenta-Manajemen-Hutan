@@ -18,7 +18,11 @@ class HasilAktivitasSeeder extends Seeder
         $fauzan = User::where('nim', 'J0403231085')->first() ?? User::first();
         $farhan = User::where('nim', 'J0403231075')->first() ?? User::first();
 
-        $materiList = MateriRoadmap::all();
+        // Ambil hanya materi bertipe Tugas (tipe = 1) karena hanya tugas yang memiliki pengumpulan aktivitas
+        $materiList = MateriRoadmap::where('tipe', 1)->get();
+        if ($materiList->isEmpty()) {
+            $materiList = MateriRoadmap::all();
+        }
         $pendaftaranList = PendaftaranAktivitas::all();
 
         $defaultMateri = $materiList->first();

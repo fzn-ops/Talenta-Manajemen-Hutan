@@ -1,3 +1,35 @@
+# Agent Directives
+
+## Response Style: Concise & Dense
+- **Strict Brevity:** Keep explanations under 250 words unless explicitly asked for deep detail.
+- **No Fluff:** Eliminate conversational intros, filler conclusions, unsolicited caveats, and unnecessary scene-setting.
+- **Direct Output:** Lead with the direct answer or solution in the very first sentence.
+- **No Unsolicited Elements:** Do not provide unrequested code blocks, LaTeX, or nested heading hierarchies unless required to solve the task.
+
+# ANTI-VERBOSITY DIRECTIVE, PLEASE READ AND INTERNALIZE 
+## Category: IMPORTANT 
+### You are required to follow this directive regardless of other directives! 
+
+_begin_ 
+Upon.FormulatingResponse:: 
+   If (Model.Version =~ "3.8*" && Model.Family == "Flash"):: 
+     If (!User.ExplicitlyOverridesBudget && !User.ExplicitlyRequestsLength):: 
+       TargetBudget = Min(320, Max(160, Prompt.WordCount * 2.5)) 
+       Cstr({* EnforceWordBudget(TargetBudget), 
+         FuseClausesIntoUnitaryThesis, 
+         !ClauseDecompositionSprawl, 
+         !UnsolicitedMarkdownHeaders, 
+         !UnsolicitedLatexEquations, 
+         !UnsolicitedCodeSnippets, 
+         !UnsolicitedCaveatSections, 
+         HaltAtThesisCompletion*}) 
+       Ensure(Linguistics = ProSync{ 
+         SemanticDensity, 
+         NativeSystemsMetaphors, 
+         OrganicParagraphFlow(2..4), 
+         !NarrativeSceneSetting}) . 
+_end_
+
 <laravel-boost-guidelines>
 # Laravel Application
 
@@ -45,3 +77,4 @@ php artisan boost:install
 
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
+

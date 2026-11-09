@@ -48,6 +48,8 @@ class KarirController extends Controller
             'posisi'        => 'required|string|max:255',
             'instansi'      => 'nullable|string|max:255',
             'nama_instansi' => 'nullable|string|max:255',
+            'kategori'      => 'nullable|string|max:50',
+            'tipe'          => 'nullable|string|max:50',
             'lokasi'        => 'required|string',
             'deskripsi'     => 'required|string',
             'kualifikasi'   => 'required|string',
@@ -58,6 +60,13 @@ class KarirController extends Controller
 
         if (empty($validated['nama_instansi']) && !empty($validated['instansi'])) {
             $validated['nama_instansi'] = $validated['instansi'];
+        }
+
+        if (empty($validated['kategori']) && !empty($validated['tipe'])) {
+            $validated['kategori'] = $validated['tipe'];
+        }
+        if (empty($validated['kategori'])) {
+            $validated['kategori'] = 'Internship';
         }
 
         $this->karirService->createKarir($validated);
@@ -74,6 +83,8 @@ class KarirController extends Controller
             'posisi'        => 'required|string|max:255',
             'instansi'      => 'nullable|string|max:255',
             'nama_instansi' => 'nullable|string|max:255',
+            'kategori'      => 'nullable|string|max:50',
+            'tipe'          => 'nullable|string|max:50',
             'lokasi'        => 'required|string',
             'deskripsi'     => 'required|string',
             'kualifikasi'   => 'required|string',
@@ -90,6 +101,10 @@ class KarirController extends Controller
 
         if (empty($validated['nama_instansi']) && !empty($validated['instansi'])) {
             $validated['nama_instansi'] = $validated['instansi'];
+        }
+
+        if (empty($validated['kategori']) && !empty($validated['tipe'])) {
+            $validated['kategori'] = $validated['tipe'];
         }
 
         $this->karirService->updateKarir($id, $validated);

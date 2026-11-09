@@ -1,4 +1,4 @@
-<script setup>
+s<script setup>
 import AdminLayout from '@/Layouts/dashboard/AdminLayout.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';

@@ -20,10 +20,24 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit']);
 
+// Dropdown Tipe Karir
+const tipeKarirOptions = ['Internship', 'Fulltime'];
+const isTipeDropdownOpen = ref(false);
+const tipeDropdownRef = ref(null);
+
+const selectTipeKarir = (option) => {
+	form.value.tipe = option;
+	form.value.kategori = option;
+	errors.value.tipe = '';
+	isTipeDropdownOpen.value = false;
+};
+
 // Form State
 const form = ref({
 	id: null,
 	posisi: '',
+	tipe: '',
+	kategori: '',
 	instansi: '',
 	lokasi: '',
 	deskripsi: '',
@@ -36,6 +50,7 @@ const form = ref({
 // Errors State
 const errors = ref({
 	posisi: '',
+	tipe: '',
 	instansi: '',
 	lokasi: '',
 	deskripsi: '',
@@ -70,6 +85,7 @@ const isBackdropClick = ref(false);
 
 const handleClose = () => {
 	showImageModal.value = false;
+	isTipeDropdownOpen.value = false;
 	resetForm();
 	emit('close');
 };
@@ -89,36 +105,41 @@ const handleKeyDown = (e) => {
 	if (e.key === 'Escape' && props.show) {
 		if (showImageModal.value) {
 			showImageModal.value = false;
+		} else if (isTipeDropdownOpen.value) {
+			isTipeDropdownOpen.value = false;
 		} else {
 			handleClose();
 		}
 	}
 };
 
+const handleClickOutside = (e) => {
+	if (tipeDropdownRef.value && !tipeDropdownRef.value.contains(e.target)) {
+		isTipeDropdownOpen.value = false;
+	}
+};
+
 onMounted(() => {
 	document.addEventListener('keydown', handleKeyDown);
+	document.addEventListener('click', handleClickOutside);
 });
 
 onBeforeUnmount(() => {
 	document.removeEventListener('keydown', handleKeyDown);
+	document.removeEventListener('click', handleClickOutside);
 });
 
 // Textarea Heights & Resizing State (Limit min & max)
-const MIN_DESKRIPSI_HEIGHT = 95;
-const MAX_DESKRIPSI_HEIGHT = 450; // Limit diperluas agar nyaman untuk deskripsi pekerjaan
+const MIN_DESKRIPSI_HEIGHT = 85;
+const MAX_DESKRIPSI_HEIGHT = 380;
 
-const MIN_KUALIFIKASI_HEIGHT = 90;
-const MAX_KUALIFIKASI_HEIGHT = 320;
+const MIN_KUALIFIKASI_HEIGHT = 85;
+const MAX_KUALIFIKASI_HEIGHT = 380;
 
-const MIN_LOKASI_HEIGHT = 90;
-const MAX_LOKASI_HEIGHT = 320;
-
-const deskripsiHeight = ref(95);
-const kualifikasiHeight = ref(95);
-const lokasiHeight = ref(95);
+const deskripsiHeight = ref(90);
+const kualifikasiHeight = ref(90);
 const deskripsiRef = ref(null);
 const kualifikasiRef = ref(null);
-const lokasiRef = ref(null);
 const isResizing = ref(false);
 
 const startResize = (field, e) => {
@@ -132,12 +153,11 @@ const startResize = (field, e) => {
 	}
 
 	const isDeskripsi = field === 'deskripsi';
-	const isLokasi = field === 'lokasi';
-	const targetRef = isDeskripsi ? deskripsiRef.value : (isLokasi ? lokasiRef.value : kualifikasiRef.value);
+	const targetRef = isDeskripsi ? deskripsiRef.value : kualifikasiRef.value;
 	const startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-	const startHeight = targetRef ? targetRef.offsetHeight : (isDeskripsi ? deskripsiHeight.value : (isLokasi ? lokasiHeight.value : kualifikasiHeight.value));
-	const minH = isDeskripsi ? MIN_DESKRIPSI_HEIGHT : (isLokasi ? MIN_LOKASI_HEIGHT : MIN_KUALIFIKASI_HEIGHT);
-	const maxH = isDeskripsi ? MAX_DESKRIPSI_HEIGHT : (isLokasi ? MAX_LOKASI_HEIGHT : MAX_KUALIFIKASI_HEIGHT);
+	const startHeight = targetRef ? targetRef.offsetHeight : (isDeskripsi ? deskripsiHeight.value : kualifikasiHeight.value);
+	const minH = isDeskripsi ? MIN_DESKRIPSI_HEIGHT : MIN_KUALIFIKASI_HEIGHT;
+	const maxH = isDeskripsi ? MAX_DESKRIPSI_HEIGHT : MAX_KUALIFIKASI_HEIGHT;
 
 	const onMouseMove = (moveEvent) => {
 		if (!isResizing.value) return;
@@ -148,8 +168,6 @@ const startResize = (field, e) => {
 		const newHeight = Math.max(minH, Math.min(maxH, startHeight + (clientY - startY)));
 		if (isDeskripsi) {
 			deskripsiHeight.value = newHeight;
-		} else if (isLokasi) {
-			lokasiHeight.value = newHeight;
 		} else {
 			kualifikasiHeight.value = newHeight;
 		}
@@ -176,6 +194,7 @@ const startResize = (field, e) => {
 const resetErrors = () => {
 	errors.value = {
 		posisi: '',
+		tipe: '',
 		instansi: '',
 		lokasi: '',
 		deskripsi: '',
@@ -190,6 +209,8 @@ const resetForm = () => {
 	form.value = {
 		id: null,
 		posisi: '',
+		tipe: '',
+		kategori: '',
 		instansi: '',
 		lokasi: '',
 		deskripsi: '',
@@ -199,12 +220,12 @@ const resetForm = () => {
 		logo: null,
 	};
 	logoPreview.value = null;
-	deskripsiHeight.value = 95;
-	kualifikasiHeight.value = 95;
-	lokasiHeight.value = 95;
+	deskripsiHeight.value = 90;
+	kualifikasiHeight.value = 90;
 	if (logoInput.value) {
 		logoInput.value.value = '';
 	}
+	isTipeDropdownOpen.value = false;
 	resetErrors();
 };
 
@@ -214,10 +235,25 @@ watch(
 	(isOpen) => {
 		if (isOpen) {
 			if (props.initialData) {
+				const rawTipe = props.initialData.tipe || props.initialData.kategori || '';
+				let normalizedTipe = '';
+				if (rawTipe) {
+					const lower = String(rawTipe).toLowerCase();
+					if (lower.includes('intern')) {
+						normalizedTipe = 'Internship';
+					} else if (lower.includes('full')) {
+						normalizedTipe = 'Fulltime';
+					} else {
+						normalizedTipe = rawTipe;
+					}
+				}
+
 				form.value = {
 					id: props.initialData.id ?? null,
 					posisi: props.initialData.posisi ?? '',
-					instansi: props.initialData.instansi ?? '',
+					tipe: normalizedTipe,
+					kategori: normalizedTipe,
+					instansi: props.initialData.instansi ?? props.initialData.nama_instansi ?? '',
 					lokasi: props.initialData.lokasi ?? '',
 					deskripsi: props.initialData.deskripsi ?? '',
 					kualifikasi: props.initialData.kualifikasi ?? '',
@@ -281,6 +317,10 @@ const validateForm = () => {
 		errors.value.posisi = 'Posisi wajib diisi!';
 		isValid = false;
 	}
+	if (!form.value.tipe) {
+		errors.value.tipe = 'Tipe karir wajib dipilih!';
+		isValid = false;
+	}
 	if (!form.value.instansi || !form.value.instansi.trim()) {
 		errors.value.instansi = 'Nama instansi wajib diisi!';
 		isValid = false;
@@ -315,7 +355,11 @@ const validateForm = () => {
 
 const handleSubmit = () => {
 	if (!validateForm()) return;
-	emit('submit', { ...form.value });
+	emit('submit', {
+		...form.value,
+		kategori: form.value.tipe,
+		tipe: form.value.tipe,
+	});
 };
 </script>
 
@@ -356,9 +400,10 @@ const handleSubmit = () => {
 
 						<form @submit.prevent="handleSubmit" novalidate class="flex flex-col flex-1 min-h-0">
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 overflow-y-auto pr-1">
-								<!-- Kolom Kiri: Informasi Inti & Persyaratan -->
+								
+								<!-- ================= KOLOM KIRI: DETAIL PEKERJAAN ================= -->
 								<div class="flex flex-col gap-3.5 sm:gap-4">
-									<!-- Posisi -->
+									<!-- 1. Posisi -->
 									<div>
 										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
 											Posisi<span class="text-red-500">*</span>
@@ -382,173 +427,87 @@ const handleSubmit = () => {
 										</p>
 									</div>
 
-									<!-- Deskripsi -->
-									<div>
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Deskripsi<span class="text-red-500">*</span>
-										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-											Jelaskan gambaran pekerjaan ini yah!
-										</p>
-										<div
-											class="mt-1 sm:mt-1.5 relative w-full rounded-[10px] border transition-colors duration-150 overflow-hidden"
-											:class="errors.deskripsi ? 'border-red-400 focus-within:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus-within:border-[#183669] focus-within:bg-white'"
-										>
-											<textarea
-												ref="deskripsiRef"
-												v-model="form.deskripsi"
-												@input="errors.deskripsi = ''"
-												placeholder="Deskripsi kegiatan atau pekerjaan..."
-												:style="{ height: `${deskripsiHeight}px`, minHeight: '95px', maxHeight: '450px' }"
-												class="w-full bg-transparent px-3.5 pt-2.5 pb-2 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] focus:outline-none resize-none overflow-y-auto block border-0 ring-0 focus:ring-0 focus:border-0 shadow-none"
-											></textarea>
-											<!-- Bottom Full-Width Resize Handle -->
-											<div
-												@mousedown="startResize('deskripsi', $event)"
-												@touchstart.passive="startResize('deskripsi', $event)"
-												class="group/handle flex h-[18px] w-full cursor-ns-resize items-center justify-center bg-[#f8fafc] hover:bg-[#e8edf5] active:bg-[#dbe4f2] border-t border-[#edf2f7] transition-colors select-none"
-												style="touch-action: none;"
-												title="Tarik ke bawah untuk memanjangkan kotak deskripsi"
-											>
-												<div class="h-[4px] w-12 rounded-full bg-[#cbd5e1] group-hover/handle:bg-[#183669]/60 group-hover/handle:w-16 group-active/handle:bg-[#183669] transition-all duration-200"></div>
-											</div>
-										</div>
-										<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-											</svg>
-											<span>{{ errors.deskripsi }}</span>
-										</p>
-									</div>
-
-									<!-- Kualifikasi -->
-									<div>
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Kualifikasi<span class="text-red-500">*</span>
-										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-											Sebutkan kualifikasi yang dibutuhkan!
-										</p>
-										<div
-											class="mt-1 sm:mt-1.5 relative w-full rounded-[10px] border transition-colors duration-150 overflow-hidden"
-											:class="errors.kualifikasi ? 'border-red-400 focus-within:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus-within:border-[#183669] focus-within:bg-white'"
-										>
-											<textarea
-												ref="kualifikasiRef"
-												v-model="form.kualifikasi"
-												@input="errors.kualifikasi = ''"
-												placeholder="S1 Semester 7, menguasai skill..."
-												:style="{ height: `${kualifikasiHeight}px`, minHeight: '90px', maxHeight: '320px' }"
-												class="w-full bg-transparent px-3.5 pt-2.5 pb-2 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] focus:outline-none resize-none overflow-y-auto block border-0 ring-0 focus:ring-0 focus:border-0 shadow-none"
-											></textarea>
-											<!-- Bottom Full-Width Resize Handle -->
-											<div
-												@mousedown="startResize('kualifikasi', $event)"
-												@touchstart.passive="startResize('kualifikasi', $event)"
-												class="group/handle flex h-[18px] w-full cursor-ns-resize items-center justify-center bg-[#f8fafc] hover:bg-[#e8edf5] active:bg-[#dbe4f2] border-t border-[#edf2f7] transition-colors select-none"
-												style="touch-action: none;"
-												title="Tarik ke bawah untuk memanjangkan kotak kualifikasi"
-											>
-												<div class="h-[4px] w-12 rounded-full bg-[#cbd5e1] group-hover/handle:bg-[#183669]/60 group-hover/handle:w-16 group-active/handle:bg-[#183669] transition-all duration-200"></div>
-											</div>
-										</div>
-										<p v-if="errors.kualifikasi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-											</svg>
-											<span>{{ errors.kualifikasi }}</span>
-										</p>
-									</div>
-								</div>
-
-								<!-- Kolom Kanan: Detail Instansi, Lokasi & Registrasi -->
-								<div class="flex flex-col gap-3.5 sm:gap-4">
-									<!-- Nama Instansi -->
-									<div>
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Nama Instansi<span class="text-red-500">*</span>
-										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-											Masukkan nama instansi / perusahaan di sini!
-										</p>
-										<input
-											type="text"
-											v-model="form.instansi"
-											@input="errors.instansi = ''"
-											placeholder="Contoh: PT Teknologi Bangsa"
-											class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
-											:class="errors.instansi ? 'border-red-400 focus-border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
-										/>
-										<p v-if="errors.instansi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-											</svg>
-											<span>{{ errors.instansi }}</span>
-										</p>
-									</div>
-
-									<!-- Lokasi -->
-									<div>
-										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-											Lokasi<span class="text-red-500">*</span>
-										</label>
-										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-											Sebutkan lokasi penempatan pekerjaan ini!
-										</p>
-										<div
-											class="mt-1 sm:mt-1.5 relative w-full rounded-[10px] border transition-colors duration-150 overflow-hidden"
-											:class="errors.lokasi ? 'border-red-400 focus-within:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus-within:border-[#183669] focus-within:bg-white'"
-										>
-											<textarea
-												ref="lokasiRef"
-												v-model="form.lokasi"
-												@input="errors.lokasi = ''"
-												placeholder="Contoh: Jakarta Selatan / Hybrid / Remote..."
-												:style="{ height: `${lokasiHeight}px`, minHeight: '90px', maxHeight: '320px' }"
-												class="w-full bg-transparent px-3.5 pt-2.5 pb-2 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] focus:outline-none resize-none overflow-y-auto block border-0 ring-0 focus:ring-0 focus:border-0 shadow-none"
-											></textarea>
-											<!-- Bottom Full-Width Resize Handle -->
-											<div
-												@mousedown="startResize('lokasi', $event)"
-												@touchstart.passive="startResize('lokasi', $event)"
-												class="group/handle flex h-[18px] w-full cursor-ns-resize items-center justify-center bg-[#f8fafc] hover:bg-[#e8edf5] active:bg-[#dbe4f2] border-t border-[#edf2f7] transition-colors select-none"
-												style="touch-action: none;"
-												title="Tarik ke bawah untuk memanjangkan kotak lokasi"
-											>
-												<div class="h-[4px] w-12 rounded-full bg-[#cbd5e1] group-hover/handle:bg-[#183669]/60 group-hover/handle:w-16 group-active/handle:bg-[#183669] transition-all duration-200"></div>
-											</div>
-										</div>
-										<p v-if="errors.lokasi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
-											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-											</svg>
-											<span>{{ errors.lokasi }}</span>
-										</p>
-									</div>
-
-									<!-- Grid 2 Kolom untuk Tautan & Deadline -->
-									<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-										<!-- Tautan Registrasi -->
-										<div>
+									<!-- 2. Grid 2 Kolom: Tipe Karir (Dropdown) & Deadline (DatePicker) -->
+									<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
+										<!-- Tipe Karir (Dropdown) -->
+										<div ref="tipeDropdownRef" class="relative">
 											<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
-												Tautan Registrasi<span class="text-red-500">*</span>
+												Tipe Karir<span class="text-red-500">*</span>
 											</label>
-											<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-												Masukkan tautan pendaftaran!
+											<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 truncate">
+												Pilih tipe lowongan
 											</p>
-											<input
-												type="text"
-												v-model="form.tautan"
-												@input="errors.tautan = ''"
-												placeholder="https://..."
-												class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
-												:class="errors.tautan ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
-											/>
-											<p v-if="errors.tautan" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<button
+												type="button"
+												@click="isTipeDropdownOpen = !isTipeDropdownOpen"
+												class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] transition-colors duration-150 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-0 select-none text-left"
+												:class="[
+													errors.tipe
+														? 'border-red-400 bg-red-50/20 text-[#1e3456]'
+														: isTipeDropdownOpen
+														? 'border-[#183669] bg-white ring-1 ring-[#183669]/10'
+														: 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff]'
+												]"
+											>
+												<span :class="form.tipe ? 'text-[#1e3456] font-medium' : 'text-[#94a3b8]'">
+													{{ form.tipe || 'Pilih Tipe' }}
+												</span>
+												<svg
+													:class="['h-4 w-4 text-[#183669] transition-transform duration-150 shrink-0', isTipeDropdownOpen ? 'rotate-180' : '']"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													viewBox="0 0 24 24"
+												>
+													<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+												</svg>
+											</button>
+
+											<!-- Dropdown Popover List -->
+											<Transition
+												enter-active-class="transition duration-150 ease-out"
+												enter-from-class="transform scale-95 opacity-0 -translate-y-1"
+												enter-to-class="transform scale-100 opacity-100 translate-y-0"
+												leave-active-class="transition duration-100 ease-in"
+												leave-from-class="transform scale-100 opacity-100 translate-y-0"
+												leave-to-class="transform scale-95 opacity-0 -translate-y-1"
+											>
+												<div
+													v-if="isTipeDropdownOpen"
+													class="absolute left-0 top-full mt-1.5 z-50 w-full rounded-[12px] border border-[#d6e0ee] bg-white p-1.5 shadow-2xl ring-1 ring-black/5"
+												>
+													<button
+														v-for="option in tipeKarirOptions"
+														:key="option"
+														type="button"
+														@click="selectTipeKarir(option)"
+														:class="[
+															'flex w-full items-center justify-between px-3 py-2 rounded-[8px] text-left font-inter text-[13px] transition-colors cursor-pointer',
+															form.tipe === option
+																? 'bg-[#183669]/10 font-semibold text-[#183669]'
+																: 'text-[#2c4363] hover:bg-[#f1f5f9]'
+														]"
+													>
+														<span>{{ option }}</span>
+														<svg
+															v-if="form.tipe === option"
+															class="h-4 w-4 text-[#183669] shrink-0"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2.5"
+															viewBox="0 0 24 24"
+														>
+															<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+														</svg>
+													</button>
+												</div>
+											</Transition>
+
+											<p v-if="errors.tipe" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
 												<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 												</svg>
-												<span>{{ errors.tautan }}</span>
+												<span>{{ errors.tipe }}</span>
 											</p>
 										</div>
 
@@ -557,8 +516,8 @@ const handleSubmit = () => {
 											<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
 												Deadline<span class="text-red-500">*</span>
 											</label>
-											<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
-												Batas waktu pendaftaran!
+											<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 truncate">
+												Batas pendaftaran
 											</p>
 											<div class="mt-1 sm:mt-1.5">
 												<DatePicker
@@ -577,18 +536,171 @@ const handleSubmit = () => {
 										</div>
 									</div>
 
-									<!-- Logo Upload -->
+									<!-- 3. Deskripsi Pekerjaan -->
 									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Deskripsi Pekerjaan<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Jelaskan gambaran pekerjaan ini yah!
+										</p>
+										<div
+											class="mt-1 sm:mt-1.5 relative w-full rounded-[10px] border transition-colors duration-150 overflow-hidden"
+											:class="errors.deskripsi ? 'border-red-400 focus-within:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus-within:border-[#183669] focus-within:bg-white'"
+										>
+											<textarea
+												ref="deskripsiRef"
+												v-model="form.deskripsi"
+												@input="errors.deskripsi = ''"
+												placeholder="Deskripsi kegiatan atau pekerjaan..."
+												:style="{ height: `${deskripsiHeight}px`, minHeight: '85px', maxHeight: '380px' }"
+												class="w-full bg-transparent px-3.5 pt-2.5 pb-2 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] focus:outline-none resize-none overflow-y-auto block border-0 ring-0 focus:ring-0 focus:border-0 shadow-none"
+											></textarea>
+											<!-- Bottom Full-Width Resize Handle -->
+											<div
+												@mousedown="startResize('deskripsi', $event)"
+												@touchstart.passive="startResize('deskripsi', $event)"
+												class="group/handle flex h-[16px] w-full cursor-ns-resize items-center justify-center bg-[#f8fafc] hover:bg-[#e8edf5] active:bg-[#dbe4f2] border-t border-[#edf2f7] transition-colors select-none"
+												style="touch-action: none;"
+												title="Tarik ke bawah untuk memperbesar kotak deskripsi"
+											>
+												<div class="h-[3.5px] w-12 rounded-full bg-[#cbd5e1] group-hover/handle:bg-[#183669]/60 group-hover/handle:w-16 group-active/handle:bg-[#183669] transition-all duration-200"></div>
+											</div>
+										</div>
+										<p v-if="errors.deskripsi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.deskripsi }}</span>
+										</p>
+									</div>
+
+									<!-- 4. Kualifikasi -->
+									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Kualifikasi<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Sebutkan kualifikasi yang dibutuhkan!
+										</p>
+										<div
+											class="mt-1 sm:mt-1.5 relative w-full rounded-[10px] border transition-colors duration-150 overflow-hidden"
+											:class="errors.kualifikasi ? 'border-red-400 focus-within:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus-within:border-[#183669] focus-within:bg-white'"
+										>
+											<textarea
+												ref="kualifikasiRef"
+												v-model="form.kualifikasi"
+												@input="errors.kualifikasi = ''"
+												placeholder="S1 Semester 7, menguasai skill..."
+												:style="{ height: `${kualifikasiHeight}px`, minHeight: '85px', maxHeight: '380px' }"
+												class="w-full bg-transparent px-3.5 pt-2.5 pb-2 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] focus:outline-none resize-none overflow-y-auto block border-0 ring-0 focus:ring-0 focus:border-0 shadow-none"
+											></textarea>
+											<!-- Bottom Full-Width Resize Handle -->
+											<div
+												@mousedown="startResize('kualifikasi', $event)"
+												@touchstart.passive="startResize('kualifikasi', $event)"
+												class="group/handle flex h-[16px] w-full cursor-ns-resize items-center justify-center bg-[#f8fafc] hover:bg-[#e8edf5] active:bg-[#dbe4f2] border-t border-[#edf2f7] transition-colors select-none"
+												style="touch-action: none;"
+												title="Tarik ke bawah untuk memperbesar kotak kualifikasi"
+											>
+												<div class="h-[3.5px] w-12 rounded-full bg-[#cbd5e1] group-hover/handle:bg-[#183669]/60 group-hover/handle:w-16 group-active/handle:bg-[#183669] transition-all duration-200"></div>
+											</div>
+										</div>
+										<p v-if="errors.kualifikasi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.kualifikasi }}</span>
+										</p>
+									</div>
+								</div>
+
+								<!-- ================= KOLOM KANAN: INSTANSI & REGISTRASI ================= -->
+								<div class="flex flex-col gap-3.5 sm:gap-4">
+									<!-- 1. Nama Instansi -->
+									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Nama Instansi<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Masukkan nama instansi / perusahaan di sini!
+										</p>
+										<input
+											type="text"
+											v-model="form.instansi"
+											@input="errors.instansi = ''"
+											placeholder="Contoh: PT Teknologi Bangsa"
+											class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+											:class="errors.instansi ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
+										/>
+										<p v-if="errors.instansi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.instansi }}</span>
+										</p>
+									</div>
+
+									<!-- 2. Lokasi Penempatan (Input Text) -->
+									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Lokasi Penempatan<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Sebutkan lokasi penempatan pekerjaan ini!
+										</p>
+										<input
+											type="text"
+											v-model="form.lokasi"
+											@input="errors.lokasi = ''"
+											placeholder="Contoh: Jakarta Selatan (Hybrid) / Remote"
+											class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+											:class="errors.lokasi ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
+										/>
+										<p v-if="errors.lokasi" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.lokasi }}</span>
+										</p>
+									</div>
+
+									<!-- 3. Tautan Registrasi -->
+									<div>
+										<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
+											Tautan Registrasi<span class="text-red-500">*</span>
+										</label>
+										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5">
+											Masukkan tautan pendaftaran lowongan!
+										</p>
+										<input
+											type="url"
+											v-model="form.tautan"
+											@input="errors.tautan = ''"
+											placeholder="https://..."
+											class="mt-1 sm:mt-1.5 h-[42px] sm:h-[44px] w-full rounded-[10px] border bg-white px-3.5 font-inter text-[13px] sm:text-[14px] text-[#1e3456] placeholder-[#94a3b8] transition-colors duration-150 focus:outline-none focus:ring-0"
+											:class="errors.tautan ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-[#d6e0ee] hover:border-[#a6b7cb] hover:bg-[#fafcff] focus:border-[#183669] focus:bg-white'"
+										/>
+										<p v-if="errors.tautan" class="mt-1 flex items-center gap-1 font-inter text-[11px] font-medium text-red-500">
+											<svg class="h-3.5 w-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+											</svg>
+											<span>{{ errors.tautan }}</span>
+										</p>
+									</div>
+
+									<!-- 4. Logo Instansi Upload -->
+									<div class="flex-1 flex flex-col">
 										<div class="flex items-center justify-between">
 											<label class="block text-[12.5px] sm:text-[13px] font-semibold text-[#183669]">
 												Logo Instansi<span class="text-red-500">*</span>
 											</label>
-											<span v-if="logoPreview" class="font-inter text-[11px] sm:text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-[#183669] border border-slate-200">
+											<span v-if="logoPreview" class="font-inter text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-[#183669] border border-slate-200">
 												1/1
 											</span>
 										</div>
 										<p class="font-inter text-[10.5px] sm:text-[11px] text-[#7188a3] mt-0.5 mb-1.5">
-											Masukkan logo instansi berupa JPG/PNG! (MAX 10MB, Rasio 1:1)
+											Format JPG/PNG (Maks. 10MB, Rasio 1:1)
 										</p>
 
 										<input
@@ -604,7 +716,7 @@ const handleSubmit = () => {
 											@dragleave.prevent="isDragging = false"
 											@drop.prevent="handleLogoDrop"
 											:class="[
-												'mt-1.5 flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3 text-center transition-colors min-h-[110px]',
+												'flex-1 flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-3 text-center transition-colors min-h-[120px]',
 												errors.logo
 													? 'border-red-400 bg-red-50/20'
 													: isDragging
@@ -613,26 +725,26 @@ const handleSubmit = () => {
 											]"
 										>
 											<!-- State 1: No logo uploaded yet -->
-											<div v-if="!logoPreview" class="flex flex-col items-center justify-center py-1.5">
+											<div v-if="!logoPreview" class="flex flex-col items-center justify-center py-2">
 												<svg class="h-8 w-8 text-[#8c9eb5]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
 												</svg>
 												<p class="mt-1 font-inter text-[11.5px] text-[#7188a3]">
-													Upload logo atau seret gambar ke form ini
+													Upload logo atau seret gambar ke sini
 												</p>
 												<button
 													type="button"
 													@click="triggerLogoUpload"
-													class="mt-2 rounded-[8px] border border-[#a6b7cb] bg-white px-4 py-0.5 font-inter text-[11.5px] font-semibold text-[#5a718d] transition hover:bg-slate-50 shadow-xs cursor-pointer"
+													class="mt-2 rounded-[8px] border border-[#a6b7cb] bg-white px-4 py-1 font-inter text-[11.5px] font-semibold text-[#5a718d] transition hover:bg-slate-50 shadow-xs cursor-pointer"
 												>
-													Upload
+													Pilih File
 												</button>
 											</div>
 
 											<!-- State 2: Logo uploaded (Square 1:1) -->
-											<div v-else class="w-full flex items-center justify-center py-0.5">
+											<div v-else class="w-full flex items-center justify-center py-1">
 												<div
-													class="relative aspect-square w-full max-w-[95px] sm:max-w-[105px] rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-xs group"
+													class="relative aspect-square w-full max-w-[105px] sm:max-w-[115px] rounded-[10px] border border-[#d6e0ee] bg-white overflow-hidden shadow-xs group"
 												>
 													<img :src="logoPreview" alt="Logo Instansi" class="h-full w-full object-contain p-2" />
 													
@@ -692,7 +804,7 @@ const handleSubmit = () => {
 								</div>
 							</div>
 
-							<!-- Tombol Aksi Form (Center di Mobile & Kanan di Desktop) -->
+							<!-- Tombol Aksi Form -->
 							<div class="mt-5 sm:mt-6 shrink-0 flex flex-row items-center justify-center sm:justify-end gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-slate-100">
 								<button
 									type="button"

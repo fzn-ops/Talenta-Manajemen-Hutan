@@ -107,12 +107,12 @@ const getTaskStatus = (item) => {
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
 
-						<!-- Status: Menunggu (SVG dari ActivityApproval.vue) -->
+						<!-- Status: Menunggu (SVG dari ActivitySubmission.vue / ActivityApproval.vue) -->
 						<svg
 							v-else-if="getTaskStatus(item) === 'menunggu'"
 							:class="[
 								'h-4 w-4 sm:h-[18px] sm:w-[18px] shrink-0 transition-transform',
-								selectedItemId === item.id ? 'text-amber-300' : 'text-gray-500'
+								selectedItemId === item.id ? 'text-slate-300' : 'text-gray-500'
 							]"
 							fill="none"
 							viewBox="0 0 24 24"

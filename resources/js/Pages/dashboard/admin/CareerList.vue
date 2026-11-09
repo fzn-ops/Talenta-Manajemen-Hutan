@@ -218,6 +218,8 @@ const handleEdit = (item) => {
   selectedKarir.value = {
     id: item.id,
     posisi: item.posisi || '',
+    tipe: item.tipe || item.kategori || '',
+    kategori: item.kategori || item.tipe || '',
     instansi: item.nama_instansi || item.instansi || '',
     lokasi: item.lokasi || '',
     deskripsi: item.deskripsi || '',
@@ -235,6 +237,8 @@ const handleModalSubmit = (formData) => {
     posisi: formData.posisi,
     instansi: formData.instansi,
     nama_instansi: formData.instansi,
+    tipe: formData.tipe || formData.kategori || 'Internship',
+    kategori: formData.kategori || formData.tipe || 'Internship',
     lokasi: formData.lokasi,
     deskripsi: formData.deskripsi,
     kualifikasi: formData.kualifikasi,

@@ -400,9 +400,14 @@ class RoadmapDetailService
             return $bulan->materiRoadmap->pluck('id');
         })->all();
 
+        // Kumpulkan semua ID tugas (tipe = 1) untuk auto-sinkronisasi hasil aktivitas yang disetujui
+        $taskMateriIds = $roadmap->bulanRoadmap->flatMap(function ($bulan) {
+            return $bulan->materiRoadmap->where('tipe', 1)->pluck('id');
+        })->all();
+
         // 1. Auto-sinkron tugas yang telah disetujui (HasilAktivitas status = disetujui) ke tabel Pencapaian
         $approvedTaskIds = HasilAktivitas::where('id_user', $userId)
-            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->whereIn('id_materi_roadmap', $taskMateriIds)
             ->where(DB::raw('LOWER(status)'), 'disetujui')
             ->pluck('id_materi_roadmap')
             ->unique()
@@ -805,9 +810,14 @@ class RoadmapDetailService
             return $bulan->materiRoadmap->pluck('id');
         })->all();
 
+        // Kumpulkan semua ID tugas (tipe = 1) untuk auto-sinkronisasi hasil aktivitas yang disetujui
+        $taskMateriIds = $roadmap->bulanRoadmap->flatMap(function ($bulan) {
+            return $bulan->materiRoadmap->where('tipe', 1)->pluck('id');
+        })->all();
+
         // 1. Auto-sinkron tugas yang telah disetujui (HasilAktivitas status = disetujui) ke tabel Pencapaian
         $approvedTaskIds = HasilAktivitas::where('id_user', $userId)
-            ->whereIn('id_materi_roadmap', $allMateriIds)
+            ->whereIn('id_materi_roadmap', $taskMateriIds)
             ->where(DB::raw('LOWER(status)'), 'disetujui')
             ->pluck('id_materi_roadmap')
             ->unique()
