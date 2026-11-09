@@ -1,13 +1,22 @@
 <script setup>
+import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 
-const stats = [
-  { value: '120', label: 'Profesional' },
-  { value: '120', label: 'Bisnis' },
-  { value: '120', label: 'Birokrat' },
-  { value: '120', label: 'Akademisi' },
-  { value: '120', label: 'Total Aktivitas' },
-];
+const props = defineProps({
+  data: {
+    type: Object,
+    default: () => ({})
+  }
+});
+
+// Gunakan tanda tanya (?) dan (?? 0) untuk pengaman
+const stats = computed(() => [
+  { value: props.data?.profesional ?? 0, label: 'Profesional' },
+  { value: props.data?.bisnis ?? 0, label: 'Bisnis' },
+  { value: props.data?.birokrat ?? 0, label: 'Birokrat' },
+  { value: props.data?.akademisi ?? 0, label: 'Akademisi' },
+  { value: props.data?.total ?? 0, label: 'Total Aktivitas' },
+]);
 </script>
 
 <template>

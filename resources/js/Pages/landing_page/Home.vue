@@ -10,7 +10,8 @@ import CtaSection from '@/Components/landing_page/Cta.vue';
 
 const props = defineProps({
   aktivitasData:Object,
-  beritaData:Object
+  beritaData:Object,
+  aktivitasStatistik:Object
 });
 
 /* // 1. Buat variabel reaktif untuk melacak posisi scroll
@@ -34,7 +35,7 @@ onUnmounted(() => {
 
 <template>
   <MainLayout>
-    <HeroSection />
+    <HeroSection :data="aktivitasStatistik"/>
     <div class="relative w-full z-20 overflow-x-hidden overflow-x-clip">
       <img 
         src="/assets/icons/icon_daun_kiri.svg" 

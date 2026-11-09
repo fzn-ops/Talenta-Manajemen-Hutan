@@ -9,7 +9,29 @@ use App\Models\GambarAktivitas;
 
 class AktivitasService
 {
-    
+
+    public static function getStatistikAktivitasAktif()
+    {
+        $query = Aktivitas::whereDate('deadline', '>=', now());
+
+        $totalAktivitas = (clone $query)->count();
+
+        $kategoriCollection = $query->pluck('kategori');
+
+        $profesional = $kategoriCollection->filter(fn($item) => is_array($item) && in_array('Profesional', $item))->count();
+        $bisnis      = $kategoriCollection->filter(fn($item) => is_array($item) && in_array('Bisnis', $item))->count();
+        $birokrat    = $kategoriCollection->filter(fn($item) => is_array($item) && in_array('Birokrat', $item))->count();
+        $akademisi   = $kategoriCollection->filter(fn($item) => is_array($item) && in_array('Akademisi', $item))->count();
+
+        return [
+            'total'       => $totalAktivitas,
+            'profesional' => $profesional,
+            'bisnis'      => $bisnis,
+            'birokrat'    => $birokrat,
+            'akademisi'   => $akademisi,
+        ];
+    }
+
     public function getAllAktivitas($status = null)
     {
         $query = Aktivitas::with('gambarAktivitas')->orderBy('created_at', 'desc');
