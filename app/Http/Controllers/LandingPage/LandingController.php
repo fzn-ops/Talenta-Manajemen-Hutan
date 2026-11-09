@@ -30,10 +30,12 @@ class LandingController extends Controller
 
         $aktivitasData = $this->aktivitasService->getPaginationAktivitas($filters,7);
         $beritaData = $this->beritaService->getLandingBerita(4);
+        $aktivitasStatistik = $this->aktivitasService->getStatistikAktivitasAktif();
 
         return Inertia::render('landing_page/Home',[
             'aktivitasData'=>$aktivitasData,
-            'beritaData'=>$beritaData
+            'beritaData'=>$beritaData,
+            'aktivitasStatistik'=>$aktivitasStatistik
         ]);
     }
 }
