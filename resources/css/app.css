@@ -9,6 +9,7 @@
     padding: 0;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
 
   button:focus:not(:focus-visible),

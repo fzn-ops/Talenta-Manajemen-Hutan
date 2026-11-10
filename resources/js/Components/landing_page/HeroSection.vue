@@ -68,33 +68,32 @@ const stats = computed(() => [
       <div class="order-2 flex w-full flex-col items-start lg:order-1 lg:w-[55%]">
         
         <!-- Judul -->
-        <h2 class="mb-4 text-3xl font-extrabold leading-[1.2] text-[#152c5b] sm:text-4xl md:text-5xl lg:mb-6 lg:text-[54px] lg:leading-[1.15] lg:tracking-tight">
-          Pelajari lebih lanjut <br class="hidden sm:inline" />
-          Talenta milikmu!
+        <h2 class="mb-4 text-xl font-extrabold leading-[1.2] text-[#152c5b] sm:text-2xl md:text-3xl lg:mb-6 lg:text-[48px] lg:leading-[1.15] lg:tracking-tight">
+          Mulai Perjalanan Pengembangan Dirimu Bersama Talenta!
         </h2>
 
         <!-- Deskripsi -->
         <div class="mb-8 space-y-4 pr-0 text-[13px] font-medium leading-relaxed text-[#475569] sm:text-sm lg:mb-10 lg:space-y-5 lg:pr-10">
           <p>
-            Lorem ipsum dolor sit amet, voluptate ut nostrud consequat ut nulla. Reprehenderit 
-            laborum consectetur ad laboris adipisicing nostrud in veniam anim. Et enim nostrud nisi 
-            consectetur deserunt sunt eu sunt. Ut in aliquip in tempor consectetur deserunt culpa 
-            voluptate.
+            Temukan berbagai peluang menarik untuk mengembangkan potensi,
+            memperluas wawasan, dan mendapatkan pengalaman baru melalui
+            beragam kegiatan yang tersedia di Talenta.
           </p>
           <p>
-            Ad velit elit sed dolor nisi nisi ad esse dolor. Ut et id cillum ex cillum ut est dolore. Ut 
-            consequat elit nisi tempor non cillum in nisi sunt voluptate. Ut cupidatat aute ullamco 
-            minim sed mollit duis nisi in. Et irure aute dolor sunt quis commodo eu fugiat sunt.
+            Mulai dari kategori Profesional, Bisnis, Birokrat, hingga Akademisi,
+            ada banyak kesempatan untuk mengeksplorasi minat, mengasah kemampuan,
+            dan membangun relasi. Yuk, jelajahi Talenta dan temukan kesempatan
+            yang tepat untuk perjalanan pengembangan dirimu!
           </p>
         </div>
 
         <!-- STATISTIK (Disesuaikan ukurannya agar tidak terlalu padat di HP kecil) -->
         <div class="mb-8 flex w-full max-w-[500px] items-center justify-between gap-1 sm:gap-2 lg:mb-12">
           <div v-for="stat in stats" :key="stat.label" class="flex flex-col items-center text-center">
-            <span class="text-xl font-extrabold text-[#152c5b] sm:text-2xl md:text-[28px]">
+            <span class="text-xl font-extrabold text-[#152c5b] sm:text-2xl md:text-[38px]">
               {{ stat.value }}
             </span>
-            <span class="mt-1 text-[8px] font-bold text-[#152c5b] sm:text-[10px] md:text-[11px]">
+            <span class="mt-3 text-[8px] font-bold text-[#152c5b] sm:text-[10px] md:text-[11px]">
               {{ stat.label }}
             </span>
           </div>
@@ -103,7 +102,7 @@ const stats = computed(() => [
         <!-- Tombol -->
         <Link 
           href="#selengkapnya" 
-          class="inline-flex items-center justify-center rounded-full bg-[#152c5b] px-8 py-3 text-xs font-bold tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[#0f1f43] hover:shadow-lg sm:px-9 sm:py-3.5 sm:text-sm"
+          class="mx-auto flex w-full items-center justify-center rounded-full bg-[#152c5b] px-8 py-3 text-xs font-bold tracking-wide text-white transition-all duration-300 hover:-translate-y-1 hover:bg-[#0f1f43] hover:shadow-lg sm:mx-0 sm:w-fit sm:px-9 sm:py-3.5 sm:text-sm"
         >
           Selengkapnya
         </Link>

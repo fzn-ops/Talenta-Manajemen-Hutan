@@ -36,7 +36,9 @@ onUnmounted(() => {
 <template>
   <MainLayout>
     <HeroSection :data="aktivitasStatistik"/>
-    <div class="relative w-full z-20 overflow-x-hidden overflow-x-clip">
+    <div 
+    id="selengkapnya"
+    class="relative w-full z-20 overflow-x-hidden overflow-x-clip">
       <img 
         src="/assets/icons/icon_daun_kiri.svg" 
         alt="Daun Kiri" 
