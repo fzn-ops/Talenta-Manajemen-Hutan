@@ -123,7 +123,7 @@ const formatDate = (dateString) => {
               :href="route('news.detail', news.id)"
               v-for="news in listNews" 
               :key="news.id"
-              class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:h-[140px]"
+              class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:h-[150px]"
             >
               <!-- Gambar Thumbnail -->
               <div class="relative w-full pb-[40%] sm:w-[35%] sm:pb-0 sm:h-32">
