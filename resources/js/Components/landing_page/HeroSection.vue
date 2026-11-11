@@ -87,28 +87,20 @@ const stats = computed(() => [
           </p>
         </div>
 
-<div class="mb-8 flex w-full max-w-[500px] items-center justify-between lg:mb-12">
-  
-  <template v-for="(stat, index) in stats" :key="stat.label">
-    <!-- Item Statistik -->
-    <div class="flex flex-col items-center justify-center transition-transform hover:-translate-y-1">
-      
-      <!-- ANGKA: Menggunakan warna Oranye/Peach dari ilustrasi -->
-      <span class="text-4xl font-black text-[#f47663] md:text-[42px] leading-none">
-        {{ stat.value }}
-      </span>
-      
-      <!-- LABEL: Uppercase dan direnggangkan (tracking-widest) -->
-      <span class="mt-2 text-[9px] font-bold uppercase tracking-widest text-gray-400 sm:text-[10px]">
-        {{ stat.label }}
-      </span>
-    </div>
-
-    <!-- Garis Pemisah (Sama seperti punya Anda, tapi sedikit lebih pendek/halus) -->
-    <div v-if="index !== stats.length - 1" class="h-8 w-[1px] bg-gray-200"></div>
-  </template>
-
-</div>
+        <div class="mb-8 flex w-full max-w-[500px] items-center justify-between lg:mb-12">
+          <template v-for="(stat, index) in stats" :key="stat.label">
+            <!-- Item Statistik -->
+            <div class="flex flex-col items-center justify-center transition-transform hover:-translate-y-1">
+              <span class="text-4xl font-black text-[#f47663] md:text-[42px] leading-none">
+                {{ stat.value }}
+              </span>
+              <span class="mt-2 text-[9px] font-bold uppercase tracking-widest text-gray-400 sm:text-[10px]">
+                {{ stat.label }}
+              </span>
+            </div>
+            <div v-if="index !== stats.length - 1" class="h-8 w-[1px] bg-gray-200"></div>
+          </template>
+        </div>
 
         <!-- Tombol -->
         <Link 
