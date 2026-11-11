@@ -83,7 +83,7 @@ const stats = computed(() => [
             Mulai dari kategori Profesional, Bisnis, Birokrat, hingga Akademisi,
             ada banyak kesempatan untuk mengeksplorasi minat, mengasah kemampuan,
             dan membangun relasi. Yuk, jelajahi Talenta dan temukan kesempatan
-            yang tepat untuk perjalanan pengembangan dirimu!
+            yang tepat untuk perjalanan pengembangan dirimu! Berikut adalah statistik kegiatan berdasarkan kategori yang dapat diikuti.
           </p>
         </div>
 
@@ -91,7 +91,7 @@ const stats = computed(() => [
           <template v-for="(stat, index) in stats" :key="stat.label">
             <!-- Item Statistik -->
             <div class="flex flex-col items-center justify-center transition-transform hover:-translate-y-1">
-              <span class="text-4xl font-black text-[#f47663] md:text-[42px] leading-none">
+              <span class="text-4xl font-black text-[#51ca84] md:text-[42px] leading-none">
                 {{ stat.value }}
               </span>
               <span class="mt-2 text-[9px] font-bold uppercase tracking-widest text-gray-400 sm:text-[10px]">
